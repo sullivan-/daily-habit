@@ -1,0 +1,179 @@
+# Habit — Ubiquitous Language
+
+This is the domain glossary for the Habit app, following Domain-Driven Design
+practice. These terms should be used consistently in all specs, code, and
+conversation. When a term here conflicts with informal usage elsewhere, update
+the other document. If a term needs to change, change it here first, then
+propagate.
+
+## Core Domain
+
+### Habit
+
+The persistent definition of something the user does regularly. A habit has a
+name, configuration (days active, daily target, timer settings, priority,
+priority weight), and is not tied to a specific date — it is the template from
+which daily work is derived.
+
+Examples: "Qigong", "Home", "Badux", "Vitamins"
+
+### Activity
+
+A single recorded instance of performing a habit. An activity belongs to one
+habit and one calendar date. It captures when the work happened and an optional
+note. An activity is the actual accomplishment — the real thing that was done.
+
+For timed habits, an activity also records: start time (first start tap), end
+time (done tap), and elapsed duration (accumulated running time, excluding
+pauses). The timer can be paused and resumed any number of times within an
+activity.
+
+An activity is the atomic unit of "I did this." Checking off an item or tapping
+done creates an activity.
+
+### Daily Target
+
+A property of a habit: how many activities the user aims to complete per day,
+with a mode of **exactly** or **at least**. "Exactly 1" means do it once and no
+more (e.g., Vitamins). "At least 3" means do it three or more times, with extra
+activities available via "do again" (e.g., Badux). The target number controls
+when the habit leaves the agenda; the mode controls whether extras are allowed.
+
+### Daily Progress
+
+A derived value: the number of activities logged for a habit on a given date,
+compared to its daily target. E.g., "2/3" means two activities completed out of
+a target of three. This is not a stored entity — it is computed from activities.
+
+### Day Boundary
+
+The hour at which one day ends and the next begins (default: 2:00 AM). Activities
+completed before the day boundary are attributed to the previous calendar date.
+The app's concept of "today" is defined by this boundary, not midnight. An
+activity records both its actual timestamp and its attributed date, which may
+differ.
+
+## Habit Configuration
+
+### Days Active
+
+Which days of the week a habit appears on the agenda. E.g., Badux is Mon-Fri.
+Qigong is every day. A habit with no days active never appears (effectively
+disabled).
+
+### Timed / Untimed
+
+Whether a habit involves a timer. **Timed** habits (Qigong, Badux, Read) show
+an elapsed timer, support chime intervals, and record duration. **Untimed**
+habits (Vitamins, Waterpick) are simple checkboxes — tap done, no timer, no
+duration recorded.
+
+### Chime Interval
+
+For timed habits: a recurring audio signal at a fixed interval while the timer
+is running. E.g., every 10 seconds (for counting in meditation) or every
+5 minutes (for awareness during a work session). Not all timed habits need a
+chime interval.
+
+### Time Threshold
+
+For timed habits: a duration milestone that triggers feedback. Three types:
+- **Minimum done**: "you've done enough" (e.g., 15 min for reading)
+- **Time to stop**: "wrap up now" (e.g., 50 min for work)
+- **Goal met**: "you hit your target" (e.g., 30 min for qigong)
+
+### Priority
+
+The importance of a habit. Five tiers: high, medium-high, medium, medium-low,
+low. Affects both agenda ordering (higher priority habits appear earlier at the
+same activity level) and progress bar color calculation (missing a low-priority
+habit has less impact on daily status than missing a high-priority one). Within
+the same priority tier, sort order breaks ties.
+
+### Time of Day
+
+The hour when a habit is typically performed (e.g., 7, 8, 14). Used to position
+the habit's **first** activity in the agenda. Subsequent activities (activity 2,
+3, etc.) are positioned by priority weight, not by time of day.
+
+### Sort Order
+
+Ordering among habits with the same time of day. Lower values appear first in
+the agenda. Distinct from priority weight, which controls ordering of subsequent
+activities.
+
+### Daily Text
+
+Optional day-specific default text for a habit. E.g., Body Care on Monday
+pre-fills "sinus rinse", on Wednesday pre-fills "cholesterol." The daily text
+appears in the note field when the habit becomes the focus in the activity view.
+It is a default, not a locked value — the user can edit or replace it before
+checking off the activity.
+
+## Task Management
+
+### Task Backlog
+
+An optional ordered list of tasks associated with a habit. When present, each
+activity prompts the user to pick (or continue) a task from the backlog. The
+backlog is loosely prioritized — the user can reorder tasks at any time.
+
+Not all habits have a task backlog. "Vitamins" has no backlog. "Home" has a
+backlog of household tasks. "Badux" has a backlog of project work items.
+
+*Note:* Task backlogs are a post-MVP feature.
+
+### Task
+
+An item in a task backlog. A task has a name and optional notes. A task can span
+multiple activities and multiple days — completing an activity on a task does not
+automatically remove it from the backlog. The user explicitly marks a task as
+complete when it is finished.
+
+## UX Context
+
+### Activity View
+
+The top element on the primary screen, present in all three layouts. Adapts its
+content based on context: shows the current habit with timer controls (main
+layout), a completed activity for review (review layout), or an expanded detail
+view (activity focused layout). When nothing is selected, shows a contextual
+summary (forward-looking in main, backward-looking in review).
+
+### Agenda
+
+The forward-looking queue in the middle section of the main layout. Shows only
+incomplete items — completed activities move to the completed list. For habits
+with daily target > 1, only the next pending activity appears; the following
+activity enters the queue once the current one is completed.
+
+### Completed List
+
+The backward-looking list in the middle section of the review layout. Shows all
+activities completed today in chronological order, with timestamps, durations,
+and note previews.
+
+### Progress Bar
+
+A compact bar at the bottom of the main layout showing overall daily progress
+(e.g., "9/14 activities complete"). Color-coded by status (blue = on track,
+green = ahead, red = behind). Tapping it switches to the review layout.
+
+### Agenda Bar
+
+A compact bar at the bottom of the review and activity focused layouts. Shows
+remaining activity count. Tapping it switches to the main layout.
+
+### Layout
+
+One of three arrangements of the primary screen: **main** (forward-looking,
+agenda + progress bar), **review** (backward-looking, completed list + agenda
+bar), or **activity focused** (expanded detail + agenda bar). The user switches
+between layouts by tapping the bars.
+
+### Display Ordering
+
+The algorithm that sorts the agenda. Considers time of day (for first
+activities), activity level (first activities before second activities), and
+priority weight (within the same activity level). The ordering is a suggestion —
+the user can always tap any item to work on it out of order.
