@@ -1,0 +1,72 @@
+package com.habit.ui
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.habit.viewmodel.AgendaViewModel
+import com.habit.viewmodel.Layout
+import com.habit.viewmodel.progressStatus
+import java.time.LocalDateTime
+
+@Composable
+fun PrimaryScreen(viewModel: AgendaViewModel) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        ActivityView(
+            state = uiState,
+            onStart = viewModel::startTimer,
+            onStop = viewModel::stopTimer,
+            onComplete = viewModel::completeActivity,
+            onCompleteUntimed = viewModel::completeUntimed,
+            onNoteChange = viewModel::updateNote,
+            onExpand = viewModel::expandActivity,
+            modifier = Modifier.weight(0f, fill = false)
+        )
+
+        when (uiState.layout) {
+            Layout.MAIN -> {
+                AgendaList(
+                    items = uiState.agendaItems,
+                    onSelect = viewModel::selectHabit,
+                    modifier = Modifier.weight(1f)
+                )
+                ProgressBar(
+                    completed = uiState.progressCount,
+                    total = uiState.totalTarget,
+                    color = progressStatus(
+                        uiState.progressCount,
+                        uiState.habits,
+                        LocalDateTime.now()
+                    ),
+                    onClick = viewModel::switchToReview
+                )
+            }
+            Layout.REVIEW -> {
+                CompletedList(
+                    items = uiState.completedItems,
+                    onSelect = viewModel::selectCompletedActivity,
+                    onDoAgain = viewModel::doAgain,
+                    modifier = Modifier.weight(1f)
+                )
+                AgendaBar(
+                    remaining = uiState.totalTarget - uiState.progressCount,
+                    onClick = viewModel::switchToMain
+                )
+            }
+            Layout.ACTIVITY_FOCUSED -> {
+                ActivityDetail(
+                    state = uiState,
+                    modifier = Modifier.weight(1f)
+                )
+                AgendaBar(
+                    remaining = uiState.totalTarget - uiState.progressCount,
+                    onClick = viewModel::switchToMain
+                )
+            }
+        }
+    }
+}

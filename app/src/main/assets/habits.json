@@ -1,0 +1,77 @@
+{
+  "dayBoundaryHour": 2,
+  "habits": [
+    {
+      "id": "qigong",
+      "name": "Qigong",
+      "timeOfDay": 7,
+      "sortOrder": 1,
+      "daysActive": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY",
+                      "SATURDAY", "SUNDAY"],
+      "dailyTarget": 2,
+      "dailyTargetMode": "AT_LEAST",
+      "timed": true,
+      "chimeIntervalSeconds": 10,
+      "thresholdMinutes": 30,
+      "thresholdType": "GOAL_MET",
+      "priority": "HIGH",
+      "dailyTexts": {}
+    },
+    {
+      "id": "vitamins",
+      "name": "Vitamins",
+      "timeOfDay": 7,
+      "sortOrder": 2,
+      "daysActive": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY",
+                      "SATURDAY", "SUNDAY"],
+      "dailyTarget": 1,
+      "dailyTargetMode": "EXACTLY",
+      "timed": false,
+      "priority": "MEDIUM",
+      "dailyTexts": {}
+    },
+    {
+      "id": "badux",
+      "name": "Badux",
+      "timeOfDay": 8,
+      "sortOrder": 1,
+      "daysActive": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+      "dailyTarget": 3,
+      "dailyTargetMode": "AT_LEAST",
+      "timed": true,
+      "chimeIntervalSeconds": 300,
+      "thresholdMinutes": 50,
+      "thresholdType": "TIME_TO_STOP",
+      "priority": "HIGH",
+      "dailyTexts": {}
+    },
+    {
+      "id": "read",
+      "name": "Read",
+      "timeOfDay": 14,
+      "sortOrder": 1,
+      "daysActive": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY",
+                      "SATURDAY", "SUNDAY"],
+      "dailyTarget": 1,
+      "dailyTargetMode": "AT_LEAST",
+      "timed": true,
+      "thresholdMinutes": 15,
+      "thresholdType": "MINIMUM_DONE",
+      "priority": "MEDIUM",
+      "dailyTexts": {}
+    },
+    {
+      "id": "home",
+      "name": "Home",
+      "timeOfDay": 17,
+      "sortOrder": 1,
+      "daysActive": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY",
+                      "SATURDAY", "SUNDAY"],
+      "dailyTarget": 1,
+      "dailyTargetMode": "AT_LEAST",
+      "timed": false,
+      "priority": "MEDIUM_LOW",
+      "dailyTexts": {}
+    }
+  ]
+}
