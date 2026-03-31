@@ -20,6 +20,13 @@ interface ActivityDao {
         date: LocalDate
     ): Flow<List<Activity>>
 
+    @Query(
+        "SELECT * FROM activity " +
+        "WHERE habitId = :habitId AND attributedDate = :date AND completedAt IS NULL " +
+        "LIMIT 1"
+    )
+    suspend fun inProgressActivity(habitId: String, date: LocalDate): Activity?
+
     @Insert
     suspend fun insert(activity: Activity): Long
 

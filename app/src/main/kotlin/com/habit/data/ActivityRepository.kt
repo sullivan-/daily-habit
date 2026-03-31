@@ -13,6 +13,9 @@ class ActivityRepository(private val activityDao: ActivityDao) {
     ): Flow<List<Activity>> =
         activityDao.activitiesForHabitOnDate(habitId, date)
 
+    suspend fun inProgressActivity(habitId: String, date: LocalDate): Activity? =
+        activityDao.inProgressActivity(habitId, date)
+
     suspend fun create(activity: Activity): Long =
         activityDao.insert(activity)
 

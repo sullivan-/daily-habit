@@ -80,6 +80,10 @@ class AgendaViewModelTest {
         every { dayBoundary.today() } returns today
         every { habitRepo.allHabits() } returns habitsFlow
         every { activityRepo.activitiesForDate(today) } returns activitiesFlow
+        coEvery { activityRepo.create(any()) } returns 1L
+        coEvery { activityRepo.inProgressActivity(any(), any()) } returns null
+        coEvery { habitRepo.getById("qigong") } returns qigong
+        coEvery { habitRepo.getById("vitamins") } returns vitamins
     }
 
     @After
@@ -101,11 +105,33 @@ class AgendaViewModelTest {
     }
 
     @Test
-    fun `selectHabit updates selectedHabitId`() = runTest {
+    fun `selectHabit updates selectedHabitId and creates activity`() = runTest {
         val vm = createViewModel()
         vm.selectHabit("qigong")
         assertThat(vm.uiState.value.selectedHabitId).isEqualTo("qigong")
-        assertThat(vm.uiState.value.selectedHabit?.name).isEqualTo("Qigong")
+        assertThat(vm.uiState.value.activeActivity).isNotNull()
+        assertThat(vm.uiState.value.activeActivity?.habitId).isEqualTo("qigong")
+        coVerify { activityRepo.create(any()) }
+    }
+
+    @Test
+    fun `selectHabit resumes existing in-progress activity`() = runTest {
+        val existing = Activity(
+            id = 42,
+            habitId = "qigong",
+            attributedDate = today,
+            startTime = null,
+            endTime = null,
+            elapsedMs = 0,
+            note = "saved note",
+            completedAt = null
+        )
+        coEvery { activityRepo.inProgressActivity("qigong", today) } returns existing
+
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        assertThat(vm.uiState.value.activeActivity?.id).isEqualTo(42)
+        assertThat(vm.uiState.value.activeActivity?.note).isEqualTo("saved note")
     }
 
     @Test
@@ -114,6 +140,7 @@ class AgendaViewModelTest {
         vm.selectHabit("qigong")
         vm.clearSelection()
         assertThat(vm.uiState.value.selectedHabitId).isNull()
+        assertThat(vm.uiState.value.activeActivity).isNull()
     }
 
     @Test
@@ -139,22 +166,18 @@ class AgendaViewModelTest {
     }
 
     @Test
-    fun `startTimer creates activity and sets timer running`() = runTest {
-        coEvery { activityRepo.create(any()) } returns 1L
+    fun `startTimer sets timer running`() = runTest {
         val vm = createViewModel()
         vm.selectHabit("qigong")
         vm.startTimer()
 
         val state = vm.uiState.value
         assertThat(state.timerRunning).isTrue()
-        assertThat(state.activeActivity).isNotNull()
-        assertThat(state.activeActivity?.habitId).isEqualTo("qigong")
-        coVerify { activityRepo.create(any()) }
+        assertThat(state.activeActivity?.startTime).isNotNull()
     }
 
     @Test
     fun `stopTimer pauses and persists elapsed time`() = runTest {
-        coEvery { activityRepo.create(any()) } returns 1L
         val vm = createViewModel()
         vm.selectHabit("qigong")
         vm.startTimer()
@@ -168,7 +191,6 @@ class AgendaViewModelTest {
 
     @Test
     fun `completeActivity finalizes and advances to next habit`() = runTest {
-        coEvery { activityRepo.create(any()) } returns 1L
         val vm = createViewModel()
         vm.selectHabit("qigong")
         vm.startTimer()
@@ -176,26 +198,36 @@ class AgendaViewModelTest {
 
         val state = vm.uiState.value
         assertThat(state.timerRunning).isFalse()
-        assertThat(state.activeActivity).isNull()
         assertThat(state.elapsedMs).isEqualTo(0)
+        // should advance to next habit (vitamins)
         assertThat(state.selectedHabitId).isEqualTo("vitamins")
     }
 
     @Test
-    fun `completeUntimed creates completed activity`() = runTest {
-        coEvery { activityRepo.create(any()) } returns 1L
-        coEvery { habitRepo.getById("vitamins") } returns vitamins
+    fun `completeUntimed completes active activity`() = runTest {
         val vm = createViewModel()
         vm.selectHabit("vitamins")
         vm.completeUntimed("vitamins", "took them")
 
         coVerify {
-            activityRepo.create(match {
+            activityRepo.update(match {
                 it.habitId == "vitamins" &&
                     it.note == "took them" &&
                     it.completedAt != null
             })
         }
+    }
+
+    @Test
+    fun `updateNote persists to database`() = runTest {
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.updateNote("standing form")
+
+        coVerify {
+            activityRepo.update(match { it.note == "standing form" })
+        }
+        assertThat(vm.uiState.value.activeActivity?.note).isEqualTo("standing form")
     }
 
     @Test
@@ -240,7 +272,6 @@ class AgendaViewModelTest {
 
     @Test
     fun `selectHabit blocked when timer running on different habit`() = runTest {
-        coEvery { activityRepo.create(any()) } returns 1L
         val vm = createViewModel()
         vm.selectHabit("qigong")
         vm.startTimer()
@@ -251,7 +282,6 @@ class AgendaViewModelTest {
 
     @Test
     fun `forceSelectHabit stops timer and switches`() = runTest {
-        coEvery { activityRepo.create(any()) } returns 1L
         val vm = createViewModel()
         vm.selectHabit("qigong")
         vm.startTimer()
@@ -260,6 +290,5 @@ class AgendaViewModelTest {
         val state = vm.uiState.value
         assertThat(state.selectedHabitId).isEqualTo("vitamins")
         assertThat(state.timerRunning).isFalse()
-        assertThat(state.activeActivity).isNull()
     }
 }

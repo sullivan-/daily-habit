@@ -54,7 +54,8 @@ class AgendaViewModel(
         _uiState.value = _uiState.value.copy(
             layout = Layout.REVIEW,
             selectedHabitId = null,
-            selectedActivityId = null
+            selectedActivityId = null,
+            activeActivity = null
         )
     }
 
@@ -76,8 +77,31 @@ class AgendaViewModel(
         _uiState.value = _uiState.value.copy(
             selectedHabitId = habitId,
             selectedActivityId = null,
+            activeActivity = null,
             layout = Layout.MAIN
         )
+        viewModelScope.launch {
+            val today = dayBoundary.today()
+            val existing = activityRepo.inProgressActivity(habitId, today)
+            if (existing != null) {
+                _uiState.value = _uiState.value.copy(activeActivity = existing)
+            } else {
+                val habit = habitRepo.getById(habitId) ?: return@launch
+                val new = Activity(
+                    habitId = habitId,
+                    attributedDate = today,
+                    startTime = null,
+                    endTime = null,
+                    elapsedMs = 0,
+                    note = habit.dailyTexts[today.dayOfWeek] ?: "",
+                    completedAt = null
+                )
+                val id = activityRepo.create(new)
+                _uiState.value = _uiState.value.copy(
+                    activeActivity = new.copy(id = id)
+                )
+            }
+        }
     }
 
     fun selectCompletedActivity(activityId: Long) {
@@ -91,49 +115,40 @@ class AgendaViewModel(
     fun clearSelection() {
         _uiState.value = _uiState.value.copy(
             selectedHabitId = null,
-            selectedActivityId = null
+            selectedActivityId = null,
+            activeActivity = null
         )
     }
 
     fun startTimer() {
         val state = _uiState.value
-        val habitId = state.selectedHabitId ?: return
+        val activity = state.activeActivity ?: return
 
         if (state.timerRunning) return
 
-        viewModelScope.launch {
-            val activity = state.activeActivity ?: run {
-                val today = dayBoundary.today()
-                val new = Activity(
-                    habitId = habitId,
-                    attributedDate = today,
-                    startTime = Instant.now(),
-                    endTime = null,
-                    elapsedMs = 0,
-                    note = state.selectedHabit?.dailyTexts
-                        ?.get(today.dayOfWeek) ?: "",
-                    completedAt = null
-                )
-                val id = activityRepo.create(new)
-                new.copy(id = id)
-            }
+        val started = if (activity.startTime == null) {
+            activity.copy(startTime = Instant.now())
+        } else {
+            activity
+        }
 
-            timerAccumulatedMs = activity.elapsedMs
-            timerStartEpochMs = System.currentTimeMillis()
+        timerAccumulatedMs = started.elapsedMs
+        timerStartEpochMs = System.currentTimeMillis()
 
-            _uiState.value = _uiState.value.copy(
-                activeActivity = activity,
-                timerRunning = true,
-                elapsedMs = timerAccumulatedMs
-            )
+        _uiState.value = _uiState.value.copy(
+            activeActivity = started,
+            timerRunning = true,
+            elapsedMs = timerAccumulatedMs
+        )
 
-            timerJob = launch(tickDispatcher) {
-                while (isActive) {
-                    delay(200)
-                    val elapsed = timerAccumulatedMs +
-                        (System.currentTimeMillis() - timerStartEpochMs)
-                    _uiState.value = _uiState.value.copy(elapsedMs = elapsed)
-                }
+        viewModelScope.launch { activityRepo.update(started) }
+
+        timerJob = viewModelScope.launch(tickDispatcher) {
+            while (isActive) {
+                delay(200)
+                val elapsed = timerAccumulatedMs +
+                    (System.currentTimeMillis() - timerStartEpochMs)
+                _uiState.value = _uiState.value.copy(elapsedMs = elapsed)
             }
         }
     }
@@ -170,7 +185,7 @@ class AgendaViewModel(
         val finalElapsed = if (state.timerRunning) {
             timerAccumulatedMs + (System.currentTimeMillis() - timerStartEpochMs)
         } else {
-            state.elapsedMs
+            activity.elapsedMs
         }
 
         val completed = activity.copy(
@@ -195,30 +210,46 @@ class AgendaViewModel(
             elapsedMs = 0,
             selectedHabitId = nextHabit?.habit?.id
         )
+
+        // eagerly load the next habit's activity
+        nextHabit?.let { selectHabit(it.habit.id) }
     }
 
     fun completeUntimed(habitId: String, note: String) {
+        val state = _uiState.value
+        val activity = state.activeActivity
+
         viewModelScope.launch {
-            val today = dayBoundary.today()
-            val habit = habitRepo.getById(habitId) ?: return@launch
-            val activity = Activity(
-                habitId = habitId,
-                attributedDate = today,
-                startTime = null,
-                endTime = null,
-                elapsedMs = 0,
-                note = note.ifEmpty {
-                    habit.dailyTexts[today.dayOfWeek] ?: ""
-                },
-                completedAt = Instant.now()
-            )
-            activityRepo.create(activity)
+            if (activity != null && activity.habitId == habitId) {
+                val completed = activity.copy(
+                    note = note,
+                    completedAt = Instant.now()
+                )
+                activityRepo.update(completed)
+            } else {
+                val today = dayBoundary.today()
+                val habit = habitRepo.getById(habitId) ?: return@launch
+                val new = Activity(
+                    habitId = habitId,
+                    attributedDate = today,
+                    startTime = null,
+                    endTime = null,
+                    elapsedMs = 0,
+                    note = note.ifEmpty {
+                        habit.dailyTexts[today.dayOfWeek] ?: ""
+                    },
+                    completedAt = Instant.now()
+                )
+                activityRepo.create(new)
+            }
 
             val nextHabit = _uiState.value.agendaItems
                 .firstOrNull { it.habit.id != habitId }
             _uiState.value = _uiState.value.copy(
+                activeActivity = null,
                 selectedHabitId = nextHabit?.habit?.id
             )
+            nextHabit?.let { selectHabit(it.habit.id) }
         }
     }
 

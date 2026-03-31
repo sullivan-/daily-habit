@@ -12,10 +12,10 @@ import com.habit.viewmodel.progressStatus
 import java.time.LocalDateTime
 
 @Composable
-fun PrimaryScreen(viewModel: AgendaViewModel) {
+fun PrimaryScreen(viewModel: AgendaViewModel, modifier: Modifier = Modifier) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize()) {
         ActivityView(
             state = uiState,
             onStart = viewModel::startTimer,
@@ -23,8 +23,7 @@ fun PrimaryScreen(viewModel: AgendaViewModel) {
             onComplete = viewModel::completeActivity,
             onCompleteUntimed = viewModel::completeUntimed,
             onNoteChange = viewModel::updateNote,
-            onExpand = viewModel::expandActivity,
-            modifier = Modifier.weight(0f, fill = false)
+            onExpand = viewModel::expandActivity
         )
 
         when (uiState.layout) {
