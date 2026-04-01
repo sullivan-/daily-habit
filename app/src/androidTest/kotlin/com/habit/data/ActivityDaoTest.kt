@@ -28,7 +28,7 @@ class ActivityDaoTest {
     private val habit = Habit(
         id = "qigong",
         name = "Qigong",
-        timeOfDay = 7,
+        timesOfDay = listOf(7),
         sortOrder = 1,
         daysActive = DayOfWeek.entries.toSet(),
         dailyTarget = 2,
@@ -36,7 +36,7 @@ class ActivityDaoTest {
         timed = true,
         chimeIntervalSeconds = 10,
         thresholdMinutes = 30,
-        thresholdType = ThresholdType.GOAL_MET,
+        thresholdType = ThresholdType.GOAL,
         priority = Priority.HIGH,
         dailyTexts = emptyMap()
     )

@@ -177,7 +177,7 @@ class AgendaViewModel(
 
     fun completeActivity(note: String) {
         val state = _uiState.value
-        val activity = state.activeActivity ?: return
+        val habitId = state.selectedHabitId ?: return
 
         timerJob?.cancel()
         timerJob = null
@@ -185,24 +185,13 @@ class AgendaViewModel(
         val finalElapsed = if (state.timerRunning) {
             timerAccumulatedMs + (System.currentTimeMillis() - timerStartEpochMs)
         } else {
-            activity.elapsedMs
-        }
-
-        val completed = activity.copy(
-            endTime = Instant.now(),
-            elapsedMs = finalElapsed,
-            note = note,
-            completedAt = Instant.now()
-        )
-
-        viewModelScope.launch {
-            activityRepo.update(completed)
+            state.activeActivity?.elapsedMs ?: 0
         }
 
         timerAccumulatedMs = 0
 
         val nextHabit = state.agendaItems
-            .firstOrNull { it.habit.id != state.selectedHabitId }
+            .firstOrNull { it.habit.id != habitId }
 
         _uiState.value = state.copy(
             activeActivity = null,
@@ -211,7 +200,29 @@ class AgendaViewModel(
             selectedHabitId = nextHabit?.habit?.id
         )
 
-        // eagerly load the next habit's activity
+        viewModelScope.launch {
+            val activity = state.activeActivity
+                ?: activityRepo.inProgressActivity(habitId, dayBoundary.today())
+            if (activity != null) {
+                activityRepo.update(activity.copy(
+                    endTime = Instant.now(),
+                    elapsedMs = finalElapsed,
+                    note = note,
+                    completedAt = Instant.now()
+                ))
+            } else {
+                activityRepo.create(Activity(
+                    habitId = habitId,
+                    attributedDate = dayBoundary.today(),
+                    startTime = null,
+                    endTime = Instant.now(),
+                    elapsedMs = 0,
+                    note = note,
+                    completedAt = Instant.now()
+                ))
+            }
+        }
+
         nextHabit?.let { selectHabit(it.habit.id) }
     }
 

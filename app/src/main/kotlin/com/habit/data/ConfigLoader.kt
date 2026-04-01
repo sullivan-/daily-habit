@@ -9,7 +9,7 @@ import kotlinx.serialization.json.Json
 data class HabitJson(
     val id: String,
     val name: String,
-    val timeOfDay: Int,
+    val timesOfDay: List<Int>,
     val sortOrder: Int,
     val daysActive: List<String>,
     val dailyTarget: Int,
@@ -51,7 +51,7 @@ class ConfigLoader(private val context: Context) {
     private fun HabitJson.toHabit() = Habit(
         id = id,
         name = name,
-        timeOfDay = timeOfDay,
+        timesOfDay = timesOfDay,
         sortOrder = sortOrder,
         daysActive = daysActive.map { DayOfWeek.valueOf(it) }.toSet(),
         dailyTarget = dailyTarget,

@@ -1,12 +1,13 @@
 package com.habit.ui
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,7 +21,11 @@ fun AgendaList(
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    LazyColumn(modifier = modifier) {
+    val listState = rememberLazyListState()
+    LazyColumn(
+        state = listState,
+        modifier = modifier.scrollbarIndicator(listState)
+    ) {
         items(items, key = { "${it.habit.id}-${it.activityNumber}" }) { item ->
             Row(
                 modifier = Modifier
@@ -40,6 +45,9 @@ fun AgendaList(
                     )
                 }
             }
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+            )
         }
     }
 }

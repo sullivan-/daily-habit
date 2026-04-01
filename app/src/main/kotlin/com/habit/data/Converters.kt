@@ -33,6 +33,15 @@ class Converters {
     }
 
     @TypeConverter
+    fun fromIntList(list: List<Int>): String =
+        list.joinToString(",")
+
+    @TypeConverter
+    fun toIntList(value: String): List<Int> =
+        if (value.isEmpty()) emptyList()
+        else value.split(",").map { it.toInt() }
+
+    @TypeConverter
     fun fromLocalDate(date: LocalDate): Long = date.toEpochDay()
 
     @TypeConverter

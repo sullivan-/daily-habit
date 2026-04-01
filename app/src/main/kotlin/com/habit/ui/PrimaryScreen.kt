@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.habit.viewmodel.AgendaViewModel
 import com.habit.viewmodel.Layout
-import com.habit.viewmodel.progressStatus
+import com.habit.viewmodel.progressRatios
 import java.time.LocalDateTime
 
 @Composable
@@ -23,7 +23,12 @@ fun PrimaryScreen(viewModel: AgendaViewModel, modifier: Modifier = Modifier) {
             onComplete = viewModel::completeActivity,
             onCompleteUntimed = viewModel::completeUntimed,
             onNoteChange = viewModel::updateNote,
-            onExpand = viewModel::expandActivity
+            onToggleDetail = {
+                if (uiState.layout == Layout.ACTIVITY_FOCUSED)
+                    viewModel.switchToMain()
+                else
+                    viewModel.expandActivity()
+            }
         )
 
         when (uiState.layout) {
@@ -33,14 +38,16 @@ fun PrimaryScreen(viewModel: AgendaViewModel, modifier: Modifier = Modifier) {
                     onSelect = viewModel::selectHabit,
                     modifier = Modifier.weight(1f)
                 )
+                val ratios = progressRatios(
+                    uiState.habits,
+                    uiState.todayActivities,
+                    LocalDateTime.now()
+                )
                 ProgressBar(
                     completed = uiState.progressCount,
                     total = uiState.totalTarget,
-                    color = progressStatus(
-                        uiState.progressCount,
-                        uiState.habits,
-                        LocalDateTime.now()
-                    ),
+                    completedOverTotal = ratios.completedOverTotal,
+                    expectedOverTotal = ratios.expectedOverTotal,
                     onClick = viewModel::switchToReview
                 )
             }

@@ -46,7 +46,7 @@ class PrimaryScreenTest {
     private val qigong = Habit(
         id = "qigong",
         name = "Qigong",
-        timeOfDay = 7,
+        timesOfDay = listOf(7),
         sortOrder = 1,
         daysActive = DayOfWeek.entries.toSet(),
         dailyTarget = 2,
@@ -62,7 +62,7 @@ class PrimaryScreenTest {
     private val vitamins = Habit(
         id = "vitamins",
         name = "Vitamins",
-        timeOfDay = 7,
+        timesOfDay = listOf(7),
         sortOrder = 2,
         daysActive = DayOfWeek.entries.toSet(),
         dailyTarget = 1,

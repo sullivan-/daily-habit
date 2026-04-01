@@ -1,6 +1,5 @@
 package com.habit.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.habit.data.Habit
 import com.habit.viewmodel.AgendaUiState
+import com.habit.viewmodel.Layout
 
 @Composable
 fun ActivityView(
@@ -29,7 +29,7 @@ fun ActivityView(
     onComplete: (String) -> Unit,
     onCompleteUntimed: (String, String) -> Unit,
     onNoteChange: (String) -> Unit,
-    onExpand: () -> Unit,
+    onToggleDetail: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val habit = state.selectedHabit
@@ -45,21 +45,17 @@ fun ActivityView(
                 state = state,
                 onNoteChange = onNoteChange
             )
-        } else if (habit.timed) {
-            TimedHabitView(
+        } else {
+            HabitView(
                 habit = habit,
                 state = state,
                 onStart = onStart,
                 onStop = onStop,
                 onComplete = onComplete,
+                onCompleteUntimed = onCompleteUntimed,
                 onNoteChange = onNoteChange,
-                onExpand = onExpand
-            )
-        } else {
-            UntimedHabitView(
-                habit = habit,
-                state = state,
-                onComplete = onCompleteUntimed
+                onToggleDetail = onToggleDetail,
+                isExpanded = state.layout == Layout.ACTIVITY_FOCUSED
             )
         }
     }
@@ -83,14 +79,16 @@ private fun CollapsedSummary(state: AgendaUiState) {
 }
 
 @Composable
-private fun TimedHabitView(
+private fun HabitView(
     habit: Habit,
     state: AgendaUiState,
     onStart: () -> Unit,
     onStop: () -> Unit,
     onComplete: (String) -> Unit,
+    onCompleteUntimed: (String, String) -> Unit,
     onNoteChange: (String) -> Unit,
-    onExpand: () -> Unit
+    onToggleDetail: () -> Unit,
+    isExpanded: Boolean
 ) {
     var note by remember(state.activeActivity?.id) {
         mutableStateOf(state.activeActivity?.note ?: "")
@@ -112,18 +110,30 @@ private fun TimedHabitView(
                 }
                 Text(
                     text = "${done + 1}/${habit.dailyTarget}",
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(end = 8.dp)
                 )
             }
+            Checkbox(
+                checked = false,
+                onCheckedChange = {
+                    if (habit.timed) {
+                        onComplete(note)
+                    } else {
+                        onCompleteUntimed(habit.id, note)
+                    }
+                }
+            )
         }
 
-        TimerDisplay(
-            elapsedMs = state.elapsedMs,
-            isRunning = state.timerRunning,
-            onStart = onStart,
-            onStop = onStop,
-            onDone = { onComplete(note) }
-        )
+        if (habit.timed) {
+            TimerDisplay(
+                elapsedMs = state.elapsedMs,
+                isRunning = state.timerRunning,
+                onStart = onStart,
+                onStop = onStop
+            )
+        }
 
         NoteField(
             value = note,
@@ -134,57 +144,14 @@ private fun TimedHabitView(
             modifier = Modifier.padding(top = 8.dp)
         )
 
-        TextButton(
-            onClick = onExpand,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        ) {
-            Text("More detail")
-        }
-    }
-}
-
-@Composable
-private fun UntimedHabitView(
-    habit: Habit,
-    state: AgendaUiState,
-    onComplete: (String, String) -> Unit
-) {
-    val dailyText = habit.dailyTexts[
-        java.time.LocalDate.now().dayOfWeek
-    ] ?: ""
-    var note by remember(habit.id) { mutableStateOf(dailyText) }
-
-    Column(modifier = Modifier.padding(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = habit.name,
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.weight(1f)
-            )
-            Checkbox(
-                checked = false,
-                onCheckedChange = { onComplete(habit.id, note) }
-            )
-        }
-
-        if (habit.dailyTarget > 1) {
-            val done = state.todayActivities.count {
-                it.habitId == habit.id && it.completedAt != null
+        if (habit.timed) {
+            TextButton(
+                onClick = onToggleDetail,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text(if (isExpanded) "Less detail" else "More detail")
             }
-            Text(
-                text = "${done + 1}/${habit.dailyTarget}",
-                style = MaterialTheme.typography.bodyMedium
-            )
         }
-
-        NoteField(
-            value = note,
-            onValueChange = { note = it },
-            modifier = Modifier.padding(top = 8.dp)
-        )
     }
 }
 

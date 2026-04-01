@@ -8,7 +8,7 @@ import java.time.DayOfWeek
 data class Habit(
     @PrimaryKey val id: String,
     val name: String,
-    val timeOfDay: Int,
+    val timesOfDay: List<Int>,
     val sortOrder: Int,
     val daysActive: Set<DayOfWeek>,
     val dailyTarget: Int,

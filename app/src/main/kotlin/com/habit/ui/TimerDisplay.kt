@@ -1,7 +1,6 @@
 package com.habit.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,34 +18,34 @@ fun TimerDisplay(
     isRunning: Boolean,
     onStart: () -> Unit,
     onStop: () -> Unit,
-    onDone: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Row(
+        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        if (isRunning) {
+            Button(onClick = onStop) { Text("Stop") }
+        } else {
+            Button(onClick = onStart) { Text("Start") }
+        }
         Text(
             text = formatElapsed(elapsedMs),
             style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(vertical = 8.dp)
+            modifier = Modifier.padding(start = 16.dp)
         )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            if (isRunning) {
-                Button(onClick = onStop) { Text("Stop") }
-            } else {
-                Button(onClick = onStart) { Text("Start") }
-            }
-            Button(onClick = onDone) { Text("Done") }
-        }
     }
 }
 
 private fun formatElapsed(ms: Long): String {
     val totalSeconds = ms / 1000
-    val minutes = totalSeconds / 60
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
     val seconds = totalSeconds % 60
-    return "%d:%02d".format(minutes, seconds)
+    return if (hours > 0) {
+        "%d:%02d:%02d".format(hours, minutes, seconds)
+    } else {
+        "%d:%02d".format(minutes, seconds)
+    }
 }
