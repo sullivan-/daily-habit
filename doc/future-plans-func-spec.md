@@ -16,16 +16,33 @@ session prompts the user to pick (or continue) a task from the backlog.
 - user can reorder tasks to adjust priority
 - daily target interacts with the backlog: "Home" with target=1 means "do at
   least one home task today," picking from the backlog
-- activities like "Badux" with target=3 can continue the same task across
-  sessions or pick different ones
+- habits like "Badux" with target=3 can continue the same task across
+  activities or pick different ones
 
 ### in-app configuration
 
-- view and edit activity definitions from within the app (currently static JSON)
-- add, remove, and reorder activities
-- edit all activity properties (daily target, timer settings, days active, etc.)
+*partially implemented: habit editor for create/edit is in progress.
+edit from expanded activity view and "New Habit" from menu.*
+
+remaining:
+- reorder habits
 - manage task backlogs (add, edit, reorder, complete tasks)
-- set day-specific daily text per activity
+- config import/export (replace static JSON bootstrapping)
+
+### habit list screen
+
+- a dedicated screen listing all habits with their key config (name, priority,
+  days active, timed/untimed)
+- tap a habit to open the editor
+- reorder habits by drag
+- search/filter by name
+
+### delete habit
+
+- available from the habit editor or habit list
+- confirmation prompt before deletion
+- deletes the habit and all associated activities (cascade)
+- cannot be undone
 
 ### history views
 
@@ -65,17 +82,17 @@ track what you're staying away from, ported from `sched/absta.py`:
 - diet tracking / improvement notes
 - ability to journal about what's working and what isn't
 
-### session day reassignment
+### activity day reassignment
 
-- allow the user to manually move a session from one day to another
-- handles edge cases where the automatic day boundary doesn't match the user's
-  intent (e.g., a very late night that crosses the 2 AM boundary)
-- the session keeps its actual timestamp but its attributed date changes
+- allow the user to manually move an activity from one day to another
+- handles edge cases where the automatic day boundary doesn't match the
+  user's intent (e.g., a very late night that crosses the 2 AM boundary)
+- the activity keeps its actual timestamp but its attributed date changes
 
 ### timer value editing
 
-- allow the user to manually adjust a session's start time, end time, or
-  elapsed duration after the fact
+- allow the user to manually adjust an activity's start time, end time,
+  or elapsed duration after the fact
 - handles cases where the user forgot to start/stop the timer
 
 ### time tracking history
