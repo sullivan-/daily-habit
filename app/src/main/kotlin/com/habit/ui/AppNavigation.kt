@@ -1,0 +1,47 @@
+package com.habit.ui
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import com.habit.AppContainer
+import com.habit.viewmodel.AgendaViewModel
+import com.habit.viewmodel.HabitEditorViewModel
+import com.habit.viewmodel.HabitEditorViewModelFactory
+
+@Composable
+fun AppNavigation(
+    navController: NavHostController,
+    agendaViewModel: AgendaViewModel,
+    container: AppContainer,
+    modifier: Modifier = Modifier
+) {
+    NavHost(
+        navController = navController,
+        startDestination = "main",
+        modifier = modifier
+    ) {
+        composable("main") {
+            PrimaryScreen(
+                viewModel = agendaViewModel,
+                onNewHabit = { navController.navigate("habit-editor/new") },
+                onEditHabit = { habitId ->
+                    navController.navigate("habit-editor/$habitId")
+                }
+            )
+        }
+        composable("habit-editor/{habitId}") { backStackEntry ->
+            val habitId = backStackEntry.arguments?.getString("habitId")
+            val editorVm: HabitEditorViewModel = viewModel(
+                factory = HabitEditorViewModelFactory(container)
+            )
+            HabitEditorScreen(
+                viewModel = editorVm,
+                habitId = if (habitId == "new") null else habitId,
+                onBack = { navController.popBackStack() }
+            )
+        }
+    }
+}

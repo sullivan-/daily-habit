@@ -92,6 +92,7 @@ fun ProgressBar(
     completedOverTotal: Float,
     completedOverExpected: Float,
     onClick: () -> Unit,
+    onMenuClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val cot = completedOverTotal.coerceIn(0f, 1f)
@@ -105,15 +106,16 @@ fun ProgressBar(
         modifier = modifier
             .fillMaxWidth()
             .height(48.dp)
-            .clickable(onClick = onClick)
             .background(gradient)
     ) {
+        MenuButton(onClick = onMenuClick, modifier = Modifier.align(Alignment.CenterStart))
         Text(
             text = "$completed/$total",
             color = Color.White,
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier
                 .align(Alignment.Center)
+                .clickable(onClick = onClick)
                 .padding(horizontal = 16.dp)
         )
     }

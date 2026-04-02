@@ -18,21 +18,24 @@ import androidx.compose.ui.unit.dp
 fun AgendaBar(
     remaining: Int,
     onClick: () -> Unit,
+    onMenuClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(48.dp)
-            .clickable(onClick = onClick)
-            .background(Color.DarkGray),
-        contentAlignment = Alignment.Center
+            .background(Color.DarkGray)
     ) {
+        MenuButton(onClick = onMenuClick, modifier = Modifier.align(Alignment.CenterStart))
         Text(
             text = "$remaining remaining",
             color = Color.White,
             style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            modifier = Modifier
+                .align(Alignment.Center)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp)
         )
     }
 }
