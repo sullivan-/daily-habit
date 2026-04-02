@@ -46,6 +46,19 @@
       }
     },
     {
+      "id": "bible-study",
+      "name": "Bible Study",
+      "timesOfDay": [9],
+      "sortOrder": 3,
+      "daysActive": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+      "dailyTarget": 1,
+      "dailyTargetMode": "AT_LEAST",
+      "timed": true,
+      "thresholdMinutes": 10,
+      "thresholdType": "GOAL",
+      "priority": "MEDIUM_LOW"
+    },
+    {
       "id": "vitamins",
       "name": "Vitamins",
       "timesOfDay": [10],
