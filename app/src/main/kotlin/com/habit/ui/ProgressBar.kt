@@ -25,19 +25,17 @@ fun ProgressBar(
     completed: Int,
     total: Int,
     completedOverTotal: Float,
-    expectedOverTotal: Float,
+    completedOverExpected: Float,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val stops = buildList {
         add(0f to green)
-        if (completedOverTotal > 0f) {
-            add(completedOverTotal to blue)
-        } else {
-            add(0f to blue)
-        }
-        if (expectedOverTotal > completedOverTotal) {
-            add(expectedOverTotal to red)
+        val bluePos = completedOverTotal.coerceIn(0f, 1f)
+        add(bluePos to blue)
+        val redPos = completedOverExpected.coerceIn(bluePos, 1f)
+        if (redPos > bluePos) {
+            add(redPos to red)
         }
         add(1f to red)
     }

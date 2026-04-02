@@ -47,7 +47,7 @@ fun PrimaryScreen(viewModel: AgendaViewModel, modifier: Modifier = Modifier) {
                     completed = uiState.progressCount,
                     total = uiState.totalTarget,
                     completedOverTotal = ratios.completedOverTotal,
-                    expectedOverTotal = ratios.expectedOverTotal,
+                    completedOverExpected = ratios.completedOverExpected,
                     onClick = viewModel::switchToReview
                 )
             }

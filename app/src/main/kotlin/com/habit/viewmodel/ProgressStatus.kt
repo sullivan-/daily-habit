@@ -15,7 +15,7 @@ fun priorityWeight(priority: Priority): Int = when (priority) {
 
 data class ProgressRatios(
     val completedOverTotal: Float,
-    val expectedOverTotal: Float
+    val completedOverExpected: Float
 )
 
 fun progressRatios(
@@ -34,7 +34,7 @@ fun progressRatios(
         expectedWeight += habit.timesOfDay.count { it <= now.hour } * w
     }
 
-    if (totalWeight == 0) return ProgressRatios(0f, 0f)
+    if (totalWeight == 0) return ProgressRatios(0f, 1f)
 
     val completedByHabit = activities
         .filter { it.completedAt != null }
@@ -50,6 +50,8 @@ fun progressRatios(
 
     return ProgressRatios(
         completedOverTotal = completedWeight.toFloat() / totalWeight,
-        expectedOverTotal = minOf(expectedWeight.toFloat() / totalWeight, 1f)
+        completedOverExpected = if (expectedWeight > 0)
+            minOf(completedWeight.toFloat() / expectedWeight, 1f)
+        else 1f
     )
 }

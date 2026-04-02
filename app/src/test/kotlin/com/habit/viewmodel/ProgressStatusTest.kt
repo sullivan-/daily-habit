@@ -46,7 +46,15 @@ class ProgressStatusTest {
     )
 
     @Test
-    fun `all done gives completedOverTotal = 1`() {
+    fun `all due items completed gives completedOverExpected = 1`() {
+        val habits = listOf(habit(8), habit(10))
+        val activities = habits.map { completed(it.id) }
+        val ratios = progressRatios(habits, activities, monday)
+        assertThat(ratios.completedOverExpected).isEqualTo(1f)
+    }
+
+    @Test
+    fun `all items completed gives completedOverTotal = 1`() {
         val habits = listOf(habit(8), habit(10))
         val activities = habits.map { completed(it.id) }
         val ratios = progressRatios(habits, activities, monday)
@@ -61,42 +69,55 @@ class ProgressStatusTest {
     }
 
     @Test
-    fun `expectedOverTotal reflects time of day`() {
-        // at 11:00, habits at 8 and 10 are due, habit at 14 is not
-        val habits = listOf(habit(8), habit(10), habit(14))
-        val ratios = progressRatios(habits, emptyList(), monday)
-        // all same priority (MEDIUM=3), expected = 2*3=6, total = 3*3=9
-        assertThat(ratios.expectedOverTotal).isWithin(0.01f).of(6f / 9f)
-    }
-
-    @Test
-    fun `high priority weighs more in ratios`() {
-        val high = habit(8, Priority.HIGH)
-        val low = habit(8, Priority.LOW)
-
-        // complete only the low one
-        val ratios1 = progressRatios(
-            listOf(high, low),
-            listOf(completed(low.id)),
-            monday
-        )
-
-        // complete only the high one
-        val ratios2 = progressRatios(
-            listOf(high, low),
-            listOf(completed(high.id)),
-            monday
-        )
-
-        assertThat(ratios2.completedOverTotal)
-            .isGreaterThan(ratios1.completedOverTotal)
-    }
-
-    @Test
-    fun `completedOverTotal never exceeds 1`() {
+    fun `nothing due yet gives completedOverExpected = 1`() {
+        val early = LocalDateTime.of(2026, 3, 30, 6, 0)
         val habits = listOf(habit(8))
-        val activities = habits.map { completed(it.id) }
+        val ratios = progressRatios(habits, emptyList(), early)
+        assertThat(ratios.completedOverExpected).isEqualTo(1f)
+    }
+
+    @Test
+    fun `completedOverExpected always gte completedOverTotal`() {
+        val habits = listOf(habit(8), habit(10), habit(14))
+        val activities = listOf(completed(habits[0].id))
         val ratios = progressRatios(habits, activities, monday)
-        assertThat(ratios.completedOverTotal).isAtMost(1f)
+        assertThat(ratios.completedOverExpected)
+            .isAtLeast(ratios.completedOverTotal)
+    }
+
+    @Test
+    fun `high priority missing hurts completedOverExpected more`() {
+        val highHabit = habit(8, Priority.HIGH)
+        val lowHabit = habit(8, Priority.LOW)
+
+        val ratios1 = progressRatios(
+            listOf(highHabit, lowHabit),
+            listOf(completed(lowHabit.id)),
+            monday
+        )
+
+        val ratios2 = progressRatios(
+            listOf(highHabit, lowHabit),
+            listOf(completed(highHabit.id)),
+            monday
+        )
+
+        assertThat(ratios2.completedOverExpected)
+            .isGreaterThan(ratios1.completedOverExpected)
+    }
+
+    @Test
+    fun `caught up early morning is all blue no red`() {
+        // at 8:30, only kegel (8am, LOW) is due, and it's done
+        val kegel = habit(8, Priority.LOW)
+        val future = habit(14, Priority.HIGH)
+        val at830 = LocalDateTime.of(2026, 3, 30, 8, 30)
+        val ratios = progressRatios(
+            listOf(kegel, future),
+            listOf(completed(kegel.id)),
+            at830
+        )
+        assertThat(ratios.completedOverExpected).isEqualTo(1f)
+        assertThat(ratios.completedOverTotal).isLessThan(1f)
     }
 }
