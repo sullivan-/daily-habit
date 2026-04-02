@@ -1,10 +1,14 @@
 package com.habit
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
@@ -12,12 +16,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.ui.Modifier
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.compose.rememberNavController
 import com.habit.service.ChimePlayer
 import com.habit.service.TimerService
-import com.habit.ui.PrimaryScreen
+import com.habit.ui.AppNavigation
 import com.habit.viewmodel.AgendaViewModel
 import com.habit.viewmodel.AgendaViewModelFactory
 import com.habit.viewmodel.ChimeEvent
@@ -32,6 +38,10 @@ class MainActivity : ComponentActivity() {
     private lateinit var chimePlayer: ChimePlayer
     private var serviceRunning = false
 
+    private val notificationPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ -> }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(
@@ -40,6 +50,7 @@ class MainActivity : ComponentActivity() {
         )
         super.onCreate(savedInstanceState)
 
+        requestNotificationPermission()
         chimePlayer = ChimePlayer()
 
         lifecycleScope.launch {
@@ -72,16 +83,32 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        val container = (application as HabitApp).container
+
         setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
+                val navController = rememberNavController()
                 Scaffold { innerPadding ->
-                    PrimaryScreen(
-                        viewModel,
+                    AppNavigation(
+                        navController = navController,
+                        agendaViewModel = viewModel,
+                        container = container,
                         modifier = Modifier
                             .padding(innerPadding)
                             .background(MaterialTheme.colorScheme.background)
                     )
                 }
+            }
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }
