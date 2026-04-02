@@ -12,15 +12,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.habit.service.ChimePlayer
 import com.habit.ui.PrimaryScreen
 import com.habit.viewmodel.AgendaViewModel
 import com.habit.viewmodel.AgendaViewModelFactory
+import com.habit.viewmodel.ChimeEvent
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
     private val viewModel: AgendaViewModel by viewModels {
         AgendaViewModelFactory((application as HabitApp).container)
     }
+
+    private lateinit var chimePlayer: ChimePlayer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge(
@@ -29,6 +37,20 @@ class MainActivity : ComponentActivity() {
             )
         )
         super.onCreate(savedInstanceState)
+
+        chimePlayer = ChimePlayer()
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.chimeEvents.collect { event ->
+                    when (event) {
+                        is ChimeEvent.Interval -> chimePlayer.playIntervalChime()
+                        is ChimeEvent.Threshold -> chimePlayer.playThresholdChime()
+                    }
+                }
+            }
+        }
+
         setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 Scaffold { innerPadding ->
@@ -40,6 +62,13 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (::chimePlayer.isInitialized) {
+            chimePlayer.release()
         }
     }
 }

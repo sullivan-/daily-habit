@@ -12,8 +12,11 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.isActive
@@ -29,9 +32,14 @@ class AgendaViewModel(
     private val _uiState = MutableStateFlow(AgendaUiState())
     val uiState: StateFlow<AgendaUiState> = _uiState.asStateFlow()
 
+    private val _chimeEvents = MutableSharedFlow<ChimeEvent>(extraBufferCapacity = 5)
+    val chimeEvents: SharedFlow<ChimeEvent> = _chimeEvents.asSharedFlow()
+
     private var timerJob: Job? = null
     private var timerStartEpochMs: Long = 0
     private var timerAccumulatedMs: Long = 0
+    private var lastIntervalChimeMs: Long = -1
+    private var thresholdChimeFired: Boolean = false
 
     init {
         viewModelScope.launch {
@@ -134,6 +142,8 @@ class AgendaViewModel(
 
         timerAccumulatedMs = started.elapsedMs
         timerStartEpochMs = System.currentTimeMillis()
+        lastIntervalChimeMs = timerAccumulatedMs
+        thresholdChimeFired = false
 
         _uiState.value = _uiState.value.copy(
             activeActivity = started,
@@ -143,12 +153,30 @@ class AgendaViewModel(
 
         viewModelScope.launch { activityRepo.update(started) }
 
+        val habit = state.selectedHabit
+        val chimeIntervalMs = habit?.chimeIntervalSeconds?.let { it * 1000L }
+        val thresholdMs = habit?.thresholdMinutes?.let { it * 60 * 1000L }
+
         timerJob = viewModelScope.launch(tickDispatcher) {
             while (isActive) {
                 delay(200)
                 val elapsed = timerAccumulatedMs +
                     (System.currentTimeMillis() - timerStartEpochMs)
                 _uiState.value = _uiState.value.copy(elapsedMs = elapsed)
+
+                if (chimeIntervalMs != null && chimeIntervalMs > 0) {
+                    val prevCount = lastIntervalChimeMs / chimeIntervalMs
+                    val currCount = elapsed / chimeIntervalMs
+                    if (currCount > prevCount) {
+                        _chimeEvents.tryEmit(ChimeEvent.Interval)
+                        lastIntervalChimeMs = elapsed
+                    }
+                }
+
+                if (thresholdMs != null && !thresholdChimeFired && elapsed >= thresholdMs) {
+                    _chimeEvents.tryEmit(ChimeEvent.Threshold)
+                    thresholdChimeFired = true
+                }
             }
         }
     }

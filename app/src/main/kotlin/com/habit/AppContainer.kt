@@ -15,7 +15,7 @@ class AppContainer(context: Context) {
         context,
         HabitDatabase::class.java,
         "habit.db"
-    ).fallbackToDestructiveMigration().build()
+    ).build()
 
     val habitRepo = HabitRepository(database.habitDao())
     val activityRepo = ActivityRepository(database.activityDao())
