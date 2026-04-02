@@ -12,7 +12,12 @@ import com.habit.viewmodel.progressRatios
 import java.time.LocalDateTime
 
 @Composable
-fun PrimaryScreen(viewModel: AgendaViewModel, modifier: Modifier = Modifier) {
+fun PrimaryScreen(
+    viewModel: AgendaViewModel,
+    onNewHabit: () -> Unit = {},
+    onEditHabit: (String) -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -28,7 +33,11 @@ fun PrimaryScreen(viewModel: AgendaViewModel, modifier: Modifier = Modifier) {
                     viewModel.switchToMain()
                 else
                     viewModel.expandActivity()
-            }
+            },
+            onHistoryOlder = viewModel::historyOlder,
+            onHistoryNewer = viewModel::historyNewer,
+            onHistoryBackToCurrent = viewModel::historyBackToCurrent,
+            onEditHabit = onEditHabit
         )
 
         when (uiState.layout) {
@@ -48,7 +57,8 @@ fun PrimaryScreen(viewModel: AgendaViewModel, modifier: Modifier = Modifier) {
                     total = uiState.totalTarget,
                     completedOverTotal = ratios.completedOverTotal,
                     completedOverExpected = ratios.completedOverExpected,
-                    onClick = viewModel::switchToReview
+                    onClick = viewModel::switchToReview,
+                    onMenuClick = onNewHabit
                 )
             }
             Layout.REVIEW -> {
@@ -60,7 +70,8 @@ fun PrimaryScreen(viewModel: AgendaViewModel, modifier: Modifier = Modifier) {
                 )
                 AgendaBar(
                     remaining = uiState.totalTarget - uiState.progressCount,
-                    onClick = viewModel::switchToMain
+                    onClick = viewModel::switchToMain,
+                    onMenuClick = onNewHabit
                 )
             }
             Layout.ACTIVITY_FOCUSED -> {
@@ -70,7 +81,8 @@ fun PrimaryScreen(viewModel: AgendaViewModel, modifier: Modifier = Modifier) {
                 )
                 AgendaBar(
                     remaining = uiState.totalTarget - uiState.progressCount,
-                    onClick = viewModel::switchToMain
+                    onClick = viewModel::switchToMain,
+                    onMenuClick = onNewHabit
                 )
             }
         }

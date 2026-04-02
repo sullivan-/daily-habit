@@ -16,6 +16,9 @@ class ActivityRepository(private val activityDao: ActivityDao) {
     suspend fun inProgressActivity(habitId: String, date: LocalDate): Activity? =
         activityDao.inProgressActivity(habitId, date)
 
+    suspend fun completedHistoryForHabit(habitId: String): List<Activity> =
+        activityDao.completedHistoryForHabit(habitId)
+
     suspend fun create(activity: Activity): Long =
         activityDao.insert(activity)
 

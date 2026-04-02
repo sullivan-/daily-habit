@@ -11,8 +11,22 @@ data class AgendaUiState(
     val selectedActivityId: Long? = null,
     val activeActivity: Activity? = null,
     val timerRunning: Boolean = false,
-    val elapsedMs: Long = 0
+    val elapsedMs: Long = 0,
+    val historyActivities: List<Activity> = emptyList(),
+    val historyIndex: Int = -1
 ) {
+    val browsingHistory: Boolean
+        get() = historyIndex >= 0 && historyActivities.isNotEmpty()
+
+    val historyActivity: Activity?
+        get() = if (browsingHistory) historyActivities.getOrNull(historyIndex) else null
+
+    val isAtOldest: Boolean
+        get() = historyIndex <= 0
+
+    val isAtNewest: Boolean
+        get() = historyIndex >= historyActivities.lastIndex
+
     val agendaItems: List<AgendaItem>
         get() {
             val today = java.time.LocalDate.now()

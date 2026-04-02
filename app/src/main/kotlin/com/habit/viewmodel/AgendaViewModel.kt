@@ -70,12 +70,24 @@ class AgendaViewModel(
     fun switchToMain() {
         _uiState.value = _uiState.value.copy(
             layout = Layout.MAIN,
-            selectedActivityId = null
+            selectedActivityId = null,
+            historyActivities = emptyList(),
+            historyIndex = -1
         )
     }
 
     fun expandActivity() {
         _uiState.value = _uiState.value.copy(layout = Layout.ACTIVITY_FOCUSED)
+        val habitId = _uiState.value.selectedHabitId ?: return
+        viewModelScope.launch {
+            val completed = activityRepo.completedHistoryForHabit(habitId)
+            val inProgress = _uiState.value.activeActivity
+            val all = if (inProgress != null) completed + inProgress else completed
+            _uiState.value = _uiState.value.copy(
+                historyActivities = all,
+                historyIndex = all.lastIndex
+            )
+        }
     }
 
     fun selectHabit(habitId: String) {
@@ -293,10 +305,39 @@ class AgendaViewModel(
     }
 
     fun updateNote(note: String) {
-        val activity = _uiState.value.activeActivity ?: return
-        val updated = activity.copy(note = note)
-        _uiState.value = _uiState.value.copy(activeActivity = updated)
-        viewModelScope.launch { activityRepo.update(updated) }
+        val state = _uiState.value
+        if (state.browsingHistory) {
+            val activity = state.historyActivity ?: return
+            val updated = activity.copy(note = note)
+            val newHistory = state.historyActivities.toMutableList()
+            newHistory[state.historyIndex] = updated
+            _uiState.value = state.copy(historyActivities = newHistory)
+            viewModelScope.launch { activityRepo.update(updated) }
+        } else {
+            val activity = state.activeActivity ?: return
+            val updated = activity.copy(note = note)
+            _uiState.value = state.copy(activeActivity = updated)
+            viewModelScope.launch { activityRepo.update(updated) }
+        }
+    }
+
+    fun historyOlder() {
+        val state = _uiState.value
+        if (state.historyIndex > 0) {
+            _uiState.value = state.copy(historyIndex = state.historyIndex - 1)
+        }
+    }
+
+    fun historyNewer() {
+        val state = _uiState.value
+        if (state.historyIndex < state.historyActivities.lastIndex) {
+            _uiState.value = state.copy(historyIndex = state.historyIndex + 1)
+        }
+    }
+
+    fun historyBackToCurrent() {
+        val state = _uiState.value
+        _uiState.value = state.copy(historyIndex = state.historyActivities.lastIndex)
     }
 
     fun doAgain(habitId: String) {

@@ -27,6 +27,13 @@ interface ActivityDao {
     )
     suspend fun inProgressActivity(habitId: String, date: LocalDate): Activity?
 
+    @Query(
+        "SELECT * FROM activity " +
+        "WHERE habitId = :habitId AND completedAt IS NOT NULL " +
+        "ORDER BY completedAt ASC"
+    )
+    suspend fun completedHistoryForHabit(habitId: String): List<Activity>
+
     @Insert
     suspend fun insert(activity: Activity): Long
 
