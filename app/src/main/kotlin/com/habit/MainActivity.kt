@@ -16,6 +16,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.habit.service.ChimePlayer
+import com.habit.service.TimerService
 import com.habit.ui.PrimaryScreen
 import com.habit.viewmodel.AgendaViewModel
 import com.habit.viewmodel.AgendaViewModelFactory
@@ -29,6 +30,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private lateinit var chimePlayer: ChimePlayer
+    private var serviceRunning = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge(
@@ -47,6 +49,25 @@ class MainActivity : ComponentActivity() {
                         is ChimeEvent.Interval -> chimePlayer.playIntervalChime()
                         is ChimeEvent.Threshold -> chimePlayer.playThresholdChime()
                     }
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            viewModel.uiState.collect { state ->
+                if (state.timerRunning && !serviceRunning) {
+                    val habit = state.selectedHabit ?: return@collect
+                    startForegroundService(TimerService.startIntent(
+                        context = this@MainActivity,
+                        habitName = habit.name,
+                        accumulatedMs = state.elapsedMs,
+                        chimeIntervalMs = (habit.chimeIntervalSeconds ?: 0) * 1000L,
+                        thresholdMs = (habit.thresholdMinutes ?: 0) * 60 * 1000L
+                    ))
+                    serviceRunning = true
+                } else if (!state.timerRunning && serviceRunning) {
+                    startService(TimerService.stopIntent(this@MainActivity))
+                    serviceRunning = false
                 }
             }
         }
