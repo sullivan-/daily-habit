@@ -5,6 +5,12 @@ they come up. items here are not committed to, just captured.
 
 ## planned features
 
+### timer value editing
+
+- allow the user to manually adjust an activity's start time, end time,
+  or elapsed duration after the fact
+- handles cases where the user forgot to start/stop the timer
+
 ### task backlogs
 
 activities can optionally have a prioritized list of tasks. when present, each
@@ -18,25 +24,6 @@ session prompts the user to pick (or continue) a task from the backlog.
   least one home task today," picking from the backlog
 - habits like "Badux" with target=3 can continue the same task across
   activities or pick different ones
-
-### in-app configuration
-
-*habit editor (create/edit/delete), habit list, and menu are
-implemented. remaining:*
-
-- reorder habits by drag in habit list
-- search/filter habits by name
-- manage task backlogs (add, edit, reorder, complete tasks)
-- config import/export (replace static JSON bootstrapping)
-
-### history views
-
-- view completed items for the last 7 days
-- view has a big visual sense (heatmap) but also shows some content and drills
-  into details
-- see what was checked off each day, with notes
-- weekly summary: how many days each habit was completed
-- trend indicators: improving, steady, declining
 
 ### progression tracking
 
@@ -52,6 +39,24 @@ a progression has:
 - a current position
 - optional linkage to a daily habit (e.g., "Read" habit auto-shows current
   progression state)
+
+### in-app configuration
+
+*habit editor (create/edit/delete), habit list, and menu are
+implemented. remaining:*
+
+- search/filter habits by name
+- manage task backlogs (add, edit, reorder, complete tasks)
+- config import/export (replace static JSON bootstrapping)
+
+### history views
+
+- view completed items for the last 7 days
+- view has a big visual sense (heatmap) but also shows some content and drills
+  into details
+- see what was checked off each day, with notes
+- weekly summary: how many days each habit was completed
+- trend indicators: improving, steady, declining
 
 ### abstinence / avoidance tracking
 
@@ -73,12 +78,6 @@ track what you're staying away from, ported from `sched/absta.py`:
 - handles edge cases where the automatic day boundary doesn't match the
   user's intent (e.g., a very late night that crosses the 2 AM boundary)
 - the activity keeps its actual timestamp but its attributed date changes
-
-### timer value editing
-
-- allow the user to manually adjust an activity's start time, end time,
-  or elapsed duration after the fact
-- handles cases where the user forgot to start/stop the timer
 
 ### time tracking history
 

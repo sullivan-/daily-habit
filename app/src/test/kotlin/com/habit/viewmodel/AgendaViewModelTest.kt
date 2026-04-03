@@ -123,7 +123,8 @@ class AgendaViewModelTest {
             startTime = null,
 
 
-            elapsedMs = 0,
+
+
             note = "saved note",
             completedAt = null
         )
@@ -178,16 +179,17 @@ class AgendaViewModelTest {
     }
 
     @Test
-    fun `stopTimer pauses and persists elapsed time`() = runTest {
+    fun `cancelTimer deletes activity and creates fresh one`() = runTest {
+        coEvery { activityRepo.create(any()) } returns 1L
         val vm = createViewModel()
         vm.selectHabit("qigong")
         vm.startTimer()
-        vm.stopTimer()
+        vm.cancelTimer()
 
         val state = vm.uiState.value
         assertThat(state.timerRunning).isFalse()
         assertThat(state.activeActivity).isNotNull()
-        coVerify { activityRepo.update(any()) }
+        assertThat(state.activeActivity?.startTime).isNull()
     }
 
     @Test
@@ -199,7 +201,6 @@ class AgendaViewModelTest {
 
         val state = vm.uiState.value
         assertThat(state.timerRunning).isFalse()
-        assertThat(state.elapsedMs).isEqualTo(0)
         // should advance to next habit (vitamins)
         assertThat(state.selectedHabitId).isEqualTo("vitamins")
     }
@@ -263,7 +264,8 @@ class AgendaViewModelTest {
                 startTime = null,
     
 
-                elapsedMs = 0,
+    
+
                 note = "",
                 completedAt = Instant.now()
             )

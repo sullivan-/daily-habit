@@ -3,7 +3,6 @@ package com.habit.ui
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,7 +36,6 @@ import com.habit.data.Habit
 import com.habit.viewmodel.AgendaUiState
 import com.habit.viewmodel.Layout
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
@@ -46,8 +44,8 @@ import kotlin.math.roundToInt
 fun ActivityView(
     state: AgendaUiState,
     onStart: () -> Unit,
-    onStop: () -> Unit,
-    onComplete: (String) -> Unit,
+    onFinish: (String) -> Unit,
+    onCancel: () -> Unit,
     onCompleteUntimed: (String, String) -> Unit,
     onNoteChange: (String) -> Unit,
     onToggleDetail: () -> Unit,
@@ -55,6 +53,8 @@ fun ActivityView(
     onHistoryNewer: () -> Unit,
     onHistoryBackToCurrent: () -> Unit,
     onEditHabit: (String) -> Unit,
+    onUpdateStartTime: (Long, java.time.Instant?) -> Unit,
+    onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val habit = state.selectedHabit
@@ -75,8 +75,8 @@ fun ActivityView(
                 habit = habit,
                 state = state,
                 onStart = onStart,
-                onStop = onStop,
-                onComplete = onComplete,
+                onFinish = onFinish,
+                onCancel = onCancel,
                 onCompleteUntimed = onCompleteUntimed,
                 onNoteChange = onNoteChange,
                 onToggleDetail = onToggleDetail,
@@ -84,6 +84,8 @@ fun ActivityView(
                 onHistoryNewer = onHistoryNewer,
                 onHistoryBackToCurrent = onHistoryBackToCurrent,
                 onEditHabit = onEditHabit,
+                onUpdateStartTime = onUpdateStartTime,
+                onUpdateCompletedAt = onUpdateCompletedAt,
                 isExpanded = state.layout == Layout.ACTIVITY_FOCUSED
             )
         }
@@ -112,8 +114,8 @@ private fun HabitView(
     habit: Habit,
     state: AgendaUiState,
     onStart: () -> Unit,
-    onStop: () -> Unit,
-    onComplete: (String) -> Unit,
+    onFinish: (String) -> Unit,
+    onCancel: () -> Unit,
     onCompleteUntimed: (String, String) -> Unit,
     onNoteChange: (String) -> Unit,
     onToggleDetail: () -> Unit,
@@ -121,6 +123,8 @@ private fun HabitView(
     onHistoryNewer: () -> Unit,
     onHistoryBackToCurrent: () -> Unit,
     onEditHabit: (String) -> Unit,
+    onUpdateStartTime: (Long, java.time.Instant?) -> Unit,
+    onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
     isExpanded: Boolean
 ) {
     if (isExpanded && state.browsingHistory && !state.isAtNewest) {
@@ -133,15 +137,17 @@ private fun HabitView(
             onHistoryOlder = onHistoryOlder,
             onHistoryNewer = onHistoryNewer,
             onHistoryBackToCurrent = onHistoryBackToCurrent,
-            onEditHabit = onEditHabit
+            onEditHabit = onEditHabit,
+            onUpdateStartTime = onUpdateStartTime,
+            onUpdateCompletedAt = onUpdateCompletedAt
         )
     } else {
         CurrentActivityView(
             habit = habit,
             state = state,
             onStart = onStart,
-            onStop = onStop,
-            onComplete = onComplete,
+            onFinish = onFinish,
+            onCancel = onCancel,
             onCompleteUntimed = onCompleteUntimed,
             onNoteChange = onNoteChange,
             onToggleDetail = onToggleDetail,
@@ -157,8 +163,8 @@ private fun CurrentActivityView(
     habit: Habit,
     state: AgendaUiState,
     onStart: () -> Unit,
-    onStop: () -> Unit,
-    onComplete: (String) -> Unit,
+    onFinish: (String) -> Unit,
+    onCancel: () -> Unit,
     onCompleteUntimed: (String, String) -> Unit,
     onNoteChange: (String) -> Unit,
     onToggleDetail: () -> Unit,
@@ -214,24 +220,26 @@ private fun CurrentActivityView(
                     contentDescription = if (isExpanded) "collapse" else "expand"
                 )
             }
-            Checkbox(
-                checked = false,
-                onCheckedChange = {
-                    if (habit.timed) {
-                        onComplete(note)
-                    } else {
-                        onCompleteUntimed(habit.id, note)
-                    }
-                }
-            )
+            if (!habit.timed) {
+                Checkbox(
+                    checked = false,
+                    onCheckedChange = { onCompleteUntimed(habit.id, note) }
+                )
+            }
         }
 
         if (habit.timed) {
+            val elapsed = if (state.timerRunning) {
+                state.activeActivity?.elapsedMs ?: 0
+            } else {
+                0L
+            }
             TimerDisplay(
-                elapsedMs = state.elapsedMs,
+                elapsedMs = elapsed,
                 isRunning = state.timerRunning,
                 onStart = onStart,
-                onStop = onStop
+                onFinish = { onFinish(note) },
+                onCancel = onCancel
             )
         }
 
@@ -256,10 +264,14 @@ private fun HistoryActivityView(
     onHistoryOlder: () -> Unit,
     onHistoryNewer: () -> Unit,
     onHistoryBackToCurrent: () -> Unit,
-    onEditHabit: (String) -> Unit
+    onEditHabit: (String) -> Unit,
+    onUpdateStartTime: (Long, java.time.Instant?) -> Unit,
+    onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit
 ) {
     var note by remember(activity.id) { mutableStateOf(activity.note) }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("EEE, MMM d") }
+    val timeFormatter = remember { DateTimeFormatter.ofPattern("h:mm a") }
+    val zone = ZoneId.systemDefault()
 
     Column(
         modifier = Modifier
@@ -300,20 +312,25 @@ private fun HistoryActivityView(
             modifier = Modifier.padding(top = 4.dp)
         )
 
+        if (habit.timed) {
+            activity.startTime?.let {
+                Text(
+                    text = "started ${it.atZone(zone).format(timeFormatter)}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+
         activity.completedAt?.let {
-            val time = java.time.LocalTime.ofInstant(it, ZoneId.systemDefault())
             Text(
-                text = "completed at %d:%02d".format(time.hour, time.minute),
+                text = "completed ${it.atZone(zone).format(timeFormatter)}",
                 style = MaterialTheme.typography.bodyMedium
             )
         }
 
         if (habit.timed && activity.elapsedMs > 0) {
-            val totalSeconds = activity.elapsedMs / 1000
-            val minutes = totalSeconds / 60
-            val seconds = totalSeconds % 60
             Text(
-                text = "%dm %ds".format(minutes, seconds),
+                text = "duration: ${formatElapsed(activity.elapsedMs)}",
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -362,9 +379,8 @@ private fun CompletedActivityDetail(
             )
         }
         if (habit.timed && activity.elapsedMs > 0) {
-            val minutes = activity.elapsedMs / 60000
             Text(
-                text = "${minutes}m",
+                text = formatElapsed(activity.elapsedMs),
                 style = MaterialTheme.typography.bodyMedium
             )
         }

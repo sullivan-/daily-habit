@@ -22,7 +22,13 @@ data class Activity(
     val habitId: String,
     val attributedDate: LocalDate,
     val startTime: Instant?,
-    val elapsedMs: Long,
     val note: String,
     val completedAt: Instant?
-)
+) {
+    val elapsedMs: Long
+        get() = when {
+            startTime == null -> 0
+            completedAt != null -> completedAt.toEpochMilli() - startTime.toEpochMilli()
+            else -> System.currentTimeMillis() - startTime.toEpochMilli()
+        }
+}

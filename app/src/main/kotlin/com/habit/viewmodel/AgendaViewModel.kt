@@ -36,8 +36,6 @@ class AgendaViewModel(
     val chimeEvents: SharedFlow<ChimeEvent> = _chimeEvents.asSharedFlow()
 
     private var timerJob: Job? = null
-    private var timerStartEpochMs: Long = 0
-    private var timerAccumulatedMs: Long = 0
     private var lastIntervalChimeMs: Long = -1
     private var thresholdChimeFired: Boolean = false
 
@@ -105,15 +103,15 @@ class AgendaViewModel(
             val existing = activityRepo.inProgressActivity(habitId, today)
             if (existing != null) {
                 _uiState.value = _uiState.value.copy(activeActivity = existing)
+                if (existing.startTime != null) {
+                    startTimerTick()
+                }
             } else {
                 val habit = habitRepo.getById(habitId) ?: return@launch
                 val new = Activity(
                     habitId = habitId,
                     attributedDate = today,
                     startTime = null,
-
-
-                    elapsedMs = 0,
                     note = habit.dailyTexts[today.dayOfWeek] ?: "",
                     completedAt = null
                 )
@@ -144,40 +142,39 @@ class AgendaViewModel(
     fun startTimer() {
         val state = _uiState.value
         val activity = state.activeActivity ?: return
-
         if (state.timerRunning) return
 
-        val started = if (activity.startTime == null) {
-            activity.copy(startTime = Instant.now())
-        } else {
-            activity
-        }
-
-        timerAccumulatedMs = started.elapsedMs
-        timerStartEpochMs = System.currentTimeMillis()
-        lastIntervalChimeMs = timerAccumulatedMs
-        thresholdChimeFired = false
-
+        val started = activity.copy(startTime = Instant.now())
         _uiState.value = _uiState.value.copy(
             activeActivity = started,
-            timerRunning = true,
-            elapsedMs = timerAccumulatedMs
+            timerRunning = true
         )
 
         viewModelScope.launch { activityRepo.update(started) }
 
-        val habit = state.selectedHabit
-        val chimeIntervalMs = habit?.chimeIntervalSeconds?.let { it * 1000L }
-        val thresholdMs = habit?.thresholdMinutes?.let { it * 60 * 1000L }
+        lastIntervalChimeMs = 0
+        thresholdChimeFired = false
+        startTimerTick()
+    }
+
+    private fun startTimerTick() {
+        timerJob?.cancel()
+        val habit = _uiState.value.selectedHabit
+        val chimeIntervalMs = habit?.chimeIntervalSeconds?.let { it * 1000L } ?: 0
+        val thresholdMs = habit?.thresholdMinutes?.let { it * 60 * 1000L } ?: 0
+
+        _uiState.value = _uiState.value.copy(timerRunning = true)
 
         timerJob = viewModelScope.launch(tickDispatcher) {
             while (isActive) {
                 delay(200)
-                val elapsed = timerAccumulatedMs +
-                    (System.currentTimeMillis() - timerStartEpochMs)
-                _uiState.value = _uiState.value.copy(elapsedMs = elapsed)
+                val activity = _uiState.value.activeActivity ?: break
+                val elapsed = activity.elapsedMs
 
-                if (chimeIntervalMs != null && chimeIntervalMs > 0) {
+                // trigger UI recomposition
+                _uiState.value = _uiState.value.copy(timerTickMs = elapsed)
+
+                if (chimeIntervalMs > 0) {
                     val prevCount = lastIntervalChimeMs / chimeIntervalMs
                     val currCount = elapsed / chimeIntervalMs
                     if (currCount > prevCount) {
@@ -186,7 +183,7 @@ class AgendaViewModel(
                     }
                 }
 
-                if (thresholdMs != null && !thresholdChimeFired && elapsed >= thresholdMs) {
+                if (thresholdMs > 0 && !thresholdChimeFired && elapsed >= thresholdMs) {
                     _chimeEvents.tryEmit(ChimeEvent.Threshold)
                     thresholdChimeFired = true
                 }
@@ -194,25 +191,39 @@ class AgendaViewModel(
         }
     }
 
-    fun stopTimer() {
-        if (!_uiState.value.timerRunning) return
+    fun cancelTimer() {
+        val state = _uiState.value
+        val activity = state.activeActivity ?: return
 
         timerJob?.cancel()
         timerJob = null
 
-        val elapsed = timerAccumulatedMs +
-            (System.currentTimeMillis() - timerStartEpochMs)
-        timerAccumulatedMs = elapsed
+        viewModelScope.launch {
+            activityRepo.delete(activity)
+        }
 
-        val activity = _uiState.value.activeActivity?.copy(elapsedMs = elapsed)
-        _uiState.value = _uiState.value.copy(
+        // create a fresh activity for this habit
+        val habitId = activity.habitId
+        _uiState.value = state.copy(
+            activeActivity = null,
             timerRunning = false,
-            elapsedMs = elapsed,
-            activeActivity = activity
+            timerTickMs = 0
         )
 
-        activity?.let {
-            viewModelScope.launch { activityRepo.update(it) }
+        viewModelScope.launch {
+            val today = dayBoundary.today()
+            val habit = habitRepo.getById(habitId) ?: return@launch
+            val new = Activity(
+                habitId = habitId,
+                attributedDate = today,
+                startTime = null,
+                note = habit.dailyTexts[today.dayOfWeek] ?: "",
+                completedAt = null
+            )
+            val id = activityRepo.create(new)
+            _uiState.value = _uiState.value.copy(
+                activeActivity = new.copy(id = id)
+            )
         }
     }
 
@@ -223,13 +234,7 @@ class AgendaViewModel(
         timerJob?.cancel()
         timerJob = null
 
-        val finalElapsed = if (state.timerRunning) {
-            timerAccumulatedMs + (System.currentTimeMillis() - timerStartEpochMs)
-        } else {
-            state.activeActivity?.elapsedMs ?: 0
-        }
-
-        timerAccumulatedMs = 0
+        val now = Instant.now()
 
         val nextHabit = state.agendaItems
             .firstOrNull { it.habit.id != habitId }
@@ -237,7 +242,7 @@ class AgendaViewModel(
         _uiState.value = state.copy(
             activeActivity = null,
             timerRunning = false,
-            elapsedMs = 0,
+            timerTickMs = 0,
             selectedHabitId = nextHabit?.habit?.id
         )
 
@@ -245,23 +250,18 @@ class AgendaViewModel(
             val activity = state.activeActivity
                 ?: activityRepo.inProgressActivity(habitId, dayBoundary.today())
             if (activity != null) {
-                activityRepo.update(activity.copy(
-
-
-                    elapsedMs = finalElapsed,
+                val completed = activity.copy(
                     note = note,
-                    completedAt = Instant.now()
-                ))
+                    completedAt = now
+                )
+                activityRepo.update(completed)
             } else {
                 activityRepo.create(Activity(
                     habitId = habitId,
                     attributedDate = dayBoundary.today(),
                     startTime = null,
-
-
-                    elapsedMs = 0,
                     note = note,
-                    completedAt = Instant.now()
+                    completedAt = now
                 ))
             }
         }
@@ -287,9 +287,6 @@ class AgendaViewModel(
                     habitId = habitId,
                     attributedDate = today,
                     startTime = null,
-
-
-                    elapsedMs = 0,
                     note = note.ifEmpty {
                         habit.dailyTexts[today.dayOfWeek] ?: ""
                     },
@@ -325,6 +322,61 @@ class AgendaViewModel(
         }
     }
 
+    fun updateActivityStartTime(activityId: Long, startTime: Instant?) {
+        updateHistoryActivity(activityId) { it.copy(startTime = startTime) }
+    }
+
+    fun updateActivityCompletedAt(activityId: Long, completedAt: Instant?) {
+        updateHistoryActivity(activityId) { activity ->
+            val updated = activity.copy(completedAt = completedAt)
+            val newAttributedDate = completedAt?.let { dayBoundary.attributedDate(it) }
+                ?: activity.attributedDate
+            updated.copy(attributedDate = newAttributedDate)
+        }
+    }
+
+    private fun updateHistoryActivity(activityId: Long, transform: (Activity) -> Activity) {
+        val state = _uiState.value
+        val idx = state.historyActivities.indexOfFirst { it.id == activityId }
+        if (idx < 0) return
+        val updated = transform(state.historyActivities[idx])
+        val newHistory = state.historyActivities.toMutableList()
+        newHistory[idx] = updated
+        _uiState.value = state.copy(historyActivities = newHistory)
+        viewModelScope.launch { activityRepo.update(updated) }
+    }
+
+    fun doAgain(habitId: String) {
+        val habit = _uiState.value.habits.find { it.id == habitId } ?: return
+        if (habit.dailyTargetMode != TargetMode.AT_LEAST) return
+
+        _uiState.value = _uiState.value.copy(
+            layout = Layout.MAIN,
+            selectedHabitId = habitId,
+            selectedActivityId = null,
+            activeActivity = null
+        )
+    }
+
+    fun forceSelectHabit(habitId: String) {
+        timerJob?.cancel()
+        timerJob = null
+        val activity = _uiState.value.activeActivity
+        if (activity != null) {
+            val completed = activity.copy(
+                completedAt = Instant.now()
+            )
+            viewModelScope.launch { activityRepo.update(completed) }
+        }
+        _uiState.value = _uiState.value.copy(
+            activeActivity = null,
+            timerRunning = false,
+            timerTickMs = 0,
+            selectedHabitId = habitId,
+            selectedActivityId = null
+        )
+    }
+
     fun historyOlder() {
         val state = _uiState.value
         if (state.historyIndex > 0) {
@@ -342,35 +394,5 @@ class AgendaViewModel(
     fun historyBackToCurrent() {
         val state = _uiState.value
         _uiState.value = state.copy(historyIndex = state.historyActivities.lastIndex)
-    }
-
-    fun doAgain(habitId: String) {
-        val habit = _uiState.value.habits.find { it.id == habitId } ?: return
-        if (habit.dailyTargetMode != TargetMode.AT_LEAST) return
-
-        _uiState.value = _uiState.value.copy(
-            layout = Layout.MAIN,
-            selectedHabitId = habitId,
-            selectedActivityId = null,
-            activeActivity = null
-        )
-    }
-
-    fun forceSelectHabit(habitId: String) {
-        stopTimer()
-        val activity = _uiState.value.activeActivity
-        if (activity != null) {
-            val completed = activity.copy(
-                completedAt = Instant.now()
-            )
-            viewModelScope.launch { activityRepo.update(completed) }
-        }
-        _uiState.value = _uiState.value.copy(
-            activeActivity = null,
-            timerRunning = false,
-            elapsedMs = 0,
-            selectedHabitId = habitId,
-            selectedActivityId = null
-        )
     }
 }

@@ -11,7 +11,7 @@ data class AgendaUiState(
     val selectedActivityId: Long? = null,
     val activeActivity: Activity? = null,
     val timerRunning: Boolean = false,
-    val elapsedMs: Long = 0,
+    val timerTickMs: Long = 0,
     val historyActivities: List<Activity> = emptyList(),
     val historyIndex: Int = -1
 ) {

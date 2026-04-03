@@ -25,8 +25,8 @@ fun PrimaryScreen(
         ActivityView(
             state = uiState,
             onStart = viewModel::startTimer,
-            onStop = viewModel::stopTimer,
-            onComplete = viewModel::completeActivity,
+            onFinish = viewModel::completeActivity,
+            onCancel = viewModel::cancelTimer,
             onCompleteUntimed = viewModel::completeUntimed,
             onNoteChange = viewModel::updateNote,
             onToggleDetail = {
@@ -38,7 +38,9 @@ fun PrimaryScreen(
             onHistoryOlder = viewModel::historyOlder,
             onHistoryNewer = viewModel::historyNewer,
             onHistoryBackToCurrent = viewModel::historyBackToCurrent,
-            onEditHabit = onEditHabit
+            onEditHabit = onEditHabit,
+            onUpdateStartTime = viewModel::updateActivityStartTime,
+            onUpdateCompletedAt = viewModel::updateActivityCompletedAt
         )
 
         when (uiState.layout) {

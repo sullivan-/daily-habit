@@ -109,9 +109,9 @@ private fun buildSummary(habit: Habit): String {
 }
 
 private fun priorityLabel(priority: Priority): String = when (priority) {
-    Priority.HIGH -> "Hi"
-    Priority.MEDIUM_HIGH -> "M+"
+    Priority.HIGH -> "High"
+    Priority.MEDIUM_HIGH -> "Med Hi"
     Priority.MEDIUM -> "Med"
-    Priority.MEDIUM_LOW -> "M-"
-    Priority.LOW -> "Lo"
+    Priority.MEDIUM_LOW -> "Med Lo"
+    Priority.LOW -> "Low"
 }

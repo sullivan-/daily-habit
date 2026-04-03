@@ -39,4 +39,7 @@ interface ActivityDao {
 
     @Update
     suspend fun update(activity: Activity)
+
+    @Query("DELETE FROM activity WHERE id = :id")
+    suspend fun deleteById(id: Long)
 }

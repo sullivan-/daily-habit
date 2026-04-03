@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,28 +18,31 @@ fun TimerDisplay(
     elapsedMs: Long,
     isRunning: Boolean,
     onStart: () -> Unit,
-    onStop: () -> Unit,
+    onFinish: () -> Unit,
+    onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier.fillMaxWidth().padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.Center,
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (isRunning) {
-            Button(onClick = onStop) { Text("Stop") }
-        } else {
-            Button(onClick = onStart) { Text("Start") }
-        }
         Text(
             text = formatElapsed(elapsedMs),
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(start = 16.dp)
+            style = MaterialTheme.typography.headlineLarge
         )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (isRunning) {
+                OutlinedButton(onClick = onCancel) { Text("Cancel") }
+                Button(onClick = onFinish) { Text("Finish") }
+            } else {
+                Button(onClick = onStart) { Text("Start") }
+            }
+        }
     }
 }
 
-private fun formatElapsed(ms: Long): String {
+fun formatElapsed(ms: Long): String {
     val totalSeconds = ms / 1000
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60

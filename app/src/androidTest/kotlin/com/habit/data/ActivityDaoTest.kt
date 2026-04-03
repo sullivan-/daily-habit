@@ -60,15 +60,11 @@ class ActivityDaoTest {
         habitId: String = "qigong",
         date: LocalDate = today,
         note: String = "",
-        elapsedMs: Long = 0,
         completedAt: Instant? = null
     ) = Activity(
         habitId = habitId,
         attributedDate = date,
         startTime = if (completedAt != null) Instant.now() else null,
-
-
-        elapsedMs = elapsedMs,
         note = note,
         completedAt = completedAt
     )
@@ -108,13 +104,14 @@ class ActivityDaoTest {
     }
 
     @Test
-    fun updateElapsedTime() = runTest {
+    fun updateStartTime() = runTest {
         habitDao.insertAll(listOf(habit))
-        activityDao.insert(activity(elapsedMs = 1000))
+        activityDao.insert(activity())
         val saved = activityDao.activitiesForDate(today).first()[0]
-        activityDao.update(saved.copy(elapsedMs = 5000))
+        val newStart = Instant.now()
+        activityDao.update(saved.copy(startTime = newStart))
 
         val result = activityDao.activitiesForDate(today).first()
-        assertEquals(5000L, result[0].elapsedMs)
+        assertEquals(newStart, result[0].startTime)
     }
 }

@@ -68,10 +68,12 @@ class MainActivity : ComponentActivity() {
             viewModel.uiState.collect { state ->
                 if (state.timerRunning && !serviceRunning) {
                     val habit = state.selectedHabit ?: return@collect
+                    val startEpochMs = state.activeActivity?.startTime
+                        ?.toEpochMilli() ?: System.currentTimeMillis()
                     startForegroundService(TimerService.startIntent(
                         context = this@MainActivity,
                         habitName = habit.name,
-                        accumulatedMs = state.elapsedMs,
+                        startEpochMs = startEpochMs,
                         chimeIntervalMs = (habit.chimeIntervalSeconds ?: 0) * 1000L,
                         thresholdMs = (habit.thresholdMinutes ?: 0) * 60 * 1000L
                     ))

@@ -41,7 +41,8 @@ class ProgressStatusTest {
         startTime = null,
 
 
-        elapsedMs = 0,
+
+
         note = "",
         completedAt = Instant.now()
     )

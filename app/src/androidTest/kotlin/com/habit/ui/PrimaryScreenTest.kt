@@ -157,7 +157,8 @@ class PrimaryScreenTest {
                 startTime = null,
 
 
-                elapsedMs = 0,
+
+
                 note = "took them",
                 completedAt = Instant.now()
             )
