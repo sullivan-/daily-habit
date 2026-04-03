@@ -297,4 +297,147 @@ class AgendaViewModelTest {
         assertThat(state.selectedHabitId).isEqualTo("vitamins")
         assertThat(state.timerRunning).isFalse()
     }
+
+    @Test
+    fun `switchToReview preserves selectedHabitId and timer state`() = runTest {
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.startTimer()
+        vm.switchToReview()
+
+        val state = vm.uiState.value
+        assertThat(state.layout).isEqualTo(Layout.REVIEW)
+        assertThat(state.selectedHabitId).isEqualTo("qigong")
+        assertThat(state.timerRunning).isTrue()
+    }
+
+    @Test
+    fun `selectHabit works after switchToReview and switchToMain`() = runTest {
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.switchToReview()
+        vm.switchToMain()
+        vm.selectHabit("vitamins")
+
+        assertThat(vm.uiState.value.selectedHabitId).isEqualTo("vitamins")
+    }
+
+    @Test
+    fun `selectHabit allowed when timer running on same habit`() = runTest {
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.startTimer()
+        vm.selectHabit("qigong")
+
+        assertThat(vm.uiState.value.selectedHabitId).isEqualTo("qigong")
+    }
+
+    @Test
+    fun `expandActivity sets activity focused layout and loads history`() = runTest {
+        coEvery { activityRepo.completedHistoryForHabit("qigong") } returns emptyList()
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.expandActivity()
+
+        val state = vm.uiState.value
+        assertThat(state.layout).isEqualTo(Layout.ACTIVITY_FOCUSED)
+        assertThat(state.historyActivities).isNotEmpty()
+        assertThat(state.previousLayout).isEqualTo(Layout.MAIN)
+    }
+
+    @Test
+    fun `collapseActivity returns to previous layout`() = runTest {
+        coEvery { activityRepo.completedHistoryForHabit("qigong") } returns emptyList()
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.switchToReview()
+        vm.expandActivity()
+        assertThat(vm.uiState.value.layout).isEqualTo(Layout.ACTIVITY_FOCUSED)
+
+        vm.collapseActivity()
+        assertThat(vm.uiState.value.layout).isEqualTo(Layout.REVIEW)
+        assertThat(vm.uiState.value.historyActivities).isEmpty()
+    }
+
+    @Test
+    fun `historyOlder and historyNewer navigate history`() = runTest {
+        val completed1 = Activity(
+            id = 10, habitId = "qigong", attributedDate = today,
+            startTime = null, note = "first", completedAt = java.time.Instant.now()
+        )
+        val completed2 = Activity(
+            id = 11, habitId = "qigong", attributedDate = today,
+            startTime = null, note = "second", completedAt = java.time.Instant.now()
+        )
+        coEvery { activityRepo.completedHistoryForHabit("qigong") } returns
+            listOf(completed1, completed2)
+
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.expandActivity()
+
+        // starts at the newest (in-progress activity at index 2)
+        val initialIndex = vm.uiState.value.historyIndex
+        assertThat(initialIndex).isEqualTo(vm.uiState.value.historyActivities.lastIndex)
+
+        vm.historyOlder()
+        assertThat(vm.uiState.value.historyIndex).isEqualTo(initialIndex - 1)
+
+        vm.historyNewer()
+        assertThat(vm.uiState.value.historyIndex).isEqualTo(initialIndex)
+    }
+
+    @Test
+    fun `historyBackToAnchor returns to anchor index`() = runTest {
+        val completed1 = Activity(
+            id = 10, habitId = "qigong", attributedDate = today,
+            startTime = null, note = "first", completedAt = java.time.Instant.now()
+        )
+        coEvery { activityRepo.completedHistoryForHabit("qigong") } returns
+            listOf(completed1)
+
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.expandActivity()
+
+        val anchorIndex = vm.uiState.value.historyAnchorIndex
+        vm.historyOlder()
+        assertThat(vm.uiState.value.historyIndex).isNotEqualTo(anchorIndex)
+
+        vm.historyBackToAnchor()
+        assertThat(vm.uiState.value.historyIndex).isEqualTo(anchorIndex)
+    }
+
+    @Test
+    fun `hasSwipedFromAnchor is true after navigation`() = runTest {
+        val completed1 = Activity(
+            id = 10, habitId = "qigong", attributedDate = today,
+            startTime = null, note = "first", completedAt = java.time.Instant.now()
+        )
+        coEvery { activityRepo.completedHistoryForHabit("qigong") } returns
+            listOf(completed1)
+
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.expandActivity()
+
+        assertThat(vm.uiState.value.hasSwipedFromAnchor).isFalse()
+        vm.historyOlder()
+        assertThat(vm.uiState.value.hasSwipedFromAnchor).isTrue()
+    }
+
+    @Test
+    fun `selectCompletedActivity sets selectedActivityId`() = runTest {
+        val completed = Activity(
+            id = 99, habitId = "vitamins", attributedDate = today,
+            startTime = null, note = "", completedAt = java.time.Instant.now()
+        )
+        activitiesFlow.value = listOf(completed)
+
+        val vm = createViewModel()
+        vm.selectCompletedActivity(99)
+
+        assertThat(vm.uiState.value.selectedActivityId).isEqualTo(99)
+        assertThat(vm.uiState.value.selectedHabitId).isEqualTo("vitamins")
+    }
 }
