@@ -59,9 +59,7 @@ class AgendaViewModel(
     fun switchToReview() {
         _uiState.value = _uiState.value.copy(
             layout = Layout.REVIEW,
-            selectedHabitId = null,
-            selectedActivityId = null,
-            activeActivity = null
+            selectedActivityId = null
         )
     }
 
@@ -78,7 +76,8 @@ class AgendaViewModel(
         _uiState.value = _uiState.value.copy(
             layout = _uiState.value.previousLayout,
             historyActivities = emptyList(),
-            historyIndex = -1
+            historyIndex = -1,
+            historyAnchorIndex = -1
         )
     }
 
@@ -89,21 +88,8 @@ class AgendaViewModel(
             layout = Layout.ACTIVITY_FOCUSED
         )
         val habitId = state.selectedHabitId ?: return
-        val selectedActivityId = state.selectedActivityId
         viewModelScope.launch {
-            val completed = activityRepo.completedHistoryForHabit(habitId)
-            val inProgress = state.activeActivity
-            val all = if (inProgress != null) completed + inProgress else completed
-            val index = if (selectedActivityId != null) {
-                all.indexOfFirst { it.id == selectedActivityId }
-                    .takeIf { it >= 0 } ?: all.lastIndex
-            } else {
-                all.lastIndex
-            }
-            _uiState.value = _uiState.value.copy(
-                historyActivities = all,
-                historyIndex = index
-            )
+            loadHistory(habitId, state.selectedActivityId)
         }
     }
 
@@ -139,15 +125,39 @@ class AgendaViewModel(
                     activeActivity = new.copy(id = id)
                 )
             }
+            loadHistory(habitId)
         }
     }
 
+    private suspend fun loadHistory(habitId: String, selectedActivityId: Long? = null) {
+        val completed = activityRepo.completedHistoryForHabit(habitId)
+        val inProgress = _uiState.value.activeActivity
+            ?: activityRepo.inProgressActivity(habitId, dayBoundary.today())
+        val all = if (inProgress != null) completed + inProgress else completed
+        val index = if (selectedActivityId != null) {
+            all.indexOfFirst { it.id == selectedActivityId }
+                .takeIf { it >= 0 } ?: all.lastIndex
+        } else {
+            all.lastIndex
+        }
+        _uiState.value = _uiState.value.copy(
+            activeActivity = _uiState.value.activeActivity ?: inProgress,
+            historyActivities = all,
+            historyIndex = index,
+            historyAnchorIndex = index
+        )
+    }
+
     fun selectCompletedActivity(activityId: Long) {
+        val habitId = _uiState.value.todayActivities
+            .find { it.id == activityId }?.habitId
         _uiState.value = _uiState.value.copy(
             selectedActivityId = activityId,
-            selectedHabitId = _uiState.value.todayActivities
-                .find { it.id == activityId }?.habitId
+            selectedHabitId = habitId
         )
+        if (habitId != null) {
+            viewModelScope.launch { loadHistory(habitId, activityId) }
+        }
     }
 
     fun clearSelection() {
@@ -326,17 +336,35 @@ class AgendaViewModel(
 
     fun updateNote(note: String) {
         val state = _uiState.value
-        if (state.browsingHistory) {
+        val showingHistory = state.browsingHistory &&
+            (!state.isAtNewest || state.historyActivity?.completedAt != null)
+
+        if (showingHistory) {
             val activity = state.historyActivity ?: return
             val updated = activity.copy(note = note)
             val newHistory = state.historyActivities.toMutableList()
             newHistory[state.historyIndex] = updated
             _uiState.value = state.copy(historyActivities = newHistory)
             viewModelScope.launch { activityRepo.update(updated) }
+        } else if (state.selectedActivityId != null) {
+            val activity = state.todayActivities.find {
+                it.id == state.selectedActivityId
+            } ?: return
+            val updated = activity.copy(note = note)
+            viewModelScope.launch { activityRepo.update(updated) }
         } else {
             val activity = state.activeActivity ?: return
             val updated = activity.copy(note = note)
-            _uiState.value = state.copy(activeActivity = updated)
+            val newHistory = if (state.browsingHistory) {
+                val list = state.historyActivities.toMutableList()
+                val idx = list.indexOfFirst { it.id == updated.id }
+                if (idx >= 0) list[idx] = updated
+                list
+            } else state.historyActivities
+            _uiState.value = state.copy(
+                activeActivity = updated,
+                historyActivities = newHistory
+            )
             viewModelScope.launch { activityRepo.update(updated) }
         }
     }
@@ -399,19 +427,40 @@ class AgendaViewModel(
     fun historyOlder() {
         val state = _uiState.value
         if (state.historyIndex > 0) {
-            _uiState.value = state.copy(historyIndex = state.historyIndex - 1)
+            val newIndex = state.historyIndex - 1
+            val activity = state.historyActivities[newIndex]
+            _uiState.value = state.copy(
+                historyIndex = newIndex,
+                selectedActivityId = if (activity.completedAt != null) activity.id else null,
+                activeActivity = if (activity.completedAt == null) activity else state.activeActivity
+            )
         }
     }
 
     fun historyNewer() {
         val state = _uiState.value
         if (state.historyIndex < state.historyActivities.lastIndex) {
-            _uiState.value = state.copy(historyIndex = state.historyIndex + 1)
+            val newIndex = state.historyIndex + 1
+            val activity = state.historyActivities[newIndex]
+            _uiState.value = state.copy(
+                historyIndex = newIndex,
+                selectedActivityId = if (activity.completedAt != null) activity.id else null,
+                activeActivity = if (activity.completedAt == null) activity else state.activeActivity
+            )
         }
     }
 
-    fun historyBackToCurrent() {
+    fun historyBackToAnchor() {
         val state = _uiState.value
-        _uiState.value = state.copy(historyIndex = state.historyActivities.lastIndex)
+        val anchorActivity = state.historyActivities.getOrNull(state.historyAnchorIndex)
+        _uiState.value = state.copy(
+            historyIndex = state.historyAnchorIndex,
+            selectedActivityId = anchorActivity?.let {
+                if (it.completedAt != null) it.id else null
+            },
+            activeActivity = anchorActivity?.let {
+                if (it.completedAt == null) it else state.activeActivity
+            } ?: state.activeActivity
+        )
     }
 }
