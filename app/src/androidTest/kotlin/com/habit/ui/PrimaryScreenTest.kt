@@ -155,7 +155,8 @@ class PrimaryScreenTest {
                 habitId = "vitamins",
                 attributedDate = today,
                 startTime = null,
-                endTime = null,
+
+
                 elapsedMs = 0,
                 note = "took them",
                 completedAt = Instant.now()

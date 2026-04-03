@@ -22,7 +22,6 @@ data class Activity(
     val habitId: String,
     val attributedDate: LocalDate,
     val startTime: Instant?,
-    val endTime: Instant?,
     val elapsedMs: Long,
     val note: String,
     val completedAt: Instant?

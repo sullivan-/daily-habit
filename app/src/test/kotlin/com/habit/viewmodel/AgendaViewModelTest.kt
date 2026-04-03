@@ -121,7 +121,8 @@ class AgendaViewModelTest {
             habitId = "qigong",
             attributedDate = today,
             startTime = null,
-            endTime = null,
+
+
             elapsedMs = 0,
             note = "saved note",
             completedAt = null
@@ -260,7 +261,8 @@ class AgendaViewModelTest {
                 habitId = "vitamins",
                 attributedDate = today,
                 startTime = null,
-                endTime = null,
+    
+
                 elapsedMs = 0,
                 note = "",
                 completedAt = Instant.now()

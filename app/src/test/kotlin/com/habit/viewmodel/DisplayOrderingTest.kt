@@ -45,7 +45,8 @@ class DisplayOrderingTest {
         habitId = habitId,
         attributedDate = monday,
         startTime = null,
-        endTime = null,
+
+
         elapsedMs = 0,
         note = "",
         completedAt = Instant.now()

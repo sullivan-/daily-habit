@@ -66,7 +66,8 @@ class ActivityDaoTest {
         habitId = habitId,
         attributedDate = date,
         startTime = if (completedAt != null) Instant.now() else null,
-        endTime = completedAt,
+
+
         elapsedMs = elapsedMs,
         note = note,
         completedAt = completedAt

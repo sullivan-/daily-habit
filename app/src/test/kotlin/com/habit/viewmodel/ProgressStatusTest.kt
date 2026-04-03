@@ -39,7 +39,8 @@ class ProgressStatusTest {
         habitId = habitId,
         attributedDate = LocalDate.of(2026, 3, 30),
         startTime = null,
-        endTime = null,
+
+
         elapsedMs = 0,
         note = "",
         completedAt = Instant.now()

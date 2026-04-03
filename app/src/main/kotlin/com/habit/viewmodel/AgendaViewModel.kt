@@ -111,7 +111,8 @@ class AgendaViewModel(
                     habitId = habitId,
                     attributedDate = today,
                     startTime = null,
-                    endTime = null,
+
+
                     elapsedMs = 0,
                     note = habit.dailyTexts[today.dayOfWeek] ?: "",
                     completedAt = null
@@ -245,7 +246,8 @@ class AgendaViewModel(
                 ?: activityRepo.inProgressActivity(habitId, dayBoundary.today())
             if (activity != null) {
                 activityRepo.update(activity.copy(
-                    endTime = Instant.now(),
+
+
                     elapsedMs = finalElapsed,
                     note = note,
                     completedAt = Instant.now()
@@ -255,7 +257,8 @@ class AgendaViewModel(
                     habitId = habitId,
                     attributedDate = dayBoundary.today(),
                     startTime = null,
-                    endTime = Instant.now(),
+
+
                     elapsedMs = 0,
                     note = note,
                     completedAt = Instant.now()
@@ -284,7 +287,8 @@ class AgendaViewModel(
                     habitId = habitId,
                     attributedDate = today,
                     startTime = null,
-                    endTime = null,
+
+
                     elapsedMs = 0,
                     note = note.ifEmpty {
                         habit.dailyTexts[today.dayOfWeek] ?: ""
@@ -357,7 +361,6 @@ class AgendaViewModel(
         val activity = _uiState.value.activeActivity
         if (activity != null) {
             val completed = activity.copy(
-                endTime = Instant.now(),
                 completedAt = Instant.now()
             )
             viewModelScope.launch { activityRepo.update(completed) }
