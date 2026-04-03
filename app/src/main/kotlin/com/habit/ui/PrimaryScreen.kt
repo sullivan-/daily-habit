@@ -1,10 +1,14 @@
 package com.habit.ui
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.habit.viewmodel.AgendaViewModel
 import com.habit.viewmodel.Layout
@@ -20,8 +24,16 @@ fun PrimaryScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val focusManager = LocalFocusManager.current
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) { focusManager.clearFocus() }
+    ) {
         val expandedModifier = if (uiState.layout == Layout.ACTIVITY_FOCUSED)
             Modifier.weight(1f) else Modifier
         ActivityView(
@@ -39,7 +51,7 @@ fun PrimaryScreen(
             },
             onHistoryOlder = viewModel::historyOlder,
             onHistoryNewer = viewModel::historyNewer,
-            onHistoryBackToCurrent = viewModel::historyBackToCurrent,
+            onHistoryBackToAnchor = viewModel::historyBackToAnchor,
             onEditHabit = onEditHabit,
             onUpdateStartTime = viewModel::updateActivityStartTime,
             onUpdateCompletedAt = viewModel::updateActivityCompletedAt,

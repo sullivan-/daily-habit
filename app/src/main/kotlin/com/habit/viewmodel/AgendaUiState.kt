@@ -14,7 +14,8 @@ data class AgendaUiState(
     val timerTickMs: Long = 0,
     val previousLayout: Layout = Layout.MAIN,
     val historyActivities: List<Activity> = emptyList(),
-    val historyIndex: Int = -1
+    val historyIndex: Int = -1,
+    val historyAnchorIndex: Int = -1
 ) {
     val browsingHistory: Boolean
         get() = historyIndex >= 0 && historyActivities.isNotEmpty()
@@ -27,6 +28,9 @@ data class AgendaUiState(
 
     val isAtNewest: Boolean
         get() = historyIndex >= historyActivities.lastIndex
+
+    val hasSwipedFromAnchor: Boolean
+        get() = historyAnchorIndex >= 0 && historyIndex != historyAnchorIndex
 
     val agendaItems: List<AgendaItem>
         get() {

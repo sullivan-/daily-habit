@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.UnfoldLess
 import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material3.Checkbox
@@ -42,7 +41,7 @@ fun ActivityView(
     onToggleDetail: () -> Unit,
     onHistoryOlder: () -> Unit,
     onHistoryNewer: () -> Unit,
-    onHistoryBackToCurrent: () -> Unit,
+    onHistoryBackToAnchor: () -> Unit,
     onEditHabit: (String) -> Unit,
     onUpdateStartTime: (Long, java.time.Instant?) -> Unit,
     onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
@@ -63,7 +62,9 @@ fun ActivityView(
             CompletedActivityDetail(
                 state = state,
                 onNoteChange = onNoteChange,
-                onToggleDetail = onToggleDetail
+                onToggleDetail = onToggleDetail,
+                onHistoryOlder = onHistoryOlder,
+                onHistoryNewer = onHistoryNewer
             )
         } else {
             HabitView(
@@ -77,7 +78,7 @@ fun ActivityView(
                 onToggleDetail = onToggleDetail,
                 onHistoryOlder = onHistoryOlder,
                 onHistoryNewer = onHistoryNewer,
-                onHistoryBackToCurrent = onHistoryBackToCurrent,
+                onHistoryBackToAnchor = onHistoryBackToAnchor,
                 onEditHabit = onEditHabit,
                 onUpdateStartTime = onUpdateStartTime,
                 onUpdateCompletedAt = onUpdateCompletedAt,
@@ -117,14 +118,16 @@ private fun HabitView(
     onToggleDetail: () -> Unit,
     onHistoryOlder: () -> Unit,
     onHistoryNewer: () -> Unit,
-    onHistoryBackToCurrent: () -> Unit,
+    onHistoryBackToAnchor: () -> Unit,
     onEditHabit: (String) -> Unit,
     onUpdateStartTime: (Long, java.time.Instant?) -> Unit,
     onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
     onDoAgain: (String) -> Unit,
     isExpanded: Boolean
 ) {
-    if (isExpanded && state.browsingHistory && !state.isAtNewest) {
+    val showHistory = isExpanded && state.browsingHistory &&
+        (!state.isAtNewest || state.historyActivity?.completedAt != null)
+    if (showHistory) {
         HistoryActivityView(
             activity = state.historyActivity!!,
             habit = habit,
@@ -133,7 +136,7 @@ private fun HabitView(
             onToggleDetail = onToggleDetail,
             onHistoryOlder = onHistoryOlder,
             onHistoryNewer = onHistoryNewer,
-            onHistoryBackToCurrent = onHistoryBackToCurrent,
+            onHistoryBackToAnchor = onHistoryBackToAnchor,
             onEditHabit = onEditHabit,
             onUpdateStartTime = onUpdateStartTime,
             onUpdateCompletedAt = onUpdateCompletedAt,
@@ -150,7 +153,9 @@ private fun HabitView(
             onNoteChange = onNoteChange,
             onToggleDetail = onToggleDetail,
             onHistoryOlder = onHistoryOlder,
+            onHistoryNewer = onHistoryNewer,
             onEditHabit = onEditHabit,
+            onDoAgain = onDoAgain,
             isExpanded = isExpanded
         )
     }
@@ -167,19 +172,21 @@ private fun CurrentActivityView(
     onNoteChange: (String) -> Unit,
     onToggleDetail: () -> Unit,
     onHistoryOlder: () -> Unit,
+    onHistoryNewer: () -> Unit,
     onEditHabit: (String) -> Unit,
+    onDoAgain: (String) -> Unit,
     isExpanded: Boolean
 ) {
     var note by remember(state.activeActivity?.id) {
         mutableStateOf(state.activeActivity?.note ?: "")
     }
 
-    val swipeModifier = if (isExpanded) {
+    val swipeModifier = if (state.browsingHistory) {
         Modifier.swipeHistoryGesture(
-            onSwipeLeft = onHistoryOlder,
-            onSwipeRight = {},
-            isAtLeft = false,
-            isAtRight = true
+            onSwipeLeft = onHistoryNewer,
+            onSwipeRight = onHistoryOlder,
+            isAtLeft = state.isAtNewest,
+            isAtRight = state.isAtOldest
         )
     } else Modifier
 
@@ -203,14 +210,6 @@ private fun CurrentActivityView(
                     modifier = Modifier.padding(end = 8.dp)
                 )
             }
-            if (isExpanded) {
-                IconButton(
-                    onClick = { onEditHabit(habit.id) },
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(Icons.Filled.Edit, "edit habit")
-                }
-            }
             IconButton(onClick = onToggleDetail, modifier = Modifier.size(32.dp)) {
                 Icon(
                     imageVector = if (isExpanded) Icons.Filled.UnfoldLess
@@ -218,12 +217,12 @@ private fun CurrentActivityView(
                     contentDescription = if (isExpanded) "collapse" else "expand"
                 )
             }
-            if (!habit.timed) {
-                Checkbox(
-                    checked = false,
-                    onCheckedChange = { onCompleteUntimed(habit.id, note) }
-                )
-            }
+            Checkbox(
+                checked = false,
+                onCheckedChange = {
+                    if (habit.timed) onFinish(note) else onCompleteUntimed(habit.id, note)
+                }
+            )
         }
 
         if (habit.timed) {
@@ -249,6 +248,24 @@ private fun CurrentActivityView(
             },
             modifier = Modifier.padding(top = 8.dp)
         )
+
+        if (isExpanded) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+            ) {
+                if (habit.dailyTargetMode == com.habit.data.TargetMode.AT_LEAST &&
+                    state.activeActivity?.completedAt != null
+                ) {
+                    TextButton(onClick = { onDoAgain(habit.id) }) {
+                        Text("Again")
+                    }
+                }
+                TextButton(onClick = { onEditHabit(habit.id) }) {
+                    Text("Edit habit")
+                }
+            }
+        }
     }
 }
 
@@ -261,7 +278,7 @@ private fun HistoryActivityView(
     onToggleDetail: () -> Unit,
     onHistoryOlder: () -> Unit,
     onHistoryNewer: () -> Unit,
-    onHistoryBackToCurrent: () -> Unit,
+    onHistoryBackToAnchor: () -> Unit,
     onEditHabit: (String) -> Unit,
     onUpdateStartTime: (Long, java.time.Instant?) -> Unit,
     onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
@@ -272,13 +289,18 @@ private fun HistoryActivityView(
     val timeFormatter = remember { DateTimeFormatter.ofPattern("h:mm a") }
     val zone = ZoneId.systemDefault()
 
+    val sameDay = state.historyActivities.filter {
+        it.habitId == habit.id && it.attributedDate == activity.attributedDate
+    }
+    val activityNumber = sameDay.indexOfFirst { it.id == activity.id } + 1
+
     Column(
         modifier = Modifier
             .swipeHistoryGesture(
-                onSwipeLeft = onHistoryOlder,
-                onSwipeRight = onHistoryNewer,
-                isAtLeft = state.isAtOldest,
-                isAtRight = state.isAtNewest
+                onSwipeLeft = onHistoryNewer,
+                onSwipeRight = onHistoryOlder,
+                isAtLeft = state.isAtNewest,
+                isAtRight = state.isAtOldest
             )
             .padding(16.dp)
     ) {
@@ -291,11 +313,12 @@ private fun HistoryActivityView(
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.weight(1f)
             )
-            IconButton(
-                onClick = { onEditHabit(habit.id) },
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(Icons.Filled.Edit, "edit habit")
+            if (habit.dailyTarget > 1 && activityNumber > 0) {
+                Text(
+                    text = "$activityNumber/${habit.dailyTarget}",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
             }
             IconButton(onClick = onToggleDetail, modifier = Modifier.size(32.dp)) {
                 Icon(
@@ -354,8 +377,13 @@ private fun HistoryActivityView(
                     Text("Again")
                 }
             }
-            TextButton(onClick = onHistoryBackToCurrent) {
-                Text("Back to today")
+            if (state.hasSwipedFromAnchor) {
+                TextButton(onClick = onHistoryBackToAnchor) {
+                    Text("Back to start")
+                }
+            }
+            TextButton(onClick = { onEditHabit(habit.id) }) {
+                Text("Edit habit")
             }
         }
     }
@@ -365,7 +393,9 @@ private fun HistoryActivityView(
 private fun CompletedActivityDetail(
     state: AgendaUiState,
     onNoteChange: (String) -> Unit,
-    onToggleDetail: () -> Unit
+    onToggleDetail: () -> Unit,
+    onHistoryOlder: () -> Unit,
+    onHistoryNewer: () -> Unit
 ) {
     val activity = state.todayActivities.find { it.id == state.selectedActivityId }
         ?: return
@@ -375,7 +405,16 @@ private fun CompletedActivityDetail(
     val timeFormatter = remember { DateTimeFormatter.ofPattern("h:mm a") }
     val zone = ZoneId.systemDefault()
 
-    Column(modifier = Modifier.padding(16.dp)) {
+    val swipeModifier = if (state.browsingHistory) {
+        Modifier.swipeHistoryGesture(
+            onSwipeLeft = onHistoryNewer,
+            onSwipeRight = onHistoryOlder,
+            isAtLeft = state.isAtNewest,
+            isAtRight = state.isAtOldest
+        )
+    } else Modifier
+
+    Column(modifier = swipeModifier.padding(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
