@@ -34,7 +34,7 @@ class TimerService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        chimePlayer = ChimePlayer()
+        chimePlayer = ChimePlayer(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

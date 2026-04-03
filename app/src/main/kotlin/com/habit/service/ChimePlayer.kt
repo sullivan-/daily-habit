@@ -1,28 +1,25 @@
 package com.habit.service
 
-import android.media.AudioManager
-import android.media.ToneGenerator
+import android.content.Context
+import android.media.RingtoneManager
+import android.net.Uri
 
-class ChimePlayer {
+class ChimePlayer(private val context: Context) {
 
-    private val toneGenerator = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
-    private val loudToneGenerator = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
+    private val notificationUri: Uri =
+        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+    private val alarmUri: Uri =
+        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
 
     fun playIntervalChime() {
-        toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
+        RingtoneManager.getRingtone(context, notificationUri)?.play()
     }
 
     fun playThresholdChime() {
-        // three ascending tones for a cheerful feel
-        loudToneGenerator.startTone(ToneGenerator.TONE_PROP_ACK, 200)
-        Thread.sleep(250)
-        loudToneGenerator.startTone(ToneGenerator.TONE_PROP_ACK, 200)
-        Thread.sleep(250)
-        loudToneGenerator.startTone(ToneGenerator.TONE_PROP_ACK, 300)
+        RingtoneManager.getRingtone(context, alarmUri)?.play()
     }
 
     fun release() {
-        toneGenerator.release()
-        loudToneGenerator.release()
+        // nothing to release with RingtoneManager
     }
 }
