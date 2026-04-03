@@ -1,16 +1,10 @@
 package com.habit.ui
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.UnfoldLess
@@ -26,21 +20,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.habit.data.Activity
 import com.habit.data.Habit
 import com.habit.viewmodel.AgendaUiState
 import com.habit.viewmodel.Layout
-import kotlinx.coroutines.launch
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import kotlin.math.roundToInt
 
 @Composable
 fun ActivityView(
@@ -57,6 +46,7 @@ fun ActivityView(
     onEditHabit: (String) -> Unit,
     onUpdateStartTime: (Long, java.time.Instant?) -> Unit,
     onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
+    onDoAgain: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val habit = state.selectedHabit
@@ -67,12 +57,13 @@ fun ActivityView(
     ) {
         if (habit == null) {
             CollapsedSummary(state = state)
-        } else if (state.selectedActivityId != null) {
+        } else if (state.selectedActivityId != null &&
+            state.layout != Layout.ACTIVITY_FOCUSED
+        ) {
             CompletedActivityDetail(
                 state = state,
                 onNoteChange = onNoteChange,
-                onToggleDetail = onToggleDetail,
-                isExpanded = state.layout == Layout.ACTIVITY_FOCUSED
+                onToggleDetail = onToggleDetail
             )
         } else {
             HabitView(
@@ -90,6 +81,7 @@ fun ActivityView(
                 onEditHabit = onEditHabit,
                 onUpdateStartTime = onUpdateStartTime,
                 onUpdateCompletedAt = onUpdateCompletedAt,
+                onDoAgain = onDoAgain,
                 isExpanded = state.layout == Layout.ACTIVITY_FOCUSED
             )
         }
@@ -129,6 +121,7 @@ private fun HabitView(
     onEditHabit: (String) -> Unit,
     onUpdateStartTime: (Long, java.time.Instant?) -> Unit,
     onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
+    onDoAgain: (String) -> Unit,
     isExpanded: Boolean
 ) {
     if (isExpanded && state.browsingHistory && !state.isAtNewest) {
@@ -143,7 +136,8 @@ private fun HabitView(
             onHistoryBackToCurrent = onHistoryBackToCurrent,
             onEditHabit = onEditHabit,
             onUpdateStartTime = onUpdateStartTime,
-            onUpdateCompletedAt = onUpdateCompletedAt
+            onUpdateCompletedAt = onUpdateCompletedAt,
+            onDoAgain = onDoAgain
         )
     } else {
         CurrentActivityView(
@@ -181,14 +175,12 @@ private fun CurrentActivityView(
     }
 
     val swipeModifier = if (isExpanded) {
-        Modifier
-            .verticalScroll(rememberScrollState())
-            .swipeHistoryGesture(
-                onSwipeLeft = onHistoryOlder,
-                onSwipeRight = {},
-                isAtLeft = false,
-                isAtRight = true
-            )
+        Modifier.swipeHistoryGesture(
+            onSwipeLeft = onHistoryOlder,
+            onSwipeRight = {},
+            isAtLeft = false,
+            isAtRight = true
+        )
     } else Modifier
 
     Column(modifier = swipeModifier.padding(16.dp)) {
@@ -272,7 +264,8 @@ private fun HistoryActivityView(
     onHistoryBackToCurrent: () -> Unit,
     onEditHabit: (String) -> Unit,
     onUpdateStartTime: (Long, java.time.Instant?) -> Unit,
-    onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit
+    onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
+    onDoAgain: (String) -> Unit
 ) {
     var note by remember(activity.id) { mutableStateOf(activity.note) }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("EEE, MMM d") }
@@ -281,7 +274,6 @@ private fun HistoryActivityView(
 
     Column(
         modifier = Modifier
-            .verticalScroll(rememberScrollState())
             .swipeHistoryGesture(
                 onSwipeLeft = onHistoryOlder,
                 onSwipeRight = onHistoryNewer,
@@ -351,11 +343,20 @@ private fun HistoryActivityView(
             modifier = Modifier.padding(top = 8.dp)
         )
 
-        TextButton(
-            onClick = onHistoryBackToCurrent,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center
         ) {
-            Text("Back to today")
+            if (habit.dailyTargetMode == com.habit.data.TargetMode.AT_LEAST &&
+                activity.completedAt != null
+            ) {
+                TextButton(onClick = { onDoAgain(habit.id) }) {
+                    Text("Again")
+                }
+            }
+            TextButton(onClick = onHistoryBackToCurrent) {
+                Text("Back to today")
+            }
         }
     }
 }
@@ -364,8 +365,7 @@ private fun HistoryActivityView(
 private fun CompletedActivityDetail(
     state: AgendaUiState,
     onNoteChange: (String) -> Unit,
-    onToggleDetail: () -> Unit,
-    isExpanded: Boolean
+    onToggleDetail: () -> Unit
 ) {
     val activity = state.todayActivities.find { it.id == state.selectedActivityId }
         ?: return
@@ -386,11 +386,7 @@ private fun CompletedActivityDetail(
                 modifier = Modifier.weight(1f)
             )
             IconButton(onClick = onToggleDetail, modifier = Modifier.size(32.dp)) {
-                Icon(
-                    imageVector = if (isExpanded) Icons.Filled.UnfoldLess
-                        else Icons.Filled.UnfoldMore,
-                    contentDescription = if (isExpanded) "collapse" else "expand"
-                )
+                Icon(Icons.Filled.UnfoldMore, "expand")
             }
         }
         activity.completedAt?.let {
@@ -416,47 +412,3 @@ private fun CompletedActivityDetail(
     }
 }
 
-@Composable
-private fun Modifier.swipeHistoryGesture(
-    onSwipeLeft: () -> Unit,
-    onSwipeRight: () -> Unit,
-    isAtLeft: Boolean,
-    isAtRight: Boolean
-): Modifier {
-    val offsetX = remember { Animatable(0f) }
-    val scope = rememberCoroutineScope()
-
-    return this
-        .offset { IntOffset(offsetX.value.roundToInt(), 0) }
-        .pointerInput(isAtLeft, isAtRight) {
-            detectHorizontalDragGestures(
-                onDragEnd = {
-                    val threshold = 100f
-                    when {
-                        offsetX.value < -threshold && !isAtLeft -> {
-                            onSwipeLeft()
-                        }
-                        offsetX.value > threshold && !isAtRight -> {
-                            onSwipeRight()
-                        }
-                    }
-                    scope.launch {
-                        offsetX.animateTo(0f, spring())
-                    }
-                },
-                onHorizontalDrag = { _, dragAmount ->
-                    scope.launch {
-                        val dampened = if (
-                            (dragAmount < 0 && isAtLeft) ||
-                            (dragAmount > 0 && isAtRight)
-                        ) {
-                            dragAmount * 0.3f
-                        } else {
-                            dragAmount
-                        }
-                        offsetX.snapTo(offsetX.value + dampened)
-                    }
-                }
-            )
-        }
-}

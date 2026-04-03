@@ -74,16 +74,35 @@ class AgendaViewModel(
         )
     }
 
+    fun collapseActivity() {
+        _uiState.value = _uiState.value.copy(
+            layout = _uiState.value.previousLayout,
+            historyActivities = emptyList(),
+            historyIndex = -1
+        )
+    }
+
     fun expandActivity() {
-        _uiState.value = _uiState.value.copy(layout = Layout.ACTIVITY_FOCUSED)
-        val habitId = _uiState.value.selectedHabitId ?: return
+        val state = _uiState.value
+        _uiState.value = state.copy(
+            previousLayout = state.layout,
+            layout = Layout.ACTIVITY_FOCUSED
+        )
+        val habitId = state.selectedHabitId ?: return
+        val selectedActivityId = state.selectedActivityId
         viewModelScope.launch {
             val completed = activityRepo.completedHistoryForHabit(habitId)
-            val inProgress = _uiState.value.activeActivity
+            val inProgress = state.activeActivity
             val all = if (inProgress != null) completed + inProgress else completed
+            val index = if (selectedActivityId != null) {
+                all.indexOfFirst { it.id == selectedActivityId }
+                    .takeIf { it >= 0 } ?: all.lastIndex
+            } else {
+                all.lastIndex
+            }
             _uiState.value = _uiState.value.copy(
                 historyActivities = all,
-                historyIndex = all.lastIndex
+                historyIndex = index
             )
         }
     }

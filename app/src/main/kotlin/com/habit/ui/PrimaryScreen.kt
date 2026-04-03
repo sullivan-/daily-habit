@@ -33,7 +33,7 @@ fun PrimaryScreen(
             onNoteChange = viewModel::updateNote,
             onToggleDetail = {
                 if (uiState.layout == Layout.ACTIVITY_FOCUSED)
-                    viewModel.switchToMain()
+                    viewModel.collapseActivity()
                 else
                     viewModel.expandActivity()
             },
@@ -43,6 +43,7 @@ fun PrimaryScreen(
             onEditHabit = onEditHabit,
             onUpdateStartTime = viewModel::updateActivityStartTime,
             onUpdateCompletedAt = viewModel::updateActivityCompletedAt,
+            onDoAgain = viewModel::doAgain,
             modifier = expandedModifier
         )
 
