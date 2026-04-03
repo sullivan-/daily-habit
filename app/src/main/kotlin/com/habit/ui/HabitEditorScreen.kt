@@ -229,19 +229,6 @@ fun HabitEditorScreen(
 
             if (state.timed) {
                 OutlinedTextField(
-                    value = state.chimeIntervalSeconds?.toString() ?: "",
-                    onValueChange = {
-                        viewModel.setChimeIntervalSeconds(it.toIntOrNull())
-                    },
-                    label = { Text("Chime interval (seconds)") },
-                    modifier = Modifier.width(220.dp),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number
-                    ),
-                    singleLine = true
-                )
-
-                OutlinedTextField(
                     value = state.thresholdMinutes?.toString() ?: "",
                     onValueChange = {
                         viewModel.setThresholdMinutes(it.toIntOrNull())

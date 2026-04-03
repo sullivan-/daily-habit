@@ -34,7 +34,8 @@ class ActivityDaoTest {
         dailyTarget = 2,
         dailyTargetMode = TargetMode.AT_LEAST,
         timed = true,
-        chimeIntervalSeconds = 10,
+
+
         thresholdMinutes = 30,
         thresholdType = ThresholdType.GOAL,
         priority = Priority.HIGH,

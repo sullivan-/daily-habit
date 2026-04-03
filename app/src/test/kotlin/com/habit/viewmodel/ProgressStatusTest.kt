@@ -27,7 +27,8 @@ class ProgressStatusTest {
         dailyTarget = 1,
         dailyTargetMode = TargetMode.EXACTLY,
         timed = false,
-        chimeIntervalSeconds = null,
+
+
         thresholdMinutes = null,
         thresholdType = null,
         priority = priority,

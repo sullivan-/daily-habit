@@ -36,7 +36,6 @@ class AgendaViewModel(
     val chimeEvents: SharedFlow<ChimeEvent> = _chimeEvents.asSharedFlow()
 
     private var timerJob: Job? = null
-    private var lastIntervalChimeMs: Long = -1
     private var thresholdChimeFired: Boolean = false
 
     init {
@@ -181,7 +180,6 @@ class AgendaViewModel(
 
         viewModelScope.launch { activityRepo.update(started) }
 
-        lastIntervalChimeMs = 0
         thresholdChimeFired = false
         startTimerTick()
     }
@@ -189,8 +187,11 @@ class AgendaViewModel(
     private fun startTimerTick() {
         timerJob?.cancel()
         val habit = _uiState.value.selectedHabit
-        val chimeIntervalMs = habit?.chimeIntervalSeconds?.let { it * 1000L } ?: 0
         val thresholdMs = habit?.thresholdMinutes?.let { it * 60 * 1000L } ?: 0
+        val currentElapsed = _uiState.value.activeActivity?.elapsedMs ?: 0
+        if (thresholdMs > 0 && currentElapsed >= thresholdMs) {
+            thresholdChimeFired = true
+        }
 
         _uiState.value = _uiState.value.copy(timerRunning = true)
 
@@ -200,17 +201,7 @@ class AgendaViewModel(
                 val activity = _uiState.value.activeActivity ?: break
                 val elapsed = activity.elapsedMs
 
-                // trigger UI recomposition
                 _uiState.value = _uiState.value.copy(timerTickMs = elapsed)
-
-                if (chimeIntervalMs > 0) {
-                    val prevCount = lastIntervalChimeMs / chimeIntervalMs
-                    val currCount = elapsed / chimeIntervalMs
-                    if (currCount > prevCount) {
-                        _chimeEvents.tryEmit(ChimeEvent.Interval)
-                        lastIntervalChimeMs = elapsed
-                    }
-                }
 
                 if (thresholdMs > 0 && !thresholdChimeFired && elapsed >= thresholdMs) {
                     _chimeEvents.tryEmit(ChimeEvent.Threshold)

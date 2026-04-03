@@ -14,7 +14,6 @@ data class Habit(
     val dailyTarget: Int,
     val dailyTargetMode: TargetMode,
     val timed: Boolean,
-    val chimeIntervalSeconds: Int?,
     val thresholdMinutes: Int?,
     val thresholdType: ThresholdType?,
     val priority: Priority,

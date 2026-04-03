@@ -5,6 +5,13 @@ they come up. items here are not committed to, just captured.
 
 ## planned features
 
+### choices (abstinence / avoidance tracking)
+
+track what you're staying away from, ported from `sched/absta.py`:
+- daily tracking of substances/behaviors to avoid (alcohol, nicotine, sugar, etc.)
+- streak counting (days since last)
+- visual calendar view
+
 ### multiple thresholds per habit
 
 a habit should be able to have both a Goal threshold and a Time to Stop
@@ -74,13 +81,6 @@ implemented. remaining:*
 - weekly summary: how many days each habit was completed
 - trend indicators: improving, steady, declining
 
-### abstinence / avoidance tracking
-
-track what you're staying away from, ported from `sched/absta.py`:
-- daily tracking of substances/behaviors to avoid (alcohol, nicotine, sugar, etc.)
-- streak counting (days since last)
-- visual calendar view
-
 ### reflection and planning
 
 - periodic review prompts (weekly?)
@@ -140,11 +140,6 @@ track what you're staying away from, ported from `sched/absta.py`:
   the agenda by priority — on a busy day, only show high-priority habits
 - could be manual (set in the morning) or automatic (based on day of week)
 - the progress bar and daily status would adjust expectations to match
-
-### habit difficulty and flexibility
-
-- some habits are "hard" (must do daily) vs "soft" (aim for 5/7 days)
-- allow the user to set realistic targets per habit rather than all-or-nothing
 
 ### "good enough" days
 

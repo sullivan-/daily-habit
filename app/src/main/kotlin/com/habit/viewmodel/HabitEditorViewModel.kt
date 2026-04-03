@@ -22,7 +22,6 @@ data class HabitEditorState(
     val dailyTarget: Int = 1,
     val dailyTargetMode: TargetMode = TargetMode.AT_LEAST,
     val timed: Boolean = false,
-    val chimeIntervalSeconds: Int? = null,
     val thresholdMinutes: Int? = null,
     val thresholdType: ThresholdType? = null,
     val priority: Priority = Priority.MEDIUM,
@@ -58,7 +57,6 @@ class HabitEditorViewModel(
                 dailyTarget = habit.dailyTarget,
                 dailyTargetMode = habit.dailyTargetMode,
                 timed = habit.timed,
-                chimeIntervalSeconds = habit.chimeIntervalSeconds,
                 thresholdMinutes = habit.thresholdMinutes,
                 thresholdType = habit.thresholdType,
                 priority = habit.priority,
@@ -120,15 +118,10 @@ class HabitEditorViewModel(
     fun setTimed(timed: Boolean) {
         _state.value = _state.value.copy(
             timed = timed,
-            chimeIntervalSeconds = if (!timed) null else _state.value.chimeIntervalSeconds,
             thresholdMinutes = if (!timed) null else _state.value.thresholdMinutes,
             thresholdType = if (!timed) null else _state.value.thresholdType,
             dirty = true
         )
-    }
-
-    fun setChimeIntervalSeconds(seconds: Int?) {
-        _state.value = _state.value.copy(chimeIntervalSeconds = seconds, dirty = true)
     }
 
     fun setThresholdMinutes(minutes: Int?) {
@@ -169,7 +162,6 @@ class HabitEditorViewModel(
                 dailyTarget = s.dailyTarget,
                 dailyTargetMode = s.dailyTargetMode,
                 timed = s.timed,
-                chimeIntervalSeconds = s.chimeIntervalSeconds,
                 thresholdMinutes = s.thresholdMinutes,
                 thresholdType = s.thresholdType,
                 priority = s.priority,

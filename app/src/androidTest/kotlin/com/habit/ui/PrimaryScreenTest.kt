@@ -52,7 +52,8 @@ class PrimaryScreenTest {
         dailyTarget = 2,
         dailyTargetMode = TargetMode.AT_LEAST,
         timed = true,
-        chimeIntervalSeconds = 10,
+
+
         thresholdMinutes = 30,
         thresholdType = null,
         priority = Priority.HIGH,
@@ -68,7 +69,8 @@ class PrimaryScreenTest {
         dailyTarget = 1,
         dailyTargetMode = TargetMode.EXACTLY,
         timed = false,
-        chimeIntervalSeconds = null,
+
+
         thresholdMinutes = null,
         thresholdType = null,
         priority = Priority.MEDIUM,

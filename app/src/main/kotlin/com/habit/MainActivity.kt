@@ -57,7 +57,6 @@ class MainActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.chimeEvents.collect { event ->
                     when (event) {
-                        is ChimeEvent.Interval -> chimePlayer.playIntervalChime()
                         is ChimeEvent.Threshold -> chimePlayer.playThresholdChime()
                     }
                 }
@@ -74,7 +73,6 @@ class MainActivity : ComponentActivity() {
                         context = this@MainActivity,
                         habitName = habit.name,
                         startEpochMs = startEpochMs,
-                        chimeIntervalMs = (habit.chimeIntervalSeconds ?: 0) * 1000L,
                         thresholdMs = (habit.thresholdMinutes ?: 0) * 60 * 1000L
                     ))
                     serviceRunning = true

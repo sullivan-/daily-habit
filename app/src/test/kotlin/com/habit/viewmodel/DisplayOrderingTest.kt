@@ -33,7 +33,8 @@ class DisplayOrderingTest {
         dailyTarget = dailyTarget,
         dailyTargetMode = TargetMode.AT_LEAST,
         timed = false,
-        chimeIntervalSeconds = null,
+
+
         thresholdMinutes = null,
         thresholdType = null,
         priority = priority,

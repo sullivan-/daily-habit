@@ -48,7 +48,8 @@ class AgendaViewModelTest {
         dailyTarget = 2,
         dailyTargetMode = TargetMode.AT_LEAST,
         timed = true,
-        chimeIntervalSeconds = 10,
+
+
         thresholdMinutes = 30,
         thresholdType = ThresholdType.GOAL,
         priority = Priority.HIGH,
@@ -64,7 +65,8 @@ class AgendaViewModelTest {
         dailyTarget = 1,
         dailyTargetMode = TargetMode.EXACTLY,
         timed = false,
-        chimeIntervalSeconds = null,
+
+
         thresholdMinutes = null,
         thresholdType = null,
         priority = Priority.MEDIUM,
