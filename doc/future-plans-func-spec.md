@@ -95,6 +95,18 @@ track what you're staying away from, ported from `sched/absta.py`:
   user's intent (e.g., a very late night that crosses the 2 AM boundary)
 - the activity keeps its actual timestamp but its attributed date changes
 
+### skip habit for the day
+
+- mark a habit as "skip" from the agenda list, excluding it from the
+  agenda for that day only
+- skipped habits don't count toward the daily target or progress bar
+- the skip is per-day, not permanent — the habit reappears the next day
+- useful for days when a habit genuinely doesn't apply (sick, traveling,
+  equipment unavailable)
+- skipped habits could appear in a separate "skipped" section or just
+  vanish from the agenda entirely
+- history should record that the habit was skipped (not just missing)
+
 ### time tracking history
 
 - log of time spent per activity over days/weeks
