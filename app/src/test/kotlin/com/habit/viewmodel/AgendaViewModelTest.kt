@@ -277,13 +277,15 @@ class AgendaViewModelTest {
     }
 
     @Test
-    fun `selectHabit blocked when timer running on different habit`() = runTest {
+    fun `selectHabit switches while timer keeps running`() = runTest {
         val vm = createViewModel()
         vm.selectHabit("qigong")
         vm.startTimer()
 
         vm.selectHabit("vitamins")
-        assertThat(vm.uiState.value.selectedHabitId).isEqualTo("qigong")
+        assertThat(vm.uiState.value.selectedHabitId).isEqualTo("vitamins")
+        assertThat(vm.uiState.value.timerRunning).isTrue()
+        assertThat(vm.uiState.value.timedHabitId).isEqualTo("qigong")
     }
 
     @Test

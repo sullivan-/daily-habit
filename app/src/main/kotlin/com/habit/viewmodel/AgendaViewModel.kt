@@ -93,9 +93,6 @@ class AgendaViewModel(
     }
 
     fun selectHabit(habitId: String) {
-        if (_uiState.value.timerRunning && _uiState.value.selectedHabitId != habitId) {
-            return
-        }
         _uiState.value = _uiState.value.copy(
             selectedHabitId = habitId,
             selectedActivityId = null,
@@ -175,7 +172,8 @@ class AgendaViewModel(
         val started = activity.copy(startTime = Instant.now())
         _uiState.value = _uiState.value.copy(
             activeActivity = started,
-            timerRunning = true
+            timerRunning = true,
+            timedHabitId = state.selectedHabitId
         )
 
         viewModelScope.launch { activityRepo.update(started) }
@@ -186,22 +184,32 @@ class AgendaViewModel(
 
     private fun startTimerTick() {
         timerJob?.cancel()
-        val habit = _uiState.value.selectedHabit
+        val state = _uiState.value
+        val timedHabitId = state.timedHabitId ?: state.selectedHabitId
+        val habit = state.habits.find { it.id == timedHabitId }
         val thresholdMs = habit?.thresholdMinutes?.let { it * 60 * 1000L } ?: 0
-        val currentElapsed = _uiState.value.activeActivity?.elapsedMs ?: 0
+        val currentElapsed = state.activeActivity?.elapsedMs ?: 0
         if (thresholdMs > 0 && currentElapsed >= thresholdMs) {
             thresholdChimeFired = true
         }
 
-        _uiState.value = _uiState.value.copy(timerRunning = true)
+        _uiState.value = state.copy(timerRunning = true, timedHabitId = timedHabitId)
 
         timerJob = viewModelScope.launch(tickDispatcher) {
             while (isActive) {
                 delay(200)
-                val activity = _uiState.value.activeActivity ?: break
-                val elapsed = activity.elapsedMs
+                // find the timed activity even if user switched to a different habit
+                val currentState = _uiState.value
+                val timedActivity = if (currentState.selectedHabitId == timedHabitId) {
+                    currentState.activeActivity
+                } else {
+                    currentState.todayActivities.find {
+                        it.habitId == timedHabitId && it.completedAt == null && it.startTime != null
+                    }
+                } ?: break
+                val elapsed = timedActivity.elapsedMs
 
-                _uiState.value = _uiState.value.copy(timerTickMs = elapsed)
+                _uiState.value = currentState.copy(timerTickMs = elapsed)
 
                 if (thresholdMs > 0 && !thresholdChimeFired && elapsed >= thresholdMs) {
                     _chimeEvents.tryEmit(ChimeEvent.Threshold)
@@ -227,6 +235,7 @@ class AgendaViewModel(
         _uiState.value = state.copy(
             activeActivity = null,
             timerRunning = false,
+            timedHabitId = null,
             timerTickMs = 0
         )
 
@@ -262,6 +271,7 @@ class AgendaViewModel(
         _uiState.value = state.copy(
             activeActivity = null,
             timerRunning = false,
+            timedHabitId = null,
             timerTickMs = 0,
             selectedHabitId = nextHabit?.habit?.id
         )
@@ -409,6 +419,7 @@ class AgendaViewModel(
         _uiState.value = _uiState.value.copy(
             activeActivity = null,
             timerRunning = false,
+            timedHabitId = null,
             timerTickMs = 0,
             selectedHabitId = habitId,
             selectedActivityId = null

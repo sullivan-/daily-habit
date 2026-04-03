@@ -12,6 +12,7 @@ data class AgendaUiState(
     val activeActivity: Activity? = null,
     val timerRunning: Boolean = false,
     val timerTickMs: Long = 0,
+    val timedHabitId: String? = null,
     val previousLayout: Layout = Layout.MAIN,
     val historyActivities: List<Activity> = emptyList(),
     val historyIndex: Int = -1,
