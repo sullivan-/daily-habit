@@ -21,28 +21,13 @@ session prompts the user to pick (or continue) a task from the backlog.
 
 ### in-app configuration
 
-*partially implemented: habit editor for create/edit is in progress.
-edit from expanded activity view and "New Habit" from menu.*
+*habit editor (create/edit/delete), habit list, and menu are
+implemented. remaining:*
 
-remaining:
-- reorder habits
+- reorder habits by drag in habit list
+- search/filter habits by name
 - manage task backlogs (add, edit, reorder, complete tasks)
 - config import/export (replace static JSON bootstrapping)
-
-### habit list screen
-
-- a dedicated screen listing all habits with their key config (name, priority,
-  days active, timed/untimed)
-- tap a habit to open the editor
-- reorder habits by drag
-- search/filter by name
-
-### delete habit
-
-- available from the habit editor or habit list
-- confirmation prompt before deletion
-- deletes the habit and all associated activities (cascade)
-- cannot be undone
 
 ### history views
 
