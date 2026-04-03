@@ -5,6 +5,22 @@ they come up. items here are not committed to, just captured.
 
 ## planned features
 
+### multiple thresholds per habit
+
+a habit should be able to have both a Goal threshold and a Time to Stop
+threshold. e.g., Qigong: goal at 30 minutes, time to stop at 45 minutes.
+each triggers its own chime. the current model only supports one
+threshold — this needs a schema change to support a list.
+
+### ephemeral chime interval
+
+the chime interval (e.g., every 10 seconds) is not a property of the
+habit — it's ephemeral state associated with an active activity. in the
+expanded view for an active activity, the user can choose a chime
+interval and start the chimes. the interval runs alongside the normal
+timer. the habit definition no longer stores chimeIntervalSeconds;
+instead the user sets it per-session in the activity view.
+
 ### timer value editing
 
 - allow the user to manually adjust an activity's start time, end time,

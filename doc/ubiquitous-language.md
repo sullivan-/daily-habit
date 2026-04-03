@@ -17,7 +17,7 @@ which daily work is derived.
 
 Examples: "Qigong", "Home", "Badux", "Vitamins"
 
-### Activity
+### Activity (also: Task)
 
 A single recorded instance of performing a habit. An activity belongs to one
 habit and one calendar date. It captures when the work happened and an optional
