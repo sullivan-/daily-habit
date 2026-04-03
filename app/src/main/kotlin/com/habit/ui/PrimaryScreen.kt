@@ -16,6 +16,7 @@ fun PrimaryScreen(
     viewModel: AgendaViewModel,
     onNewHabit: () -> Unit = {},
     onEditHabit: (String) -> Unit = {},
+    onHabitList: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -58,7 +59,8 @@ fun PrimaryScreen(
                     completedOverTotal = ratios.completedOverTotal,
                     completedOverExpected = ratios.completedOverExpected,
                     onClick = viewModel::switchToReview,
-                    onMenuClick = onNewHabit
+                    onNewHabit = onNewHabit,
+                    onHabitList = onHabitList
                 )
             }
             Layout.REVIEW -> {
@@ -71,7 +73,8 @@ fun PrimaryScreen(
                 AgendaBar(
                     remaining = uiState.totalTarget - uiState.progressCount,
                     onClick = viewModel::switchToMain,
-                    onMenuClick = onNewHabit
+                    onNewHabit = onNewHabit,
+                    onHabitList = onHabitList
                 )
             }
             Layout.ACTIVITY_FOCUSED -> {
@@ -82,7 +85,8 @@ fun PrimaryScreen(
                 AgendaBar(
                     remaining = uiState.totalTarget - uiState.progressCount,
                     onClick = viewModel::switchToMain,
-                    onMenuClick = onNewHabit
+                    onNewHabit = onNewHabit,
+                    onHabitList = onHabitList
                 )
             }
         }

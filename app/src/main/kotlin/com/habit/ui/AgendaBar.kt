@@ -18,7 +18,8 @@ import androidx.compose.ui.unit.dp
 fun AgendaBar(
     remaining: Int,
     onClick: () -> Unit,
-    onMenuClick: () -> Unit,
+    onNewHabit: () -> Unit,
+    onHabitList: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -27,7 +28,7 @@ fun AgendaBar(
             .height(48.dp)
             .background(Color.DarkGray)
     ) {
-        MenuButton(onClick = onMenuClick, modifier = Modifier.align(Alignment.CenterStart))
+        MenuButton(onNewHabit = onNewHabit, onHabitList = onHabitList, modifier = Modifier.align(Alignment.CenterStart))
         Text(
             text = "$remaining remaining",
             color = Color.White,

@@ -18,7 +18,8 @@ import androidx.compose.ui.graphics.Color
 
 @Composable
 fun MenuButton(
-    onClick: () -> Unit,
+    onNewHabit: () -> Unit,
+    onHabitList: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -32,10 +33,17 @@ fun MenuButton(
             onDismissRequest = { expanded = false }
         ) {
             DropdownMenuItem(
+                text = { Text("Habits") },
+                onClick = {
+                    expanded = false
+                    onHabitList()
+                }
+            )
+            DropdownMenuItem(
                 text = { Text("New Habit") },
                 onClick = {
                     expanded = false
-                    onClick()
+                    onNewHabit()
                 }
             )
         }

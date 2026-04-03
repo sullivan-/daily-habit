@@ -26,4 +26,7 @@ interface HabitDao {
 
     @Update
     suspend fun update(habit: Habit)
+
+    @Query("DELETE FROM habit WHERE id = :id")
+    suspend fun deleteById(id: String)
 }

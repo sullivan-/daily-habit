@@ -73,7 +73,30 @@ fun HabitEditorScreen(
         if (state.saved) onBack()
     }
 
+    LaunchedEffect(state.deleted) {
+        if (state.deleted) onBack()
+    }
+
     var showDiscardDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete ${state.name}?") },
+            text = { Text("this will delete the habit and all its activity history. this cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.delete() }) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     if (showDiscardDialog) {
         AlertDialog(
@@ -256,6 +279,19 @@ fun HabitEditorScreen(
                 dailyTexts = state.dailyTexts,
                 onSetText = viewModel::setDailyText
             )
+
+            if (!state.isNew) {
+                Spacer(Modifier.height(16.dp))
+                TextButton(
+                    onClick = { showDeleteDialog = true },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text(
+                        "Delete Habit",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
 
             Spacer(Modifier.height(32.dp))
         }

@@ -29,7 +29,8 @@ data class HabitEditorState(
     val dailyTexts: Map<DayOfWeek, String> = emptyMap(),
     val isNew: Boolean = true,
     val dirty: Boolean = false,
-    val saved: Boolean = false
+    val saved: Boolean = false,
+    val deleted: Boolean = false
 ) {
     val isValid: Boolean
         get() = name.isNotBlank() &&
@@ -180,6 +181,15 @@ class HabitEditorViewModel(
                 habitRepo.update(habit)
             }
             _state.value = s.copy(saved = true, dirty = false)
+        }
+    }
+
+    fun delete() {
+        val s = _state.value
+        if (s.isNew) return
+        viewModelScope.launch {
+            habitRepo.deleteById(s.id)
+            _state.value = s.copy(deleted = true)
         }
     }
 

@@ -29,7 +29,18 @@ fun AppNavigation(
                 onNewHabit = { navController.navigate("habit-editor/new") },
                 onEditHabit = { habitId ->
                     navController.navigate("habit-editor/$habitId")
-                }
+                },
+                onHabitList = { navController.navigate("habit-list") }
+            )
+        }
+        composable("habit-list") {
+            HabitListScreen(
+                viewModel = agendaViewModel,
+                onEditHabit = { habitId ->
+                    navController.navigate("habit-editor/$habitId")
+                },
+                onNewHabit = { navController.navigate("habit-editor/new") },
+                onBack = { navController.popBackStack() }
             )
         }
         composable("habit-editor/{habitId}") { backStackEntry ->
