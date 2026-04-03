@@ -22,6 +22,8 @@ fun PrimaryScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(modifier = modifier.fillMaxSize()) {
+        val expandedModifier = if (uiState.layout == Layout.ACTIVITY_FOCUSED)
+            Modifier.weight(1f) else Modifier
         ActivityView(
             state = uiState,
             onStart = viewModel::startTimer,
@@ -40,7 +42,8 @@ fun PrimaryScreen(
             onHistoryBackToCurrent = viewModel::historyBackToCurrent,
             onEditHabit = onEditHabit,
             onUpdateStartTime = viewModel::updateActivityStartTime,
-            onUpdateCompletedAt = viewModel::updateActivityCompletedAt
+            onUpdateCompletedAt = viewModel::updateActivityCompletedAt,
+            modifier = expandedModifier
         )
 
         when (uiState.layout) {
@@ -80,10 +83,7 @@ fun PrimaryScreen(
                 )
             }
             Layout.ACTIVITY_FOCUSED -> {
-                ActivityDetail(
-                    state = uiState,
-                    modifier = Modifier.weight(1f)
-                )
+                // expanded activity view fills remaining space via weight on parent
                 AgendaBar(
                     remaining = uiState.totalTarget - uiState.progressCount,
                     onClick = viewModel::switchToMain,

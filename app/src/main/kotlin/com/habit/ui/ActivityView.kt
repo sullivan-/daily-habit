@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.UnfoldLess
@@ -68,7 +70,9 @@ fun ActivityView(
         } else if (state.selectedActivityId != null) {
             CompletedActivityDetail(
                 state = state,
-                onNoteChange = onNoteChange
+                onNoteChange = onNoteChange,
+                onToggleDetail = onToggleDetail,
+                isExpanded = state.layout == Layout.ACTIVITY_FOCUSED
             )
         } else {
             HabitView(
@@ -177,12 +181,14 @@ private fun CurrentActivityView(
     }
 
     val swipeModifier = if (isExpanded) {
-        Modifier.swipeHistoryGesture(
-            onSwipeLeft = onHistoryOlder,
-            onSwipeRight = {},
-            isAtLeft = false,
-            isAtRight = true
-        )
+        Modifier
+            .verticalScroll(rememberScrollState())
+            .swipeHistoryGesture(
+                onSwipeLeft = onHistoryOlder,
+                onSwipeRight = {},
+                isAtLeft = false,
+                isAtRight = true
+            )
     } else Modifier
 
     Column(modifier = swipeModifier.padding(16.dp)) {
@@ -275,6 +281,7 @@ private fun HistoryActivityView(
 
     Column(
         modifier = Modifier
+            .verticalScroll(rememberScrollState())
             .swipeHistoryGesture(
                 onSwipeLeft = onHistoryOlder,
                 onSwipeRight = onHistoryNewer,
@@ -356,31 +363,45 @@ private fun HistoryActivityView(
 @Composable
 private fun CompletedActivityDetail(
     state: AgendaUiState,
-    onNoteChange: (String) -> Unit
+    onNoteChange: (String) -> Unit,
+    onToggleDetail: () -> Unit,
+    isExpanded: Boolean
 ) {
     val activity = state.todayActivities.find { it.id == state.selectedActivityId }
         ?: return
     val habit = state.habits.find { it.id == activity.habitId } ?: return
 
     var note by remember(activity.id) { mutableStateOf(activity.note) }
+    val timeFormatter = remember { DateTimeFormatter.ofPattern("h:mm a") }
+    val zone = ZoneId.systemDefault()
 
     Column(modifier = Modifier.padding(16.dp)) {
-        Text(
-            text = habit.name,
-            style = MaterialTheme.typography.headlineSmall
-        )
-        activity.completedAt?.let {
-            val time = java.time.LocalTime.ofInstant(
-                it, java.time.ZoneId.systemDefault()
-            )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
-                text = "completed at ${time.hour}:%02d".format(time.minute),
+                text = habit.name,
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(onClick = onToggleDetail, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    imageVector = if (isExpanded) Icons.Filled.UnfoldLess
+                        else Icons.Filled.UnfoldMore,
+                    contentDescription = if (isExpanded) "collapse" else "expand"
+                )
+            }
+        }
+        activity.completedAt?.let {
+            Text(
+                text = "completed ${it.atZone(zone).format(timeFormatter)}",
                 style = MaterialTheme.typography.bodyMedium
             )
         }
         if (habit.timed && activity.elapsedMs > 0) {
             Text(
-                text = formatElapsed(activity.elapsedMs),
+                text = "duration: ${formatElapsed(activity.elapsedMs)}",
                 style = MaterialTheme.typography.bodyMedium
             )
         }

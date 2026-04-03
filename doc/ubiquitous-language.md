@@ -134,11 +134,17 @@ complete when it is finished.
 
 ### Activity View
 
-The top element on the primary screen, present in all three layouts. Adapts its
-content based on context: shows the current habit with timer controls (main
-layout), a completed activity for review (review layout), or an expanded detail
-view (activity focused layout). When nothing is selected, shows a contextual
-summary (forward-looking in main, backward-looking in review).
+The top element on the primary screen. Appears in two forms:
+
+- **Compact activity view** — the top section in main and review layouts.
+  Shows the current habit with timer controls, or a completed activity for
+  review. When nothing is selected, shows a contextual summary. Has an
+  unfold icon to expand.
+- **Expanded activity view** — the full-screen view in the activity focused
+  layout. Shows all activity detail including history swipe, start/completion
+  times, duration, and editable notes. Has an unfold-less icon to collapse
+  back to compact. Supports swiping left/right to browse past activities
+  for the same habit.
 
 ### Agenda
 
