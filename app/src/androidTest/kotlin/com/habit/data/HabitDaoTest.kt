@@ -77,10 +77,20 @@ class HabitDaoTest {
     }
 
     @Test
-    fun insertReplaces() = runTest {
+    fun insertIgnoresDuplicates() = runTest {
         dao.insertAll(listOf(habit))
         val updated = habit.copy(name = "Qigong Updated")
         dao.insertAll(listOf(updated))
+        val all = dao.allHabits().first()
+        assertEquals(1, all.size)
+        assertEquals("Qigong", all[0].name) // IGNORE keeps original
+    }
+
+    @Test
+    fun updateModifiesExisting() = runTest {
+        dao.insertAll(listOf(habit))
+        val updated = habit.copy(name = "Qigong Updated")
+        dao.update(updated)
         val all = dao.allHabits().first()
         assertEquals(1, all.size)
         assertEquals("Qigong Updated", all[0].name)

@@ -109,7 +109,7 @@ class ActivityDaoTest {
         habitDao.insertAll(listOf(habit))
         activityDao.insert(activity())
         val saved = activityDao.activitiesForDate(today).first()[0]
-        val newStart = Instant.now()
+        val newStart = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MILLIS)
         activityDao.update(saved.copy(startTime = newStart))
 
         val result = activityDao.activitiesForDate(today).first()
