@@ -8,7 +8,7 @@ all features must work fully offline with no Google API dependencies.
 
 - `doc/` — active works in progress (specs, designs)
 - `doc/open/` — planned docs not actively being worked on
-- `doc/closed/` — implemented docs, prefixed with date stamp (e.g., `20260505-doc-name.md`)
+- `doc/completed/` — implemented docs, prefixed with date stamp (e.g., `20260505-doc-name.md`)
 - `doc/habit-ubiquitous-language.md` — DDD domain glossary, canonical term definitions
 - `.claude/skills/` — claude code skills for authoring specs and implementing features
 - `sched/` — legacy printed schedule generator (Python/ReportLab)
@@ -23,7 +23,7 @@ all features must work fully offline with no Google API dependencies.
 
 1. docs start in `doc/` while actively being worked on
 2. docs not currently being worked on go in `doc/open/`
-3. once a doc has been fully implemented, move to `doc/closed/` with a date prefix
+3. once a doc has been fully implemented, move to `doc/completed/` with a date prefix
    (e.g., `20260505-mvp-func-spec.md`)
 
 ## conventions

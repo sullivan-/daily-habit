@@ -26,12 +26,12 @@ Before drafting, do three things:
    Active func specs:
    !`ls doc/*func* 2>/dev/null`
 
-3. Read 1-2 completed UX designs from `doc/closed/` that are most relevant
+3. Read 1-2 completed UX designs from `doc/completed/` that are most relevant
    to the feature. use them to calibrate tone, depth, and structure — not
    as rigid templates.
 
    Available completed UX designs:
-   !`ls doc/closed/*ux* 2>/dev/null`
+   !`ls doc/completed/*ux* 2>/dev/null`
 
    If no completed UX designs exist yet, read any active ones in `doc/`:
    !`ls doc/*ux* 2>/dev/null`
@@ -55,7 +55,7 @@ needs to change, update the func spec — don't silently override it.
 - write in clear, direct prose — not implementation language.
 - italicize opening labels for asides, e.g., *motivation:*, *note:*.
 - active working docs go directly in `doc/`. paused or future docs go in
-  `doc/open/`. implemented docs move to `doc/closed/` with a date prefix
+  `doc/open/`. implemented docs move to `doc/completed/` with a date prefix
   (e.g., `20260505-feature-ux-design.md`).
 - align columns in markdown tables.
 

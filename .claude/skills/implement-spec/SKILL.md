@@ -89,7 +89,7 @@ Do not consider the implementation complete until all tests pass.
 ## Completion
 
 - Summarize what was implemented and any spec deviations or open questions.
-- Offer to move the spec from `doc/` to `doc/closed/` with a date prefix
+- Offer to move the spec from `doc/` to `doc/completed/` with a date prefix
   (e.g., `20260505-mvp-tech-spec.md`).
 
 ## Process

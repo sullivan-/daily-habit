@@ -18,12 +18,12 @@ Before drafting, do two things:
 1. Read project context: `CLAUDE.md` for conventions and design principles,
    and `doc/habit-ubiquitous-language.md` for domain terminology.
 
-2. Read 1-2 completed func specs from `doc/closed/` that are most relevant
+2. Read 1-2 completed func specs from `doc/completed/` that are most relevant
    to the feature being specced. Use them to calibrate tone, depth, and
    structure — not as rigid templates.
 
    Available completed specs:
-   !`ls doc/closed/*func* 2>/dev/null`
+   !`ls doc/completed/*func* 2>/dev/null`
 
    If no completed specs exist yet, read any active specs in `doc/` for
    reference:
@@ -48,7 +48,7 @@ needs to change, update this spec accordingly.
 - write in clear, direct prose — not implementation language.
 - italicize opening labels for asides, e.g., *motivation:*, *note:*.
 - active working specs go directly in `doc/`. specs not actively being
-  worked on go in `doc/open/`. implemented specs move to `doc/closed/`
+  worked on go in `doc/open/`. implemented specs move to `doc/completed/`
   with a date prefix (e.g., `20260505-feature-func-spec.md`).
 - align columns in markdown tables (all `|` symbols in a column should
   line up).

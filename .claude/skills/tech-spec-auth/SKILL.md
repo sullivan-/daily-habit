@@ -29,12 +29,12 @@ Before drafting:
    Paused/future:
    !`ls doc/open/ 2>/dev/null`
 
-3. Read 1-2 completed tech specs from `doc/closed/` that are most relevant
+3. Read 1-2 completed tech specs from `doc/completed/` that are most relevant
    to the feature. Use them to calibrate tone, depth, and structure — not
    as rigid templates.
 
    Completed tech specs:
-   !`ls doc/closed/*tech* 2>/dev/null`
+   !`ls doc/completed/*tech* 2>/dev/null`
 
 4. Read the actual code that will be modified — the relevant entities, DAOs,
    repositories, ViewModels, and Compose screens. A tech spec must be
@@ -45,7 +45,7 @@ Before drafting:
 - use regular English capitalization in spec documents.
 - line limit in markdown files is 100 characters.
 - active working specs go directly in `doc/`. paused or future specs go in
-  `doc/open/`. implemented specs move to `doc/closed/` with a date prefix
+  `doc/open/`. implemented specs move to `doc/completed/` with a date prefix
   (e.g., `20260505-mvp-tech-spec.md`).
 - align columns in markdown tables.
 - include Kotlin code blocks for entity definitions, DAO signatures, ViewModel
