@@ -47,7 +47,8 @@ class AgendaViewModel(
             ) { habits, activities ->
                 _uiState.value.copy(
                     habits = habits,
-                    todayActivities = activities
+                    todayActivities = activities,
+                    today = today
                 )
             }.collect { newState ->
                 _uiState.value = newState
@@ -162,6 +163,23 @@ class AgendaViewModel(
             selectedActivityId = null,
             activeActivity = null
         )
+    }
+
+    fun skipActivity() {
+        val activity = _uiState.value.activeActivity ?: return
+        if (activity.completedAt != null) return
+        _uiState.value = _uiState.value.copy(
+            selectedHabitId = null,
+            selectedActivityId = null,
+            activeActivity = null,
+            layout = Layout.MAIN,
+            historyActivities = emptyList(),
+            historyIndex = -1,
+            historyAnchorIndex = -1
+        )
+        viewModelScope.launch {
+            activityRepo.delete(activity)
+        }
     }
 
     fun startTimer() {

@@ -22,14 +22,22 @@ data class HabitJson(
 )
 
 @Serializable
+data class TallyJson(
+    val name: String,
+    val priority: String
+)
+
+@Serializable
 data class AppConfigJson(
     val dayBoundaryHour: Int,
-    val habits: List<HabitJson>
+    val habits: List<HabitJson>,
+    val tallies: List<TallyJson> = emptyList()
 )
 
 data class AppConfig(
     val dayBoundaryHour: Int,
-    val habits: List<Habit>
+    val habits: List<Habit>,
+    val tallies: List<Tally>
 )
 
 class ConfigLoader(private val context: Context) {
@@ -43,9 +51,15 @@ class ConfigLoader(private val context: Context) {
         val raw = json.decodeFromString<AppConfigJson>(text)
         return AppConfig(
             dayBoundaryHour = raw.dayBoundaryHour,
-            habits = raw.habits.map { it.toHabit() }
+            habits = raw.habits.map { it.toHabit() },
+            tallies = raw.tallies.map { it.toTally() }
         )
     }
+
+    private fun TallyJson.toTally() = Tally(
+        name = name,
+        priority = Priority.valueOf(priority)
+    )
 
     private fun HabitJson.toHabit() = Habit(
         id = id,

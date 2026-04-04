@@ -46,6 +46,7 @@ fun ActivityView(
     onUpdateStartTime: (Long, java.time.Instant?) -> Unit,
     onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
     onDoAgain: (String) -> Unit,
+    onSkip: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val habit = state.selectedHabit
@@ -83,6 +84,7 @@ fun ActivityView(
                 onUpdateStartTime = onUpdateStartTime,
                 onUpdateCompletedAt = onUpdateCompletedAt,
                 onDoAgain = onDoAgain,
+                onSkip = onSkip,
                 isExpanded = state.layout == Layout.ACTIVITY_FOCUSED
             )
         }
@@ -123,6 +125,7 @@ private fun HabitView(
     onUpdateStartTime: (Long, java.time.Instant?) -> Unit,
     onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
     onDoAgain: (String) -> Unit,
+    onSkip: () -> Unit,
     isExpanded: Boolean
 ) {
     val showHistory = isExpanded && state.browsingHistory &&
@@ -156,6 +159,7 @@ private fun HabitView(
             onHistoryNewer = onHistoryNewer,
             onEditHabit = onEditHabit,
             onDoAgain = onDoAgain,
+            onSkip = onSkip,
             isExpanded = isExpanded
         )
     }
@@ -175,6 +179,7 @@ private fun CurrentActivityView(
     onHistoryNewer: () -> Unit,
     onEditHabit: (String) -> Unit,
     onDoAgain: (String) -> Unit,
+    onSkip: () -> Unit,
     isExpanded: Boolean
 ) {
     var note by remember(state.activeActivity?.id) {
@@ -259,6 +264,11 @@ private fun CurrentActivityView(
                 ) {
                     TextButton(onClick = { onDoAgain(habit.id) }) {
                         Text("Again")
+                    }
+                }
+                if (state.activeActivity?.completedAt == null) {
+                    TextButton(onClick = onSkip) {
+                        Text("Skip")
                     }
                 }
                 TextButton(onClick = { onEditHabit(habit.id) }) {

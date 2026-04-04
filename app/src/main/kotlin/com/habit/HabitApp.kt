@@ -36,6 +36,7 @@ class HabitApp : Application() {
     private fun loadHabits() {
         appScope.launch {
             container.habitRepo.loadFromConfig(container.habits)
+            container.tallyRepo.loadFromConfig(container.tallies)
         }
     }
 

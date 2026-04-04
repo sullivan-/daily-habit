@@ -2,11 +2,14 @@ package com.habit.viewmodel
 
 import com.habit.data.Activity
 import com.habit.data.Habit
+import com.habit.data.TargetMode
+import java.time.LocalDate
 
 data class AgendaUiState(
     val layout: Layout = Layout.MAIN,
     val habits: List<Habit> = emptyList(),
     val todayActivities: List<Activity> = emptyList(),
+    val today: LocalDate = LocalDate.now(),
     val selectedHabitId: String? = null,
     val selectedActivityId: Long? = null,
     val activeActivity: Activity? = null,
@@ -34,10 +37,7 @@ data class AgendaUiState(
         get() = historyAnchorIndex >= 0 && historyIndex != historyAnchorIndex
 
     val agendaItems: List<AgendaItem>
-        get() {
-            val today = java.time.LocalDate.now()
-            return sortAgenda(habits, todayActivities, today)
-        }
+        get() = sortAgenda(habits, todayActivities, today)
 
     val completedItems: List<CompletedItem>
         get() {
@@ -57,9 +57,23 @@ data class AgendaUiState(
 
     val totalTarget: Int
         get() = habits
-            .filter { java.time.LocalDate.now().dayOfWeek in it.daysActive }
+            .filter { today.dayOfWeek in it.daysActive }
             .sumOf { it.dailyTarget }
 
     val selectedHabit: Habit?
         get() = selectedHabitId?.let { id -> habits.find { it.id == id } }
+
+    val otherHabits: List<Habit>
+        get() {
+            val agendaHabitIds = agendaItems.map { it.habit.id }.toSet()
+            val completedCounts = todayActivities
+                .filter { it.completedAt != null }
+                .groupBy { it.habitId }
+                .mapValues { it.value.size }
+            return habits.filter { habit ->
+                habit.id !in agendaHabitIds &&
+                    !(habit.dailyTargetMode == TargetMode.EXACTLY &&
+                        (completedCounts[habit.id] ?: 0) >= habit.dailyTarget)
+            }
+        }
 }

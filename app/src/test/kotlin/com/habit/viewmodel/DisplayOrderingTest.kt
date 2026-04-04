@@ -186,6 +186,44 @@ class DisplayOrderingTest {
     }
 
     @Test
+    fun `in-progress activity on non-active day includes habit on agenda`() {
+        val weekdayOnly = habit(
+            "weekday",
+            daysActive = setOf(
+                DayOfWeek.MONDAY, DayOfWeek.TUESDAY,
+                DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY
+            )
+        )
+        val saturday = LocalDate.of(2026, 4, 4)
+        val satMorning = LocalDateTime.of(2026, 4, 4, 9, 0)
+        val inProgress = Activity(
+            id = 1, habitId = "weekday", attributedDate = saturday,
+            startTime = null, note = "", completedAt = null
+        )
+        val result = sortAgenda(listOf(weekdayOnly), listOf(inProgress), saturday, satMorning)
+        assertThat(result.map { it.habit.id }).containsExactly("weekday")
+    }
+
+    @Test
+    fun `completed activity on non-active day does not include habit on agenda`() {
+        val weekdayOnly = habit(
+            "weekday",
+            daysActive = setOf(
+                DayOfWeek.MONDAY, DayOfWeek.TUESDAY,
+                DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY
+            )
+        )
+        val saturday = LocalDate.of(2026, 4, 4)
+        val satMorning = LocalDateTime.of(2026, 4, 4, 9, 0)
+        val completed = Activity(
+            id = 1, habitId = "weekday", attributedDate = saturday,
+            startTime = null, note = "", completedAt = Instant.now()
+        )
+        val result = sortAgenda(listOf(weekdayOnly), listOf(completed), saturday, satMorning)
+        assertThat(result).isEmpty()
+    }
+
+    @Test
     fun `multi-time habit completion claims non-past slots first`() {
         val kegel = habit("kegel", timesOfDay = listOf(8, 12, 16),
             dailyTarget = 3, priority = Priority.LOW)

@@ -14,6 +14,9 @@ interface TallyDao {
     @Query("SELECT * FROM tally WHERE id = :id")
     suspend fun getById(id: Long): Tally?
 
+    @Insert(onConflict = androidx.room.OnConflictStrategy.IGNORE)
+    suspend fun insertAll(tallies: List<Tally>)
+
     @Insert
     suspend fun insert(tally: Tally): Long
 

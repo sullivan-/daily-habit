@@ -19,6 +19,8 @@ import com.habit.viewmodel.AgendaItem
 fun AgendaList(
     items: List<AgendaItem>,
     onSelect: (String) -> Unit,
+    hasOtherHabits: Boolean = false,
+    onOther: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
@@ -48,6 +50,19 @@ fun AgendaList(
             HorizontalDivider(
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
             )
+        }
+        if (hasOtherHabits) {
+            item(key = "other") {
+                Text(
+                    text = "Other\u2026",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOther() }
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                )
+            }
         }
     }
 }

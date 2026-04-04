@@ -30,4 +30,5 @@ class AppContainer(context: Context) {
     val choiceRepo = ChoiceRepository(database.choiceDao())
     val dayBoundary = DayBoundary(config.dayBoundaryHour)
     val habits = config.habits
+    val tallies = config.tallies
 }

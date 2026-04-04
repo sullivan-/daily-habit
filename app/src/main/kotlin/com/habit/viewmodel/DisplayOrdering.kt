@@ -74,6 +74,17 @@ fun sortAgenda(
         .groupBy { it.habitId }
         .mapValues { it.value.size }
 
+    // habits with in-progress activities today get on the agenda
+    // even if not normally active today
+    val inProgressHabitIds = activities
+        .filter { it.completedAt == null }
+        .map { it.habitId }
+        .toSet()
+    val habitsById = habits.associateBy { it.id }
+    val extraHabits = inProgressHabitIds
+        .filter { id -> activeHabits.none { it.id == id } }
+        .mapNotNull { habitsById[it] }
+
     val items = mutableListOf<AgendaItem>()
     for (habit in activeHabits) {
         val done = completedCounts[habit.id] ?: 0
@@ -88,6 +99,15 @@ fun sortAgenda(
                 ))
             }
         }
+    }
+    for (habit in extraHabits) {
+        val done = completedCounts[habit.id] ?: 0
+        items.add(AgendaItem(
+            habit = habit,
+            activityNumber = done + 1,
+            totalTarget = maxOf(habit.dailyTarget, done + 1),
+            assignedTimeOfDay = now.hour
+        ))
     }
 
     return items.sortedWith(

@@ -442,4 +442,83 @@ class AgendaViewModelTest {
         assertThat(vm.uiState.value.selectedActivityId).isEqualTo(99)
         assertThat(vm.uiState.value.selectedHabitId).isEqualTo("vitamins")
     }
+
+    @Test
+    fun `skipActivity deletes in-progress activity and clears selection`() = runTest {
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        assertThat(vm.uiState.value.activeActivity).isNotNull()
+
+        vm.skipActivity()
+
+        assertThat(vm.uiState.value.selectedHabitId).isNull()
+        assertThat(vm.uiState.value.activeActivity).isNull()
+        assertThat(vm.uiState.value.layout).isEqualTo(Layout.MAIN)
+        coVerify { activityRepo.delete(any()) }
+    }
+
+    @Test
+    fun `skipActivity does nothing when no active activity`() = runTest {
+        val vm = createViewModel()
+        // no habit selected — no activeActivity
+        vm.skipActivity()
+        coVerify(exactly = 0) { activityRepo.delete(any()) }
+    }
+
+    @Test
+    fun `today field uses dayBoundary not system clock`() = runTest {
+        val vm = createViewModel()
+        assertThat(vm.uiState.value.today).isEqualTo(today)
+    }
+
+    @Test
+    fun `totalTarget uses dayBoundary today for day filtering`() = runTest {
+        // today is Monday — both habits are active on Monday
+        val vm = createViewModel()
+        // qigong target=2, vitamins target=1 → 3
+        assertThat(vm.uiState.value.totalTarget).isEqualTo(3)
+    }
+
+    @Test
+    fun `otherHabits excludes habits on agenda`() = runTest {
+        val vm = createViewModel()
+        val otherIds = vm.uiState.value.otherHabits.map { it.id }
+        val agendaIds = vm.uiState.value.agendaItems.map { it.habit.id }
+        // no overlap
+        assertThat(otherIds).containsNoneIn(agendaIds)
+    }
+
+    @Test
+    fun `otherHabits excludes exactly habits that met target`() = runTest {
+        // complete vitamins (EXACTLY, target=1)
+        activitiesFlow.value = listOf(
+            Activity(
+                id = 1, habitId = "vitamins", attributedDate = today,
+                startTime = null, note = "", completedAt = Instant.now()
+            )
+        )
+
+        val vm = createViewModel()
+        val otherIds = vm.uiState.value.otherHabits.map { it.id }
+        assertThat(otherIds).doesNotContain("vitamins")
+    }
+
+    @Test
+    fun `otherHabits includes at-least habits that met target`() = runTest {
+        // complete qigong twice (AT_LEAST, target=2) — target met
+        activitiesFlow.value = listOf(
+            Activity(
+                id = 1, habitId = "qigong", attributedDate = today,
+                startTime = null, note = "", completedAt = Instant.now()
+            ),
+            Activity(
+                id = 2, habitId = "qigong", attributedDate = today,
+                startTime = null, note = "", completedAt = Instant.now()
+            )
+        )
+
+        val vm = createViewModel()
+        val otherIds = vm.uiState.value.otherHabits.map { it.id }
+        assertThat(otherIds).contains("qigong")
+    }
 }

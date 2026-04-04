@@ -260,5 +260,15 @@
       "priority": "HIGH",
       "dailyTexts": {}
     }
+  ],
+  "tallies": [
+    {
+      "name": "Coffee",
+      "priority": "MEDIUM"
+    },
+    {
+      "name": "Sweets",
+      "priority": "MEDIUM"
+    }
   ]
 }
