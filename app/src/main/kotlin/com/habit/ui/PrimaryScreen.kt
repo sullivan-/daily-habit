@@ -21,6 +21,7 @@ fun PrimaryScreen(
     onNewHabit: () -> Unit = {},
     onEditHabit: (String) -> Unit = {},
     onHabitList: () -> Unit = {},
+    onChoices: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -78,7 +79,8 @@ fun PrimaryScreen(
                     completedOverExpected = ratios.completedOverExpected,
                     onClick = viewModel::switchToReview,
                     onNewHabit = onNewHabit,
-                    onHabitList = onHabitList
+                    onHabitList = onHabitList,
+                    onChoices = onChoices
                 )
             }
             Layout.REVIEW -> {
@@ -92,7 +94,8 @@ fun PrimaryScreen(
                     remaining = uiState.totalTarget - uiState.progressCount,
                     onClick = viewModel::switchToMain,
                     onNewHabit = onNewHabit,
-                    onHabitList = onHabitList
+                    onHabitList = onHabitList,
+                    onChoices = onChoices
                 )
             }
             Layout.ACTIVITY_FOCUSED -> {
@@ -101,7 +104,8 @@ fun PrimaryScreen(
                     remaining = uiState.totalTarget - uiState.progressCount,
                     onClick = viewModel::switchToMain,
                     onNewHabit = onNewHabit,
-                    onHabitList = onHabitList
+                    onHabitList = onHabitList,
+                    onChoices = onChoices
                 )
             }
         }

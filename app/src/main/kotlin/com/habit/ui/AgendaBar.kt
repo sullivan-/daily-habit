@@ -20,6 +20,7 @@ fun AgendaBar(
     onClick: () -> Unit,
     onNewHabit: () -> Unit,
     onHabitList: () -> Unit,
+    onChoices: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -28,7 +29,7 @@ fun AgendaBar(
             .height(48.dp)
             .background(Color.DarkGray)
     ) {
-        MenuButton(onNewHabit = onNewHabit, onHabitList = onHabitList, modifier = Modifier.align(Alignment.CenterStart))
+        MenuButton(onNewHabit = onNewHabit, onHabitList = onHabitList, onChoices = onChoices, modifier = Modifier.align(Alignment.CenterStart))
         Text(
             text = "$remaining remaining",
             color = Color.White,

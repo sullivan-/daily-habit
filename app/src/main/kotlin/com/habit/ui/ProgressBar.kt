@@ -94,6 +94,7 @@ fun ProgressBar(
     onClick: () -> Unit,
     onNewHabit: () -> Unit,
     onHabitList: () -> Unit,
+    onChoices: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val cot = completedOverTotal.coerceIn(0f, 1f)
@@ -109,7 +110,7 @@ fun ProgressBar(
             .height(48.dp)
             .background(gradient)
     ) {
-        MenuButton(onNewHabit = onNewHabit, onHabitList = onHabitList, modifier = Modifier.align(Alignment.CenterStart))
+        MenuButton(onNewHabit = onNewHabit, onHabitList = onHabitList, onChoices = onChoices, modifier = Modifier.align(Alignment.CenterStart))
         Text(
             text = "$completed/$total",
             color = Color.White,

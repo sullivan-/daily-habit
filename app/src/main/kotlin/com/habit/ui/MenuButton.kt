@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 fun MenuButton(
     onNewHabit: () -> Unit,
     onHabitList: () -> Unit,
+    onChoices: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -66,6 +67,22 @@ fun MenuButton(
                 onClick = {
                     expanded = false
                     onNewHabit()
+                }
+            )
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+            )
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        "Choices",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                },
+                onClick = {
+                    expanded = false
+                    onChoices()
                 }
             )
         }

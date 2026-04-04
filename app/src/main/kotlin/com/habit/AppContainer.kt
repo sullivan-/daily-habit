@@ -3,10 +3,12 @@ package com.habit
 import android.content.Context
 import androidx.room.Room
 import com.habit.data.ActivityRepository
+import com.habit.data.ChoiceRepository
 import com.habit.data.ConfigLoader
 import com.habit.data.DayBoundary
 import com.habit.data.HabitDatabase
 import com.habit.data.HabitRepository
+import com.habit.data.TallyRepository
 
 class AppContainer(context: Context) {
     private val config = ConfigLoader(context).load()
@@ -15,10 +17,17 @@ class AppContainer(context: Context) {
         context,
         HabitDatabase::class.java,
         "habit.db"
-    ).addMigrations(HabitDatabase.MIGRATION_2_3, HabitDatabase.MIGRATION_3_4, HabitDatabase.MIGRATION_4_5).build()
+    ).addMigrations(
+        HabitDatabase.MIGRATION_2_3,
+        HabitDatabase.MIGRATION_3_4,
+        HabitDatabase.MIGRATION_4_5,
+        HabitDatabase.MIGRATION_5_6
+    ).build()
 
     val habitRepo = HabitRepository(database.habitDao())
     val activityRepo = ActivityRepository(database.activityDao())
+    val tallyRepo = TallyRepository(database.tallyDao())
+    val choiceRepo = ChoiceRepository(database.choiceDao())
     val dayBoundary = DayBoundary(config.dayBoundaryHour)
     val habits = config.habits
 }
