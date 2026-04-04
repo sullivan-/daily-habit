@@ -5,13 +5,6 @@ they come up. items here are not committed to, just captured.
 
 ## planned features
 
-### choices (abstinence / avoidance tracking)
-
-track what you're staying away from, ported from `sched/absta.py`:
-- daily tracking of substances/behaviors to avoid (alcohol, nicotine, sugar, etc.)
-- streak counting (days since last)
-- visual calendar view
-
 ### multiple thresholds per habit
 
 a habit should be able to have both a Goal threshold and a Time to Stop

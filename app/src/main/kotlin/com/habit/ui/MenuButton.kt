@@ -36,6 +36,7 @@ fun MenuButton(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
+            offset = androidx.compose.ui.unit.DpOffset(0.dp, (-4).dp),
             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
         ) {
             DropdownMenuItem(
