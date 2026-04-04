@@ -130,6 +130,31 @@ multiple activities and multiple days — completing an activity on a task does 
 automatically remove it from the backlog. The user explicitly marks a task as
 complete when it is finished.
 
+## Choices Domain
+
+### Tally
+
+The persistent definition of something the user is tempted to do but is trying
+to avoid. A tally has a name and a priority. It is the counterpart to a habit —
+where a habit tracks something positive to cultivate, a tally tracks something
+to resist.
+
+Examples: "Nicotine", "Alcohol", "Video Games", "Sweets"
+
+### Choice
+
+A single recorded event on a tally. The user was tempted and chose to abstain
+(resist the impulse) or indulge (give in). A choice captures only a timestamp
+and the decision — no notes or additional data. A tally accumulates many
+choices over time.
+
+### Choices Screen
+
+A separate screen accessed from the menu. Displays the user's tallies as a
+list, each with inline Yes/No buttons for recording choices and an indicator
+showing the recent abstain ratio. Tallies are sorted by a blend of priority
+and recency of activity.
+
 ## UX Context
 
 ### Activity View
