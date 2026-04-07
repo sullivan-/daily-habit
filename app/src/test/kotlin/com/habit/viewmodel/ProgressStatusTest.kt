@@ -29,8 +29,8 @@ class ProgressStatusTest {
         timed = false,
 
 
-        thresholdMinutes = null,
-        thresholdType = null,
+        goalMinutes = null,
+        stopMinutes = null,
         priority = priority,
         dailyTexts = emptyMap()
     )

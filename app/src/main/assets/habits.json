@@ -4,10 +4,21 @@
     {
       "id": "kegel",
       "name": "Kegel",
-      "timesOfDay": [8, 12, 16],
+      "timesOfDay": [
+        8,
+        12,
+        16
+      ],
       "sortOrder": 1,
-      "daysActive": ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY",
-                      "FRIDAY", "SATURDAY"],
+      "daysActive": [
+        "SUNDAY",
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ],
       "dailyTarget": 3,
       "dailyTargetMode": "AT_LEAST",
       "timed": false,
@@ -17,54 +28,85 @@
     {
       "id": "qigong-training",
       "name": "Qigong Training",
-      "timesOfDay": [9],
+      "timesOfDay": [
+        9
+      ],
       "sortOrder": 1,
-      "daysActive": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+      "daysActive": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY"
+      ],
       "dailyTarget": 1,
       "dailyTargetMode": "AT_LEAST",
       "timed": true,
-      "thresholdMinutes": 30,
-      "thresholdType": "GOAL",
       "priority": "HIGH",
-      "dailyTexts": {}
+      "dailyTexts": {},
+      "goalMinutes": 30
     },
     {
       "id": "prayer",
       "name": "Prayer",
-      "timesOfDay": [9],
+      "timesOfDay": [
+        9
+      ],
       "sortOrder": 2,
-      "daysActive": ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY",
-                      "FRIDAY", "SATURDAY"],
+      "daysActive": [
+        "SUNDAY",
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ],
       "dailyTarget": 1,
       "dailyTargetMode": "AT_LEAST",
       "timed": true,
-      "thresholdMinutes": 5,
-      "thresholdType": "GOAL",
       "priority": "HIGH",
       "dailyTexts": {
         "SUNDAY": "church"
-      }
+      },
+      "goalMinutes": 5
     },
     {
       "id": "bible-study",
       "name": "Bible Study",
-      "timesOfDay": [9],
+      "timesOfDay": [
+        9
+      ],
       "sortOrder": 3,
-      "daysActive": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+      "daysActive": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY"
+      ],
       "dailyTarget": 1,
       "dailyTargetMode": "AT_LEAST",
       "timed": true,
-      "thresholdMinutes": 10,
-      "thresholdType": "GOAL",
-      "priority": "MEDIUM_LOW"
+      "priority": "MEDIUM_LOW",
+      "goalMinutes": 10
     },
     {
       "id": "vitamins",
       "name": "Vitamins",
-      "timesOfDay": [10],
+      "timesOfDay": [
+        10
+      ],
       "sortOrder": 1,
-      "daysActive": ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY",
-                      "FRIDAY", "SATURDAY"],
+      "daysActive": [
+        "SUNDAY",
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ],
       "dailyTarget": 1,
       "dailyTargetMode": "EXACTLY",
       "timed": false,
@@ -74,10 +116,19 @@
     {
       "id": "supplements",
       "name": "Supplements",
-      "timesOfDay": [10],
+      "timesOfDay": [
+        10
+      ],
       "sortOrder": 2,
-      "daysActive": ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY",
-                      "FRIDAY", "SATURDAY"],
+      "daysActive": [
+        "SUNDAY",
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ],
       "dailyTarget": 1,
       "dailyTargetMode": "EXACTLY",
       "timed": false,
@@ -87,24 +138,41 @@
     {
       "id": "badux",
       "name": "Badux",
-      "timesOfDay": [11, 15],
+      "timesOfDay": [
+        11,
+        15
+      ],
       "sortOrder": 1,
-      "daysActive": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+      "daysActive": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY"
+      ],
       "dailyTarget": 2,
       "dailyTargetMode": "AT_LEAST",
       "timed": true,
-      "thresholdMinutes": 50,
-      "thresholdType": "TIME_TO_STOP",
       "priority": "HIGH",
-      "dailyTexts": {}
+      "dailyTexts": {},
+      "stopMinutes": 50
     },
     {
       "id": "body-care",
       "name": "Body Care",
-      "timesOfDay": [13],
+      "timesOfDay": [
+        13
+      ],
       "sortOrder": 1,
-      "daysActive": ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY",
-                      "FRIDAY", "SATURDAY"],
+      "daysActive": [
+        "SUNDAY",
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ],
       "dailyTarget": 1,
       "dailyTargetMode": "AT_LEAST",
       "timed": false,
@@ -122,38 +190,61 @@
     {
       "id": "read",
       "name": "Read",
-      "timesOfDay": [13],
+      "timesOfDay": [
+        13
+      ],
       "sortOrder": 2,
-      "daysActive": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+      "daysActive": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY"
+      ],
       "dailyTarget": 1,
       "dailyTargetMode": "AT_LEAST",
       "timed": true,
-      "thresholdMinutes": 15,
-      "thresholdType": "GOAL",
       "priority": "MEDIUM_HIGH",
-      "dailyTexts": {}
+      "dailyTexts": {},
+      "goalMinutes": 15
     },
     {
       "id": "health-research",
       "name": "Health Research",
-      "timesOfDay": [13],
+      "timesOfDay": [
+        13
+      ],
       "sortOrder": 3,
-      "daysActive": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+      "daysActive": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY"
+      ],
       "dailyTarget": 1,
       "dailyTargetMode": "AT_LEAST",
       "timed": true,
-      "thresholdMinutes": 15,
-      "thresholdType": "GOAL",
       "priority": "MEDIUM_HIGH",
-      "dailyTexts": {}
+      "dailyTexts": {},
+      "goalMinutes": 15
     },
     {
       "id": "ginseng",
       "name": "Ginseng",
-      "timesOfDay": [15],
+      "timesOfDay": [
+        15
+      ],
       "sortOrder": 1,
-      "daysActive": ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY",
-                      "FRIDAY", "SATURDAY"],
+      "daysActive": [
+        "SUNDAY",
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ],
       "dailyTarget": 1,
       "dailyTargetMode": "EXACTLY",
       "timed": false,
@@ -163,25 +254,42 @@
     {
       "id": "qigong-practice",
       "name": "Qigong Practice",
-      "timesOfDay": [15],
+      "timesOfDay": [
+        15
+      ],
       "sortOrder": 2,
-      "daysActive": ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY",
-                      "FRIDAY", "SATURDAY"],
+      "daysActive": [
+        "SUNDAY",
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ],
       "dailyTarget": 1,
       "dailyTargetMode": "AT_LEAST",
       "timed": true,
-      "thresholdMinutes": 15,
-      "thresholdType": "GOAL",
       "priority": "HIGH",
-      "dailyTexts": {}
+      "dailyTexts": {},
+      "goalMinutes": 15
     },
     {
       "id": "dead-hangs",
       "name": "Dead Hangs",
-      "timesOfDay": [16],
+      "timesOfDay": [
+        16
+      ],
       "sortOrder": 1,
-      "daysActive": ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY",
-                      "FRIDAY", "SATURDAY"],
+      "daysActive": [
+        "SUNDAY",
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ],
       "dailyTarget": 1,
       "dailyTargetMode": "AT_LEAST",
       "timed": false,
@@ -191,28 +299,44 @@
     {
       "id": "home-todo",
       "name": "Home / TODO",
-      "timesOfDay": [16],
+      "timesOfDay": [
+        16
+      ],
       "sortOrder": 2,
-      "daysActive": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+      "daysActive": [
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY"
+      ],
       "dailyTarget": 1,
       "dailyTargetMode": "AT_LEAST",
       "timed": true,
-      "thresholdMinutes": 50,
-      "thresholdType": "TIME_TO_STOP",
       "priority": "MEDIUM_HIGH",
       "dailyTexts": {
         "MONDAY": "tend plants",
         "WEDNESDAY": "backups",
         "FRIDAY": "cleaning"
-      }
+      },
+      "stopMinutes": 50
     },
     {
       "id": "ear-treatment",
       "name": "Ear Treatment",
-      "timesOfDay": [16],
+      "timesOfDay": [
+        16
+      ],
       "sortOrder": 3,
-      "daysActive": ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY",
-                      "FRIDAY", "SATURDAY"],
+      "daysActive": [
+        "SUNDAY",
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ],
       "dailyTarget": 1,
       "dailyTargetMode": "AT_LEAST",
       "timed": false,
@@ -222,25 +346,42 @@
     {
       "id": "meditate",
       "name": "Meditate",
-      "timesOfDay": [21],
+      "timesOfDay": [
+        21
+      ],
       "sortOrder": 1,
-      "daysActive": ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY",
-                      "FRIDAY", "SATURDAY"],
+      "daysActive": [
+        "SUNDAY",
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ],
       "dailyTarget": 1,
       "dailyTargetMode": "AT_LEAST",
       "timed": true,
-      "thresholdMinutes": 15,
-      "thresholdType": "GOAL",
       "priority": "MEDIUM_HIGH",
-      "dailyTexts": {}
+      "dailyTexts": {},
+      "goalMinutes": 15
     },
     {
       "id": "journal",
       "name": "Journal",
-      "timesOfDay": [21],
+      "timesOfDay": [
+        21
+      ],
       "sortOrder": 2,
-      "daysActive": ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY",
-                      "FRIDAY", "SATURDAY"],
+      "daysActive": [
+        "SUNDAY",
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ],
       "dailyTarget": 1,
       "dailyTargetMode": "AT_LEAST",
       "timed": false,
@@ -250,10 +391,19 @@
     {
       "id": "waterpick",
       "name": "Waterpick",
-      "timesOfDay": [22],
+      "timesOfDay": [
+        22
+      ],
       "sortOrder": 1,
-      "daysActive": ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY",
-                      "FRIDAY", "SATURDAY"],
+      "daysActive": [
+        "SUNDAY",
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ],
       "dailyTarget": 1,
       "dailyTargetMode": "AT_LEAST",
       "timed": false,

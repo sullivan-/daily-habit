@@ -36,7 +36,8 @@ class AgendaViewModel(
     val chimeEvents: SharedFlow<ChimeEvent> = _chimeEvents.asSharedFlow()
 
     private var timerJob: Job? = null
-    private var thresholdChimeFired: Boolean = false
+    private var goalChimeFired: Boolean = false
+    private var stopChimeFired: Boolean = false
 
     init {
         viewModelScope.launch {
@@ -196,7 +197,8 @@ class AgendaViewModel(
 
         viewModelScope.launch { activityRepo.update(started) }
 
-        thresholdChimeFired = false
+        goalChimeFired = false
+        stopChimeFired = false
         startTimerTick()
     }
 
@@ -205,11 +207,11 @@ class AgendaViewModel(
         val state = _uiState.value
         val timedHabitId = state.timedHabitId ?: state.selectedHabitId
         val habit = state.habits.find { it.id == timedHabitId }
-        val thresholdMs = habit?.thresholdMinutes?.let { it * 60 * 1000L } ?: 0
+        val goalMs = habit?.goalMinutes?.let { it * 60 * 1000L } ?: 0
+        val stopMs = habit?.stopMinutes?.let { it * 60 * 1000L } ?: 0
         val currentElapsed = state.activeActivity?.elapsedMs ?: 0
-        if (thresholdMs > 0 && currentElapsed >= thresholdMs) {
-            thresholdChimeFired = true
-        }
+        if (goalMs > 0 && currentElapsed >= goalMs) goalChimeFired = true
+        if (stopMs > 0 && currentElapsed >= stopMs) stopChimeFired = true
 
         _uiState.value = state.copy(timerRunning = true, timedHabitId = timedHabitId)
 
@@ -229,9 +231,13 @@ class AgendaViewModel(
 
                 _uiState.value = currentState.copy(timerTickMs = elapsed)
 
-                if (thresholdMs > 0 && !thresholdChimeFired && elapsed >= thresholdMs) {
+                if (goalMs > 0 && !goalChimeFired && elapsed >= goalMs) {
                     _chimeEvents.tryEmit(ChimeEvent.Threshold)
-                    thresholdChimeFired = true
+                    goalChimeFired = true
+                }
+                if (stopMs > 0 && !stopChimeFired && elapsed >= stopMs) {
+                    _chimeEvents.tryEmit(ChimeEvent.Threshold)
+                    stopChimeFired = true
                 }
             }
         }

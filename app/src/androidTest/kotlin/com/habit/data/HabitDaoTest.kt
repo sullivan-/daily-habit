@@ -32,8 +32,8 @@ class HabitDaoTest {
         timed = true,
 
 
-        thresholdMinutes = 30,
-        thresholdType = ThresholdType.GOAL,
+        goalMinutes = 30,
+        stopMinutes = null,
         priority = Priority.HIGH,
         dailyTexts = mapOf(DayOfWeek.MONDAY to "standing form")
     )

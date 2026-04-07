@@ -14,8 +14,8 @@ data class Habit(
     val dailyTarget: Int,
     val dailyTargetMode: TargetMode,
     val timed: Boolean,
-    val thresholdMinutes: Int?,
-    val thresholdType: ThresholdType?,
+    val goalMinutes: Int?,
+    val stopMinutes: Int?,
     val priority: Priority,
     val dailyTexts: Map<DayOfWeek, String>
 )

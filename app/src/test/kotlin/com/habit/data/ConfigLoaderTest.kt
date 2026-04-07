@@ -33,8 +33,8 @@ class ConfigLoaderTest {
                 "dailyTarget": 2,
                 "dailyTargetMode": "AT_LEAST",
                 "timed": true,
-                "thresholdMinutes": 30,
-                "thresholdType": "GOAL",
+                "goalMinutes": 30,
+                "stopMinutes": null,
                 "priority": "HIGH",
                 "dailyTexts": {"MONDAY": "standing form"}
             }]
@@ -55,8 +55,8 @@ class ConfigLoaderTest {
         assertThat(habit.dailyTarget).isEqualTo(2)
         assertThat(habit.dailyTargetMode).isEqualTo(TargetMode.AT_LEAST)
         assertThat(habit.timed).isTrue()
-        assertThat(habit.thresholdMinutes).isEqualTo(30)
-        assertThat(habit.thresholdType).isEqualTo(ThresholdType.GOAL)
+        assertThat(habit.goalMinutes).isEqualTo(30)
+        assertThat(habit.stopMinutes).isNull()
         assertThat(habit.priority).isEqualTo(Priority.HIGH)
         assertThat(habit.dailyTexts).isEqualTo(
             mapOf(DayOfWeek.MONDAY to "standing form")
@@ -83,8 +83,8 @@ class ConfigLoaderTest {
         """).load()
 
         val habit = config.habits[0]
-        assertThat(habit.thresholdMinutes).isNull()
-        assertThat(habit.thresholdType).isNull()
+        assertThat(habit.goalMinutes).isNull()
+        assertThat(habit.stopMinutes).isNull()
         assertThat(habit.dailyTexts).isEmpty()
     }
 
@@ -136,28 +136,27 @@ class ConfigLoaderTest {
     }
 
     @Test
-    fun `converts threshold types`() {
-        listOf("GOAL", "TIME_TO_STOP").forEach { tt ->
-            val config = loaderWithJson("""
-            {
-                "dayBoundaryHour": 2,
-                "habits": [{
-                    "id": "test",
-                    "name": "Test",
-                    "timesOfDay": [8],
-                    "sortOrder": 1,
-                    "daysActive": ["MONDAY"],
-                    "dailyTarget": 1,
-                    "dailyTargetMode": "AT_LEAST",
-                    "timed": true,
-                    "thresholdMinutes": 15,
-                    "thresholdType": "$tt",
-                    "priority": "MEDIUM"
-                }]
-            }
-            """).load()
-            assertThat(config.habits[0].thresholdType).isEqualTo(ThresholdType.valueOf(tt))
+    fun `converts goal and stop minutes`() {
+        val config = loaderWithJson("""
+        {
+            "dayBoundaryHour": 2,
+            "habits": [{
+                "id": "test",
+                "name": "Test",
+                "timesOfDay": [8],
+                "sortOrder": 1,
+                "daysActive": ["MONDAY"],
+                "dailyTarget": 1,
+                "dailyTargetMode": "AT_LEAST",
+                "timed": true,
+                "goalMinutes": 15,
+                "stopMinutes": 45,
+                "priority": "MEDIUM"
+            }]
         }
+        """).load()
+        assertThat(config.habits[0].goalMinutes).isEqualTo(15)
+        assertThat(config.habits[0].stopMinutes).isEqualTo(45)
     }
 
     @Test

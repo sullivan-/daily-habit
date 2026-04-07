@@ -36,8 +36,8 @@ class ActivityDaoTest {
         timed = true,
 
 
-        thresholdMinutes = 30,
-        thresholdType = ThresholdType.GOAL,
+        goalMinutes = 30,
+        stopMinutes = null,
         priority = Priority.HIGH,
         dailyTexts = emptyMap()
     )

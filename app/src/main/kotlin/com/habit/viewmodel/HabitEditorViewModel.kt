@@ -6,7 +6,6 @@ import com.habit.data.Habit
 import com.habit.data.HabitRepository
 import com.habit.data.Priority
 import com.habit.data.TargetMode
-import com.habit.data.ThresholdType
 import java.time.DayOfWeek
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,8 +21,8 @@ data class HabitEditorState(
     val dailyTarget: Int = 1,
     val dailyTargetMode: TargetMode = TargetMode.AT_LEAST,
     val timed: Boolean = false,
-    val thresholdMinutes: Int? = null,
-    val thresholdType: ThresholdType? = null,
+    val goalMinutes: Int? = null,
+    val stopMinutes: Int? = null,
     val priority: Priority = Priority.MEDIUM,
     val dailyTexts: Map<DayOfWeek, String> = emptyMap(),
     val isNew: Boolean = true,
@@ -57,8 +56,8 @@ class HabitEditorViewModel(
                 dailyTarget = habit.dailyTarget,
                 dailyTargetMode = habit.dailyTargetMode,
                 timed = habit.timed,
-                thresholdMinutes = habit.thresholdMinutes,
-                thresholdType = habit.thresholdType,
+                goalMinutes = habit.goalMinutes,
+                stopMinutes = habit.stopMinutes,
                 priority = habit.priority,
                 dailyTexts = habit.dailyTexts,
                 isNew = false,
@@ -118,23 +117,18 @@ class HabitEditorViewModel(
     fun setTimed(timed: Boolean) {
         _state.value = _state.value.copy(
             timed = timed,
-            thresholdMinutes = if (!timed) null else _state.value.thresholdMinutes,
-            thresholdType = if (!timed) null else _state.value.thresholdType,
+            goalMinutes = if (!timed) null else _state.value.goalMinutes,
+            stopMinutes = if (!timed) null else _state.value.stopMinutes,
             dirty = true
         )
     }
 
-    fun setThresholdMinutes(minutes: Int?) {
-        _state.value = _state.value.copy(
-            thresholdMinutes = minutes,
-            thresholdType = if (minutes == null) null else
-                _state.value.thresholdType ?: ThresholdType.GOAL,
-            dirty = true
-        )
+    fun setGoalMinutes(minutes: Int?) {
+        _state.value = _state.value.copy(goalMinutes = minutes, dirty = true)
     }
 
-    fun setThresholdType(type: ThresholdType?) {
-        _state.value = _state.value.copy(thresholdType = type, dirty = true)
+    fun setStopMinutes(minutes: Int?) {
+        _state.value = _state.value.copy(stopMinutes = minutes, dirty = true)
     }
 
     fun setPriority(priority: Priority) {
@@ -162,8 +156,8 @@ class HabitEditorViewModel(
                 dailyTarget = s.dailyTarget,
                 dailyTargetMode = s.dailyTargetMode,
                 timed = s.timed,
-                thresholdMinutes = s.thresholdMinutes,
-                thresholdType = s.thresholdType,
+                goalMinutes = s.goalMinutes,
+                stopMinutes = s.stopMinutes,
                 priority = s.priority,
                 dailyTexts = s.dailyTexts
             )

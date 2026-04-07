@@ -8,7 +8,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [Habit::class, Activity::class, Tally::class, Choice::class],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -103,6 +103,20 @@ abstract class HabitDatabase : RoomDatabase() {
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_choice_timestamp ON choice(timestamp)"
                 )
+            }
+        }
+
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE habit RENAME COLUMN thresholdMinutes TO goalMinutes"
+                )
+                db.execSQL("ALTER TABLE habit ADD COLUMN stopMinutes INTEGER")
+                db.execSQL("""
+                    UPDATE habit SET stopMinutes = goalMinutes, goalMinutes = NULL
+                    WHERE thresholdType = 'TIME_TO_STOP'
+                """)
+                db.execSQL("ALTER TABLE habit DROP COLUMN thresholdType")
             }
         }
     }

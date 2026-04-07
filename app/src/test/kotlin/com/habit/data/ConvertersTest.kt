@@ -73,13 +73,5 @@ class ConvertersTest {
             .isEqualTo(TargetMode.AT_LEAST)
         assertThat(converters.toPriority(converters.fromPriority(Priority.HIGH)))
             .isEqualTo(Priority.HIGH)
-        assertThat(converters.toThresholdType(converters.fromThresholdType(ThresholdType.GOAL)))
-            .isEqualTo(ThresholdType.GOAL)
-    }
-
-    @Test
-    fun `null ThresholdType round-trip`() {
-        assertThat(converters.fromThresholdType(null)).isNull()
-        assertThat(converters.toThresholdType(null)).isNull()
     }
 }

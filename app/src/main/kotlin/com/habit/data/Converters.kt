@@ -60,12 +60,6 @@ class Converters {
     fun toTargetMode(value: String): TargetMode = TargetMode.valueOf(value)
 
     @TypeConverter
-    fun fromThresholdType(type: ThresholdType?): String? = type?.name
-
-    @TypeConverter
-    fun toThresholdType(value: String?): ThresholdType? = value?.let { ThresholdType.valueOf(it) }
-
-    @TypeConverter
     fun fromPriority(priority: Priority): String = priority.name
 
     @TypeConverter

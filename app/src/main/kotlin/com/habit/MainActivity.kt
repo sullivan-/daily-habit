@@ -73,7 +73,9 @@ class MainActivity : ComponentActivity() {
                         context = this@MainActivity,
                         habitName = habit.name,
                         startEpochMs = startEpochMs,
-                        thresholdMs = (habit.thresholdMinutes ?: 0) * 60 * 1000L
+                        thresholdMs = listOfNotNull(
+                            habit.goalMinutes, habit.stopMinutes
+                        ).minOrNull()?.let { it * 60 * 1000L } ?: 0L
                     ))
                     serviceRunning = true
                 } else if (!state.timerRunning && serviceRunning) {

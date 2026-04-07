@@ -15,8 +15,8 @@ data class HabitJson(
     val dailyTarget: Int,
     val dailyTargetMode: String,
     val timed: Boolean,
-    val thresholdMinutes: Int? = null,
-    val thresholdType: String? = null,
+    val goalMinutes: Int? = null,
+    val stopMinutes: Int? = null,
     val priority: String,
     val dailyTexts: Map<String, String> = emptyMap()
 )
@@ -72,8 +72,8 @@ class ConfigLoader(private val context: Context) {
         dailyTarget = dailyTarget,
         dailyTargetMode = TargetMode.valueOf(dailyTargetMode),
         timed = timed,
-        thresholdMinutes = thresholdMinutes,
-        thresholdType = thresholdType?.let { ThresholdType.valueOf(it) },
+        goalMinutes = goalMinutes,
+        stopMinutes = stopMinutes,
         priority = Priority.valueOf(priority),
         dailyTexts = dailyTexts.mapKeys { DayOfWeek.valueOf(it.key) }
     )

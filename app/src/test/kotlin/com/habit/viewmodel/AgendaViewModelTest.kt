@@ -8,7 +8,7 @@ import com.habit.data.Habit
 import com.habit.data.HabitRepository
 import com.habit.data.Priority
 import com.habit.data.TargetMode
-import com.habit.data.ThresholdType
+
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -50,8 +50,8 @@ class AgendaViewModelTest {
         timed = true,
 
 
-        thresholdMinutes = 30,
-        thresholdType = ThresholdType.GOAL,
+        goalMinutes = 30,
+        stopMinutes = null,
         priority = Priority.HIGH,
         dailyTexts = emptyMap()
     )
@@ -67,8 +67,8 @@ class AgendaViewModelTest {
         timed = false,
 
 
-        thresholdMinutes = null,
-        thresholdType = null,
+        goalMinutes = null,
+        stopMinutes = null,
         priority = Priority.MEDIUM,
         dailyTexts = emptyMap()
     )

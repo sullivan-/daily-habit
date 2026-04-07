@@ -5,7 +5,7 @@ import com.habit.data.Habit
 import com.habit.data.HabitRepository
 import com.habit.data.Priority
 import com.habit.data.TargetMode
-import com.habit.data.ThresholdType
+
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -35,8 +35,8 @@ class HabitEditorViewModelTest {
         dailyTarget = 2,
         dailyTargetMode = TargetMode.AT_LEAST,
         timed = true,
-        thresholdMinutes = 30,
-        thresholdType = ThresholdType.GOAL,
+        goalMinutes = 30,
+        stopMinutes = null,
         priority = Priority.HIGH,
         dailyTexts = mapOf(DayOfWeek.MONDAY to "standing form")
     )
@@ -76,7 +76,7 @@ class HabitEditorViewModelTest {
         assertThat(state.name).isEqualTo("Qigong")
         assertThat(state.timesOfDay).isEqualTo(listOf(7, 15))
         assertThat(state.priority).isEqualTo(Priority.HIGH)
-        assertThat(state.thresholdMinutes).isEqualTo(30)
+        assertThat(state.goalMinutes).isEqualTo(30)
         assertThat(state.dailyTexts[DayOfWeek.MONDAY]).isEqualTo("standing form")
         assertThat(state.dirty).isFalse()
     }
@@ -163,35 +163,51 @@ class HabitEditorViewModelTest {
     }
 
     @Test
-    fun `setTimed clears threshold fields when false`() {
+    fun `setTimed clears goal and stop fields when false`() {
         val vm = createViewModel()
         vm.setTimed(true)
-        vm.setThresholdMinutes(30)
-        assertThat(vm.state.value.thresholdMinutes).isEqualTo(30)
-        assertThat(vm.state.value.thresholdType).isEqualTo(ThresholdType.GOAL)
+        vm.setGoalMinutes(30)
+        assertThat(vm.state.value.goalMinutes).isEqualTo(30)
 
         vm.setTimed(false)
-        assertThat(vm.state.value.thresholdMinutes).isNull()
-        assertThat(vm.state.value.thresholdType).isNull()
+        assertThat(vm.state.value.goalMinutes).isNull()
+        assertThat(vm.state.value.stopMinutes).isNull()
     }
 
     @Test
-    fun `setThresholdMinutes initializes thresholdType to GOAL`() {
+    fun `setGoalMinutes sets goal`() {
         val vm = createViewModel()
         vm.setTimed(true)
-        assertThat(vm.state.value.thresholdType).isNull()
 
-        vm.setThresholdMinutes(15)
-        assertThat(vm.state.value.thresholdType).isEqualTo(ThresholdType.GOAL)
+        vm.setGoalMinutes(15)
+        assertThat(vm.state.value.goalMinutes).isEqualTo(15)
     }
 
     @Test
-    fun `setThresholdMinutes null clears thresholdType`() {
+    fun `setGoalMinutes null clears goal`() {
         val vm = createViewModel()
         vm.setTimed(true)
-        vm.setThresholdMinutes(15)
-        vm.setThresholdMinutes(null)
-        assertThat(vm.state.value.thresholdType).isNull()
+        vm.setGoalMinutes(15)
+        vm.setGoalMinutes(null)
+        assertThat(vm.state.value.goalMinutes).isNull()
+    }
+
+    @Test
+    fun `setStopMinutes sets stop`() {
+        val vm = createViewModel()
+        vm.setTimed(true)
+
+        vm.setStopMinutes(45)
+        assertThat(vm.state.value.stopMinutes).isEqualTo(45)
+    }
+
+    @Test
+    fun `setStopMinutes null clears stop`() {
+        val vm = createViewModel()
+        vm.setTimed(true)
+        vm.setStopMinutes(45)
+        vm.setStopMinutes(null)
+        assertThat(vm.state.value.stopMinutes).isNull()
     }
 
     @Test

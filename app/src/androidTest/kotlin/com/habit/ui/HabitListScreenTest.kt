@@ -47,8 +47,8 @@ class HabitListScreenTest {
         dailyTarget = 2,
         dailyTargetMode = TargetMode.AT_LEAST,
         timed = true,
-        thresholdMinutes = 30,
-        thresholdType = null,
+        goalMinutes = 30,
+        stopMinutes = null,
         priority = Priority.HIGH,
         dailyTexts = emptyMap()
     )
@@ -62,8 +62,8 @@ class HabitListScreenTest {
         dailyTarget = 1,
         dailyTargetMode = TargetMode.EXACTLY,
         timed = false,
-        thresholdMinutes = null,
-        thresholdType = null,
+        goalMinutes = null,
+        stopMinutes = null,
         priority = Priority.MEDIUM,
         dailyTexts = emptyMap()
     )
@@ -80,8 +80,8 @@ class HabitListScreenTest {
         dailyTarget = 3,
         dailyTargetMode = TargetMode.AT_LEAST,
         timed = true,
-        thresholdMinutes = 50,
-        thresholdType = null,
+        goalMinutes = 50,
+        stopMinutes = null,
         priority = Priority.MEDIUM_HIGH,
         dailyTexts = emptyMap()
     )
