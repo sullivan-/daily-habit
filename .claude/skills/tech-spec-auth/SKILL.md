@@ -42,13 +42,13 @@ Before drafting:
 
 ## Format
 
-- use regular English capitalization in spec documents.
-- line limit in markdown files is 100 characters.
-- active working specs go directly in `doc/`. paused or future specs go in
+- Use regular English capitalization in spec documents.
+- Line limit in markdown files is 120 characters.
+- Active working specs go directly in `doc/`. paused or future specs go in
   `doc/open/`. implemented specs move to `doc/completed/` with a date prefix
   (e.g., `20260505-mvp-tech-spec.md`).
-- align columns in markdown tables.
-- include Kotlin code blocks for entity definitions, DAO signatures, ViewModel
+- Align columns in markdown tables.
+- Include Kotlin code blocks for entity definitions, DAO signatures, ViewModel
   state classes, and key data structures.
 
 ## Structure
