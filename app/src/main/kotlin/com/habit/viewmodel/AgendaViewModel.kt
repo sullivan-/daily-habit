@@ -183,6 +183,27 @@ class AgendaViewModel(
         }
     }
 
+    fun deleteActivity() {
+        val activity = _uiState.value.activeActivity ?: return
+        if (_uiState.value.timerRunning) {
+            timerJob?.cancel()
+        }
+        _uiState.value = _uiState.value.copy(
+            selectedHabitId = null,
+            selectedActivityId = null,
+            activeActivity = null,
+            timerRunning = false,
+            timedHabitId = null,
+            layout = Layout.MAIN,
+            historyActivities = emptyList(),
+            historyIndex = -1,
+            historyAnchorIndex = -1
+        )
+        viewModelScope.launch {
+            activityRepo.delete(activity)
+        }
+    }
+
     fun startTimer() {
         val state = _uiState.value
         val activity = state.activeActivity ?: return

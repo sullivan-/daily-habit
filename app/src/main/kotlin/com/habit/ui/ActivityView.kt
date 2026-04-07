@@ -1,10 +1,16 @@
 package com.habit.ui
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.UnfoldLess
 import androidx.compose.material.icons.filled.UnfoldMore
@@ -28,6 +34,8 @@ import com.habit.data.Activity
 import com.habit.data.Habit
 import com.habit.viewmodel.AgendaUiState
 import com.habit.viewmodel.Layout
+import java.time.Instant
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -48,6 +56,7 @@ fun ActivityView(
     onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
     onDoAgain: (String) -> Unit,
     onSkip: () -> Unit = {},
+    onDelete: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val habit = state.selectedHabit
@@ -86,6 +95,7 @@ fun ActivityView(
                 onUpdateCompletedAt = onUpdateCompletedAt,
                 onDoAgain = onDoAgain,
                 onSkip = onSkip,
+                onDelete = onDelete,
                 isExpanded = state.layout == Layout.ACTIVITY_FOCUSED
             )
         }
@@ -127,6 +137,7 @@ private fun HabitView(
     onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
     onDoAgain: (String) -> Unit,
     onSkip: () -> Unit,
+    onDelete: () -> Unit,
     isExpanded: Boolean
 ) {
     val showHistory = isExpanded && state.browsingHistory &&
@@ -161,6 +172,9 @@ private fun HabitView(
             onEditHabit = onEditHabit,
             onDoAgain = onDoAgain,
             onSkip = onSkip,
+            onDelete = onDelete,
+            onUpdateStartTime = onUpdateStartTime,
+            onUpdateCompletedAt = onUpdateCompletedAt,
             isExpanded = isExpanded
         )
     }
@@ -181,6 +195,9 @@ private fun CurrentActivityView(
     onEditHabit: (String) -> Unit,
     onDoAgain: (String) -> Unit,
     onSkip: () -> Unit,
+    onDelete: () -> Unit,
+    onUpdateStartTime: (Long, java.time.Instant?) -> Unit,
+    onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
     isExpanded: Boolean
 ) {
     var note by remember(state.activeActivity?.id) {
@@ -246,6 +263,13 @@ private fun CurrentActivityView(
             )
         }
 
+        EditableActivityTimes(
+            activity = state.activeActivity,
+            habit = habit,
+            onUpdateStartTime = onUpdateStartTime,
+            onUpdateCompletedAt = onUpdateCompletedAt
+        )
+
         NoteField(
             value = note,
             onValueChange = { newNote ->
@@ -259,7 +283,7 @@ private fun CurrentActivityView(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(
+            horizontalArrangement = Arrangement.spacedBy(
                 8.dp, Alignment.CenterHorizontally
             )
         ) {
@@ -276,8 +300,11 @@ private fun CurrentActivityView(
                     Text("Skip")
                 }
             }
+            Button(onClick = onDelete, elevation = buttonElevation()) {
+                Text("Delete")
+            }
             Button(onClick = { onEditHabit(habit.id) }, elevation = buttonElevation()) {
-                Text("Edit")
+                Text("Edit Habit")
             }
         }
     }
@@ -348,28 +375,12 @@ private fun HistoryActivityView(
             modifier = Modifier.padding(top = 4.dp)
         )
 
-        if (habit.timed) {
-            activity.startTime?.let {
-                Text(
-                    text = "started ${it.atZone(zone).format(timeFormatter)}",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        }
-
-        activity.completedAt?.let {
-            Text(
-                text = "completed ${it.atZone(zone).format(timeFormatter)}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-
-        if (habit.timed && activity.elapsedMs > 0) {
-            Text(
-                text = "duration: ${formatElapsed(activity.elapsedMs)}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
+        EditableActivityTimes(
+            activity = activity,
+            habit = habit,
+            onUpdateStartTime = onUpdateStartTime,
+            onUpdateCompletedAt = onUpdateCompletedAt
+        )
 
         NoteField(
             value = note,
@@ -384,7 +395,7 @@ private fun HistoryActivityView(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(
+            horizontalArrangement = Arrangement.spacedBy(
                 8.dp, Alignment.CenterHorizontally
             )
         ) {
@@ -401,7 +412,7 @@ private fun HistoryActivityView(
                 }
             }
             Button(onClick = { onEditHabit(habit.id) }, elevation = buttonElevation()) {
-                Text("Edit")
+                Text("Edit Habit")
             }
         }
     }
@@ -467,5 +478,109 @@ private fun CompletedActivityDetail(
             modifier = Modifier.padding(top = 8.dp)
         )
     }
+}
+
+@Composable
+private fun EditableActivityTimes(
+    activity: Activity?,
+    habit: Habit,
+    onUpdateStartTime: (Long, Instant?) -> Unit,
+    onUpdateCompletedAt: (Long, Instant?) -> Unit
+) {
+    if (activity == null) return
+    val zone = ZoneId.systemDefault()
+    val timeFormatter = remember { DateTimeFormatter.ofPattern("h:mm a") }
+
+    var editingStart by remember { mutableStateOf(false) }
+    var editingEnd by remember { mutableStateOf(false) }
+
+    if (habit.timed) {
+        activity.startTime?.let { startTime ->
+            Text(
+                text = "started ${startTime.atZone(zone).format(timeFormatter)}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clickable { editingStart = true }
+            )
+        }
+    }
+    activity.completedAt?.let { completedAt ->
+        Text(
+            text = "completed ${completedAt.atZone(zone).format(timeFormatter)}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.clickable { editingEnd = true }
+        )
+    }
+    if (habit.timed && activity.elapsedMs > 0) {
+        Text(
+            text = "duration: ${formatElapsed(activity.elapsedMs)}",
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+
+    if (editingStart && activity.startTime != null) {
+        ActivityTimePicker(
+            title = "Start time",
+            current = activity.startTime,
+            upperBound = activity.completedAt ?: Instant.now(),
+            onConfirm = { onUpdateStartTime(activity.id, it); editingStart = false },
+            onDismiss = { editingStart = false }
+        )
+    }
+    if (editingEnd && activity.completedAt != null) {
+        ActivityTimePicker(
+            title = "End time",
+            current = activity.completedAt,
+            lowerBound = activity.startTime,
+            upperBound = Instant.now(),
+            onConfirm = { onUpdateCompletedAt(activity.id, it); editingEnd = false },
+            onDismiss = { editingEnd = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ActivityTimePicker(
+    title: String,
+    current: Instant,
+    lowerBound: Instant? = null,
+    upperBound: Instant,
+    onConfirm: (Instant) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val zone = ZoneId.systemDefault()
+    val localTime = current.atZone(zone).toLocalTime()
+    val pickerState = rememberTimePickerState(
+        initialHour = localTime.hour,
+        initialMinute = localTime.minute
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            TimePicker(state = pickerState)
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val today = current.atZone(zone).toLocalDate()
+                val picked = today.atTime(pickerState.hour, pickerState.minute)
+                    .atZone(zone).toInstant()
+                val clamped = if (lowerBound != null && picked.isBefore(lowerBound)) {
+                    lowerBound
+                } else if (picked.isAfter(upperBound)) {
+                    upperBound
+                } else {
+                    picked
+                }
+                onConfirm(clamped)
+            }) { Text("OK") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
 }
 

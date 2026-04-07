@@ -105,6 +105,7 @@ fun PrimaryScreen(
             onUpdateCompletedAt = viewModel::updateActivityCompletedAt,
             onDoAgain = viewModel::doAgain,
             onSkip = viewModel::skipActivity,
+            onDelete = viewModel::deleteActivity,
             modifier = expandedModifier
         )
 
