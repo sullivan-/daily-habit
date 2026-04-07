@@ -126,7 +126,8 @@ fun TallyEditorScreen(
                 actions = {
                     Button(
                         onClick = { viewModel.save() },
-                        enabled = state.isValid
+                        enabled = state.isValid,
+                        elevation = buttonElevation()
                     ) {
                         Text("Save")
                     }
@@ -149,6 +150,7 @@ fun TallyEditorScreen(
                 onValueChange = viewModel::setName,
                 label = { Text("Name") },
                 modifier = Modifier.fillMaxWidth(),
+                shape = ControlShape,
                 singleLine = true
             )
 
@@ -163,6 +165,7 @@ fun TallyEditorScreen(
                 OutlinedButton(
                     onClick = { showDeleteDialog = true },
                     modifier = Modifier.align(Alignment.CenterHorizontally),
+                    elevation = buttonElevation(),
                     colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
                     ),
@@ -198,6 +201,7 @@ private fun TallyPrioritySelector(
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded)
             },
+            shape = ControlShape,
             modifier = Modifier.menuAnchor()
         )
         ExposedDropdownMenu(

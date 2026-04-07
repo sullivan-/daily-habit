@@ -33,10 +33,16 @@ fun TimerDisplay(
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (isRunning) {
-                OutlinedButton(onClick = onCancel) { Text("Cancel") }
-                Button(onClick = onFinish) { Text("Finish") }
+                OutlinedButton(onClick = onCancel, elevation = buttonElevation()) {
+                    Text("Cancel")
+                }
+                Button(onClick = onFinish, elevation = buttonElevation()) {
+                    Text("Finish")
+                }
             } else {
-                Button(onClick = onStart) { Text("Start") }
+                Button(onClick = onStart, elevation = buttonElevation()) {
+                    Text("Start")
+                }
             }
         }
     }

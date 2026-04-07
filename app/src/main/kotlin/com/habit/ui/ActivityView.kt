@@ -12,6 +12,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -254,26 +255,29 @@ private fun CurrentActivityView(
             modifier = Modifier.padding(top = 8.dp)
         )
 
-        if (isExpanded) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(
+                8.dp, Alignment.CenterHorizontally
+            )
+        ) {
+            if (isExpanded &&
+                habit.dailyTargetMode == com.habit.data.TargetMode.AT_LEAST &&
+                state.activeActivity?.completedAt != null
             ) {
-                if (habit.dailyTargetMode == com.habit.data.TargetMode.AT_LEAST &&
-                    state.activeActivity?.completedAt != null
-                ) {
-                    TextButton(onClick = { onDoAgain(habit.id) }) {
-                        Text("Again")
-                    }
+                TextButton(onClick = { onDoAgain(habit.id) }) {
+                    Text("Again")
                 }
-                if (state.activeActivity?.completedAt == null) {
-                    TextButton(onClick = onSkip) {
-                        Text("Skip")
-                    }
+            }
+            if (state.activeActivity?.completedAt == null) {
+                Button(onClick = onSkip, elevation = buttonElevation()) {
+                    Text("Skip")
                 }
-                TextButton(onClick = { onEditHabit(habit.id) }) {
-                    Text("Edit habit")
-                }
+            }
+            Button(onClick = { onEditHabit(habit.id) }, elevation = buttonElevation()) {
+                Text("Edit")
             }
         }
     }
@@ -377,8 +381,12 @@ private fun HistoryActivityView(
         )
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(
+                8.dp, Alignment.CenterHorizontally
+            )
         ) {
             if (habit.dailyTargetMode == com.habit.data.TargetMode.AT_LEAST &&
                 activity.completedAt != null
@@ -392,8 +400,8 @@ private fun HistoryActivityView(
                     Text("Back to start")
                 }
             }
-            TextButton(onClick = { onEditHabit(habit.id) }) {
-                Text("Edit habit")
+            Button(onClick = { onEditHabit(habit.id) }, elevation = buttonElevation()) {
+                Text("Edit")
             }
         }
     }

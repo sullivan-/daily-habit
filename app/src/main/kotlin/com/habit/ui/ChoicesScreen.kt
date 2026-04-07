@@ -150,10 +150,10 @@ fun TallyRow(
                 color = indicatorColor(item.ratio)
             )
         }
-        OutlinedButton(onClick = onNo) {
+        OutlinedButton(onClick = onNo, elevation = buttonElevation()) {
             Text("No")
         }
-        OutlinedButton(onClick = onYes) {
+        OutlinedButton(onClick = onYes, elevation = buttonElevation()) {
             Text("Yes")
         }
     }

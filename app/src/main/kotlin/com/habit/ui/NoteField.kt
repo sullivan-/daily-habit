@@ -17,6 +17,7 @@ fun NoteField(
         onValueChange = onValueChange,
         label = { Text("Note") },
         modifier = modifier.fillMaxWidth(),
+        shape = ControlShape,
         singleLine = false,
         maxLines = 3
     )
