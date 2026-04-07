@@ -1,17 +1,25 @@
 package com.habit.ui
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -31,11 +39,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -44,6 +54,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,7 +63,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.habit.data.Priority
 import com.habit.data.TargetMode
-import com.habit.data.ThresholdType
 import com.habit.viewmodel.HabitEditorViewModel
 import java.time.DayOfWeek
 
@@ -84,7 +94,12 @@ fun HabitEditorScreen(
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text("Delete ${state.name}?") },
-            text = { Text("this will delete the habit and all its activity history. this cannot be undone.") },
+            text = {
+                Text(
+                    "this will delete the habit and all its activity history." +
+                    " this cannot be undone."
+                )
+            },
             confirmButton = {
                 TextButton(onClick = { viewModel.delete() }) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
@@ -129,7 +144,8 @@ fun HabitEditorScreen(
                 actions = {
                     Button(
                         onClick = { viewModel.save() },
-                        enabled = state.isValid
+                        enabled = state.isValid,
+                        elevation = buttonElevation()
                     ) {
                         Text("Save")
                     }
@@ -152,135 +168,184 @@ fun HabitEditorScreen(
                 onValueChange = viewModel::setName,
                 label = { Text("Name") },
                 modifier = Modifier.fillMaxWidth(),
+                shape = ControlShape,
                 singleLine = true
             )
 
-            Text("Times of day", style = MaterialTheme.typography.labelLarge)
-            TimesOfDayChips(
-                times = state.timesOfDay,
-                onAdd = viewModel::addTimeOfDay,
-                onRemove = viewModel::removeTimeOfDay
-            )
-
-            Text("Days active", style = MaterialTheme.typography.labelLarge)
-            DaysActiveRow(
-                daysActive = state.daysActive,
-                onToggle = viewModel::toggleDayActive
-            )
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = state.dailyTarget.toString(),
-                    onValueChange = {
-                        it.toIntOrNull()?.let(viewModel::setDailyTarget)
-                    },
-                    label = { Text("Daily target") },
-                    modifier = Modifier.width(120.dp),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number
-                    ),
-                    singleLine = true
+            FieldGroup("Schedule") {
+                TimesOfDayChips(
+                    times = state.timesOfDay,
+                    onAdd = viewModel::addTimeOfDay,
+                    onRemove = viewModel::removeTimeOfDay
                 )
-                Spacer(Modifier.width(16.dp))
-                SingleChoiceSegmentedButtonRow {
-                    SegmentedButton(
-                        selected = state.dailyTargetMode == TargetMode.AT_LEAST,
-                        onClick = {
-                            viewModel.setDailyTargetMode(TargetMode.AT_LEAST)
-                        },
-                        shape = SegmentedButtonDefaults.itemShape(0, 2)
-                    ) { Text("At least") }
-                    SegmentedButton(
-                        selected = state.dailyTargetMode == TargetMode.EXACTLY,
-                        onClick = {
-                            viewModel.setDailyTargetMode(TargetMode.EXACTLY)
-                        },
-                        shape = SegmentedButtonDefaults.itemShape(1, 2)
-                    ) { Text("Exactly") }
-                }
+                Spacer(Modifier.height(8.dp))
+                DaysActiveRow(
+                    daysActive = state.daysActive,
+                    onToggle = viewModel::toggleDayActive
+                )
             }
 
-            OutlinedTextField(
-                value = state.sortOrder.toString(),
-                onValueChange = {
-                    it.toIntOrNull()?.let(viewModel::setSortOrder)
-                },
-                label = { Text("Sort order") },
-                modifier = Modifier.width(120.dp),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number
-                ),
-                singleLine = true
-            )
-
-            Text("Priority", style = MaterialTheme.typography.labelLarge)
-            PrioritySelector(
-                priority = state.priority,
-                onSelect = viewModel::setPriority
-            )
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(
-                    checked = state.timed,
-                    onCheckedChange = { viewModel.setTimed(it) }
-                )
-                Text("Timed habit")
-            }
-
-            if (state.timed) {
-                OutlinedTextField(
-                    value = state.thresholdMinutes?.toString() ?: "",
-                    onValueChange = {
-                        viewModel.setThresholdMinutes(it.toIntOrNull())
-                    },
-                    label = { Text("Threshold (minutes)") },
-                    modifier = Modifier.width(220.dp),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number
-                    ),
-                    singleLine = true
-                )
-
-                if (state.thresholdMinutes != null) {
-                    SingleChoiceSegmentedButtonRow {
-                        SegmentedButton(
-                            selected = state.thresholdType == ThresholdType.GOAL,
-                            onClick = {
-                                viewModel.setThresholdType(ThresholdType.GOAL)
-                            },
-                            shape = SegmentedButtonDefaults.itemShape(0, 2)
-                        ) { Text("Goal") }
-                        SegmentedButton(
-                            selected = state.thresholdType == ThresholdType.TIME_TO_STOP,
-                            onClick = {
-                                viewModel.setThresholdType(ThresholdType.TIME_TO_STOP)
-                            },
-                            shape = SegmentedButtonDefaults.itemShape(1, 2)
-                        ) { Text("Time to stop") }
-                    }
-                }
-            }
-
-            Text("Daily texts", style = MaterialTheme.typography.labelLarge)
-            DailyTextsEditor(
-                dailyTexts = state.dailyTexts,
-                onSetText = viewModel::setDailyText
-            )
-
-            if (!state.isNew) {
-                Spacer(Modifier.height(16.dp))
-                TextButton(
-                    onClick = { showDeleteDialog = true },
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+            FieldGroup("Priority") {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(
-                        "Delete Habit",
-                        color = MaterialTheme.colorScheme.error
+                    PrioritySelector(
+                        priority = state.priority,
+                        onSelect = viewModel::setPriority,
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = state.sortOrder.toString(),
+                        onValueChange = {
+                            it.toIntOrNull()?.let(viewModel::setSortOrder)
+                        },
+                        label = { Text("Tie breaker") },
+                        modifier = Modifier.weight(1f),
+                        shape = ControlShape,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number
+                        ),
+                        singleLine = true
                     )
                 }
             }
 
+            FieldGroup("Tracking") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = state.dailyTarget.toString(),
+                        onValueChange = {
+                            it.toIntOrNull()?.let(viewModel::setDailyTarget)
+                        },
+                        label = { Text("Daily target") },
+                        modifier = Modifier.width(120.dp),
+                        shape = ControlShape,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number
+                        ),
+                        singleLine = true
+                    )
+                    Spacer(Modifier.width(16.dp))
+                    SingleChoiceSegmentedButtonRow {
+                        SegmentedButton(
+                            selected = state.dailyTargetMode == TargetMode.AT_LEAST,
+                            onClick = {
+                                viewModel.setDailyTargetMode(TargetMode.AT_LEAST)
+                            },
+                            shape = segmentedShape(0, 2)
+                        ) { Text("At least") }
+                        SegmentedButton(
+                            selected = state.dailyTargetMode == TargetMode.EXACTLY,
+                            onClick = {
+                                viewModel.setDailyTargetMode(TargetMode.EXACTLY)
+                            },
+                            shape = segmentedShape(1, 2)
+                        ) { Text("Exactly") }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = state.timed,
+                        onCheckedChange = { viewModel.setTimed(it) }
+                    )
+                    Text("Timed habit")
+                }
+                if (state.timed) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = state.goalMinutes?.toString() ?: "",
+                            onValueChange = {
+                                viewModel.setGoalMinutes(it.toIntOrNull())
+                            },
+                            label = { Text("Goal") },
+                            modifier = Modifier.weight(1f),
+                            shape = ControlShape,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number
+                            ),
+                            suffix = { Text("min") },
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = state.stopMinutes?.toString() ?: "",
+                            onValueChange = {
+                                viewModel.setStopMinutes(it.toIntOrNull())
+                            },
+                            label = { Text("Stop time") },
+                            modifier = Modifier.weight(1f),
+                            shape = ControlShape,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number
+                            ),
+                            suffix = { Text("min") },
+                            singleLine = true
+                        )
+                    }
+                }
+            }
+
+            FieldGroup("Daily texts") {
+                DailyTextsEditor(
+                    dailyTexts = state.dailyTexts,
+                    onSetText = viewModel::setDailyText
+                )
+            }
+
+            if (!state.isNew) {
+                Spacer(Modifier.height(4.dp))
+                OutlinedButton(
+                    onClick = { showDeleteDialog = true },
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    elevation = buttonElevation(),
+                    colors = androidx.compose.material3.ButtonDefaults
+                        .outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp, MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete Habit")
+                }
+            }
+
             Spacer(Modifier.height(32.dp))
+        }
+    }
+}
+
+@Composable
+private fun FieldGroup(
+    title: String,
+    content: @Composable () -> Unit
+) {
+    val borderColor = MaterialTheme.colorScheme.outlineVariant
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+    ) {
+        Column(
+            modifier = Modifier.padding(
+                start = 12.dp, end = 12.dp, top = 20.dp, bottom = 12.dp
+            )
+        ) {
+            content()
+        }
+        Surface(
+            color = MaterialTheme.colorScheme.background,
+            modifier = Modifier.align(Alignment.TopCenter)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
         }
     }
 }
@@ -293,37 +358,16 @@ private fun TimesOfDayChips(
     onRemove: (Int) -> Unit
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
-    var newHour by remember { mutableStateOf("") }
 
     if (showAddDialog) {
-        AlertDialog(
-            onDismissRequest = { showAddDialog = false; newHour = "" },
-            title = { Text("Add time") },
-            text = {
-                OutlinedTextField(
-                    value = newHour,
-                    onValueChange = { newHour = it },
-                    label = { Text("Hour (0-23)") },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number
-                    ),
-                    singleLine = true
-                )
+        HourPickerDialog(
+            initialHour = ((times.maxOrNull() ?: 7) + 1).coerceIn(0, 23),
+            existingHours = times.toSet(),
+            onConfirm = { hour ->
+                onAdd(hour)
+                showAddDialog = false
             },
-            confirmButton = {
-                TextButton(onClick = {
-                    newHour.toIntOrNull()?.let { h ->
-                        if (h in 0..23) onAdd(h)
-                    }
-                    showAddDialog = false
-                    newHour = ""
-                }) { Text("Add") }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showAddDialog = false; newHour = ""
-                }) { Text("Cancel") }
-            }
+            onDismiss = { showAddDialog = false }
         )
     }
 
@@ -375,7 +419,8 @@ private fun DaysActiveRow(
 @Composable
 private fun PrioritySelector(
     priority: Priority,
-    onSelect: (Priority) -> Unit
+    onSelect: (Priority) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
     val labels = mapOf(
@@ -388,16 +433,19 @@ private fun PrioritySelector(
 
     ExposedDropdownMenuBox(
         expanded = expanded,
-        onExpandedChange = { expanded = it }
+        onExpandedChange = { expanded = it },
+        modifier = modifier
     ) {
         OutlinedTextField(
             value = labels[priority] ?: "",
             onValueChange = {},
             readOnly = true,
+            label = { Text("Priority") },
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded)
             },
-            modifier = Modifier.menuAnchor().width(160.dp)
+            shape = ControlShape,
+            modifier = Modifier.menuAnchor().fillMaxWidth()
         )
         ExposedDropdownMenu(
             expanded = expanded,
@@ -433,7 +481,56 @@ private fun DailyTextsEditor(
             onValueChange = { onSetText(day, it) },
             label = { Text(label) },
             modifier = Modifier.fillMaxWidth(),
+            shape = ControlShape,
             singleLine = true
         )
     }
+}
+
+@Composable
+private fun HourPickerDialog(
+    initialHour: Int,
+    existingHours: Set<Int>,
+    onConfirm: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val hours = (0..23).toList()
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(Unit) {
+        val scrollTo = (initialHour - 2).coerceIn(0, 21)
+        listState.scrollToItem(scrollTo)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add time") },
+        text = {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.heightIn(max = 300.dp)
+            ) {
+                items(hours) { hour ->
+                    val alreadyUsed = hour in existingHours
+                    val textColor = if (alreadyUsed)
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    else MaterialTheme.colorScheme.onSurface
+                    Text(
+                        text = "%d:00".format(hour),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = textColor,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (alreadyUsed) Modifier
+                                else Modifier.clickable { onConfirm(hour) }
+                            )
+                            .padding(vertical = 10.dp, horizontal = 16.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {}
+    )
 }

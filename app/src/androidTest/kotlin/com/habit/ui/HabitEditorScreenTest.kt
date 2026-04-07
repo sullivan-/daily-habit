@@ -19,7 +19,7 @@ import com.habit.data.Habit
 import com.habit.data.HabitRepository
 import com.habit.data.Priority
 import com.habit.data.TargetMode
-import com.habit.data.ThresholdType
+
 import com.habit.viewmodel.HabitEditorViewModel
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -46,8 +46,8 @@ class HabitEditorScreenTest {
         dailyTarget = 2,
         dailyTargetMode = TargetMode.AT_LEAST,
         timed = true,
-        thresholdMinutes = 30,
-        thresholdType = ThresholdType.GOAL,
+        goalMinutes = 30,
+        stopMinutes = null,
         priority = Priority.HIGH,
         dailyTexts = mapOf(DayOfWeek.MONDAY to "morning session")
     )
@@ -152,10 +152,10 @@ class HabitEditorScreenTest {
         composeTestRule.onNodeWithText("+").performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("Add time").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Hour (0-23)").performTextInput("14")
-        composeTestRule.onNodeWithText("Add").performClick()
+        // default is 8:00, picker starts near 9:00
+        composeTestRule.onNodeWithText("10:00").performClick()
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("14:00").assertIsDisplayed()
+        composeTestRule.onNodeWithText("10:00").assertIsDisplayed()
     }
 
     @Test
@@ -164,8 +164,7 @@ class HabitEditorScreenTest {
         // add a second time first so removal is allowed
         composeTestRule.onNodeWithText("+").performClick()
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("Hour (0-23)").performTextInput("14")
-        composeTestRule.onNodeWithText("Add").performClick()
+        composeTestRule.onNodeWithText("10:00").performClick()
         composeTestRule.waitForIdle()
         // now remove the original 8:00
         composeTestRule.onNodeWithText("8:00").performClick()
@@ -196,13 +195,13 @@ class HabitEditorScreenTest {
     @Test
     fun editTimedHabitShowsCheckboxOn() {
         setScreen(habitId = "qigong")
-        composeTestRule.onNodeWithText("Timed habit").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Timed habit").performScrollTo().assertIsDisplayed()
     }
 
     @Test
     fun timedFieldsVisibleWhenTimedChecked() {
         setScreen(habitId = "qigong")
-        composeTestRule.onNodeWithText("Threshold (minutes)")
+        composeTestRule.onNodeWithText("Goal")
             .performScrollTo()
             .assertIsDisplayed()
     }
@@ -210,26 +209,17 @@ class HabitEditorScreenTest {
     @Test
     fun timedFieldsHiddenWhenUntimed() {
         setScreen()
-        composeTestRule.onAllNodesWithText("Threshold (minutes)").fetchSemanticsNodes().let {
+        composeTestRule.onAllNodesWithText("Goal").fetchSemanticsNodes().let {
             assert(it.isEmpty())
         }
     }
 
     @Test
-    fun checkingTimedShowsThresholdField() {
+    fun checkingTimedShowsGoalField() {
         setScreen()
         composeTestRule.onNode(isToggleable()).performScrollTo().performClick()
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("Threshold (minutes)").assertExists()
-    }
-
-    // --- threshold type ---
-
-    @Test
-    fun thresholdTypeVisibleWhenThresholdSet() {
-        setScreen(habitId = "qigong")
-        composeTestRule.onNodeWithText("Goal").performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText("Time to stop").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Goal").assertExists()
     }
 
     // --- daily texts ---
