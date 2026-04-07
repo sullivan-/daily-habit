@@ -24,7 +24,7 @@ class TallyEditorViewModelTest {
     private val tallyRepo = mockk<TallyRepository>(relaxed = true)
 
     private val existingTally = Tally(
-        id = 1L,
+        id = "1",
         name = "Sweets",
         priority = Priority.HIGH
     )
@@ -32,7 +32,7 @@ class TallyEditorViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        coEvery { tallyRepo.getById(1L) } returns existingTally
+        coEvery { tallyRepo.getById("1") } returns existingTally
     }
 
     @After
@@ -111,11 +111,11 @@ class TallyEditorViewModelTest {
     @Test
     fun `loadTally populates state from repository`() = runTest {
         val vm = createViewModel()
-        vm.loadTally(1L)
+        vm.loadTally("1")
 
         val state = vm.state.value
         assertThat(state.isNew).isFalse()
-        assertThat(state.id).isEqualTo(1L)
+        assertThat(state.id).isEqualTo("1")
         assertThat(state.name).isEqualTo("Sweets")
         assertThat(state.priority).isEqualTo(Priority.HIGH)
         assertThat(state.dirty).isFalse()
@@ -123,22 +123,22 @@ class TallyEditorViewModelTest {
 
     @Test
     fun `loadTally with unknown id does nothing`() = runTest {
-        coEvery { tallyRepo.getById(99L) } returns null
+        coEvery { tallyRepo.getById("99") } returns null
         val vm = createViewModel()
-        vm.loadTally(99L)
+        vm.loadTally("99")
         assertThat(vm.state.value.isNew).isTrue()
     }
 
     @Test
     fun `save existing tally updates`() = runTest {
         val vm = createViewModel()
-        vm.loadTally(1L)
+        vm.loadTally("1")
         vm.setName("Sweets Updated")
         vm.save()
 
         coVerify {
             tallyRepo.update(match {
-                it.id == 1L && it.name == "Sweets Updated"
+                it.id == "1" && it.name == "Sweets Updated"
             })
         }
         assertThat(vm.state.value.saved).isTrue()
@@ -147,10 +147,10 @@ class TallyEditorViewModelTest {
     @Test
     fun `delete removes tally and sets deleted flag`() = runTest {
         val vm = createViewModel()
-        vm.loadTally(1L)
+        vm.loadTally("1")
         vm.delete()
 
-        coVerify { tallyRepo.deleteById(1L) }
+        coVerify { tallyRepo.deleteById("1") }
         assertThat(vm.state.value.deleted).isTrue()
     }
 

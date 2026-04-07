@@ -32,8 +32,8 @@ class ChoicesViewModelTest {
     private val choiceRepo = mockk<ChoiceRepository>(relaxed = true)
     private val dayBoundary = DayBoundary(2)
 
-    private val sweets = Tally(id = 1L, name = "Sweets", priority = Priority.HIGH)
-    private val nicotine = Tally(id = 2L, name = "Nicotine", priority = Priority.LOW)
+    private val sweets = Tally(id = "1", name = "Sweets", priority = Priority.HIGH)
+    private val nicotine = Tally(id = "2", name = "Nicotine", priority = Priority.LOW)
 
     @Before
     fun setUp() {
@@ -80,30 +80,30 @@ class ChoicesViewModelTest {
     @Test
     fun `recordChoice with abstain inserts choice`() = runTest {
         val vm = createViewModel()
-        vm.recordChoice(1L, abstained = true)
+        vm.recordChoice("1", abstained = true)
 
         coVerify {
-            choiceRepo.record(match { it.tallyId == 1L && it.abstained })
+            choiceRepo.record(match { it.tallyId == "1" && it.abstained })
         }
     }
 
     @Test
     fun `recordChoice with indulge inserts choice`() = runTest {
         val vm = createViewModel()
-        vm.recordChoice(1L, abstained = false)
+        vm.recordChoice("1", abstained = false)
 
         coVerify {
-            choiceRepo.record(match { it.tallyId == 1L && !it.abstained })
+            choiceRepo.record(match { it.tallyId == "1" && !it.abstained })
         }
     }
 
     @Test
     fun `indicator shows recent choices`() = runTest {
         val now = Instant.now()
-        coEvery { choiceRepo.recentChoices(1L, 10) } returns listOf(
-            Choice(1, 1L, now, abstained = true),
-            Choice(2, 1L, now.minusSeconds(60), abstained = true),
-            Choice(3, 1L, now.minusSeconds(120), abstained = false)
+        coEvery { choiceRepo.recentChoices("1", 10) } returns listOf(
+            Choice(1, "1", now, abstained = true),
+            Choice(2, "1", now.minusSeconds(60), abstained = true),
+            Choice(3, "1", now.minusSeconds(120), abstained = false)
         )
 
         val vm = createViewModel(listOf(sweets))
@@ -116,9 +116,9 @@ class ChoicesViewModelTest {
     @Test
     fun `ratio is 1 when all abstain`() = runTest {
         val now = Instant.now()
-        coEvery { choiceRepo.recentChoices(1L, 10) } returns listOf(
-            Choice(1, 1L, now, abstained = true),
-            Choice(2, 1L, now.minusSeconds(60), abstained = true)
+        coEvery { choiceRepo.recentChoices("1", 10) } returns listOf(
+            Choice(1, "1", now, abstained = true),
+            Choice(2, "1", now.minusSeconds(60), abstained = true)
         )
 
         val vm = createViewModel(listOf(sweets))
@@ -128,9 +128,9 @@ class ChoicesViewModelTest {
     @Test
     fun `ratio is 0 when all indulge`() = runTest {
         val now = Instant.now()
-        coEvery { choiceRepo.recentChoices(1L, 10) } returns listOf(
-            Choice(1, 1L, now, abstained = false),
-            Choice(2, 1L, now.minusSeconds(60), abstained = false)
+        coEvery { choiceRepo.recentChoices("1", 10) } returns listOf(
+            Choice(1, "1", now, abstained = false),
+            Choice(2, "1", now.minusSeconds(60), abstained = false)
         )
 
         val vm = createViewModel(listOf(sweets))
@@ -142,7 +142,7 @@ class ChoicesViewModelTest {
         // nicotine (LOW=0.2) has max weekly activity → recency 1.0 → score 1.2
         // sweets (HIGH=1.0) has no weekly activity → recency 0.0 → score 1.0
         coEvery { choiceRepo.choiceCountsSince(any()) } returns listOf(
-            TallyChoiceCount(tallyId = 2L, count = 10)
+            TallyChoiceCount(tallyId = "2", count = 10)
         )
 
         val vm = createViewModel()
@@ -164,10 +164,10 @@ class ChoicesViewModelTest {
     fun `switches to daily counts when more than 10 choices today`() = runTest {
         val now = Instant.now()
         val todayChoices = (1..12).map { i ->
-            Choice(i.toLong(), 1L, now.minusSeconds(i * 60L), abstained = i % 2 == 0)
+            Choice(i.toLong(), "1", now.minusSeconds(i * 60L), abstained = i % 2 == 0)
         }
-        coEvery { choiceRepo.choicesToday(1L, any(), any()) } returns todayChoices
-        coEvery { choiceRepo.recentChoices(1L, 10) } returns todayChoices.take(10)
+        coEvery { choiceRepo.choicesToday("1", any(), any()) } returns todayChoices
+        coEvery { choiceRepo.recentChoices("1", 10) } returns todayChoices.take(10)
 
         val vm = createViewModel(listOf(sweets))
         val item = vm.uiState.value.tallies.first()

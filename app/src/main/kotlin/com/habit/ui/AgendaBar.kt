@@ -21,6 +21,8 @@ fun AgendaBar(
     onNewHabit: () -> Unit,
     onHabitList: () -> Unit,
     onChoices: () -> Unit = {},
+    onSwipeLeft: (() -> Unit)? = null,
+    onSwipeRight: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -28,6 +30,7 @@ fun AgendaBar(
             .fillMaxWidth()
             .height(48.dp)
             .background(Color.DarkGray)
+            .swipeBar(onSwipeLeft = onSwipeLeft, onSwipeRight = onSwipeRight)
     ) {
         MenuButton(onNewHabit = onNewHabit, onHabitList = onHabitList, onChoices = onChoices, modifier = Modifier.align(Alignment.CenterStart))
         Text(

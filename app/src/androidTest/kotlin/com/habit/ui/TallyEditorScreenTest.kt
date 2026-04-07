@@ -32,7 +32,7 @@ class TallyEditorScreenTest {
     private var backRequested = false
 
     private val existingTally = Tally(
-        id = 1L,
+        id = "1",
         name = "Sweets",
         priority = Priority.HIGH
     )
@@ -40,10 +40,10 @@ class TallyEditorScreenTest {
     @Before
     fun setUp() {
         backRequested = false
-        coEvery { tallyRepo.getById(1L) } returns existingTally
+        coEvery { tallyRepo.getById("1") } returns existingTally
     }
 
-    private fun setScreen(tallyId: Long? = null) {
+    private fun setScreen(tallyId: String? = null) {
         val vm = TallyEditorViewModel(tallyRepo)
         composeTestRule.setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
@@ -65,13 +65,13 @@ class TallyEditorScreenTest {
 
     @Test
     fun editTallyShowsCorrectTitle() {
-        setScreen(tallyId = 1L)
+        setScreen(tallyId = "1")
         composeTestRule.onNodeWithText("Edit Tally").assertIsDisplayed()
     }
 
     @Test
     fun editTallyPopulatesName() {
-        setScreen(tallyId = 1L)
+        setScreen(tallyId = "1")
         composeTestRule.onNodeWithText("Sweets").assertIsDisplayed()
     }
 
@@ -102,12 +102,12 @@ class TallyEditorScreenTest {
 
     @Test
     fun saveExistingTallyUpdates() {
-        setScreen(tallyId = 1L)
+        setScreen(tallyId = "1")
         composeTestRule.onNodeWithText("Sweets").performTextReplacement("Candy")
         composeTestRule.onNodeWithText("Save").performClick()
         composeTestRule.waitForIdle()
 
-        coVerify { tallyRepo.update(match { it.id == 1L && it.name == "Candy" }) }
+        coVerify { tallyRepo.update(match { it.id == "1" && it.name == "Candy" }) }
     }
 
     @Test
@@ -121,7 +121,7 @@ class TallyEditorScreenTest {
 
     @Test
     fun deleteShowsConfirmation() {
-        setScreen(tallyId = 1L)
+        setScreen(tallyId = "1")
         composeTestRule.onNodeWithText("Delete Tally").performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("Delete Sweets?").assertIsDisplayed()
@@ -129,14 +129,14 @@ class TallyEditorScreenTest {
 
     @Test
     fun confirmDeleteRemovesTally() {
-        setScreen(tallyId = 1L)
+        setScreen(tallyId = "1")
         composeTestRule.onNodeWithText("Delete Tally").performClick()
         composeTestRule.waitForIdle()
         // tap the "Delete" button in the dialog
         composeTestRule.onAllNodesWithText("Delete")[0].performClick()
         composeTestRule.waitForIdle()
 
-        coVerify { tallyRepo.deleteById(1L) }
+        coVerify { tallyRepo.deleteById("1") }
         assert(backRequested)
     }
 

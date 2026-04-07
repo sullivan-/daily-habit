@@ -95,6 +95,8 @@ fun ProgressBar(
     onNewHabit: () -> Unit,
     onHabitList: () -> Unit,
     onChoices: () -> Unit = {},
+    onSwipeLeft: (() -> Unit)? = null,
+    onSwipeRight: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val cot = completedOverTotal.coerceIn(0f, 1f)
@@ -109,6 +111,7 @@ fun ProgressBar(
             .fillMaxWidth()
             .height(48.dp)
             .background(gradient)
+            .swipeBar(onSwipeLeft = onSwipeLeft, onSwipeRight = onSwipeRight)
     ) {
         MenuButton(onNewHabit = onNewHabit, onHabitList = onHabitList, onChoices = onChoices, modifier = Modifier.align(Alignment.CenterStart))
         Text(

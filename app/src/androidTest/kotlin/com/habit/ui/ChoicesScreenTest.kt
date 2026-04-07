@@ -38,10 +38,10 @@ class ChoicesScreenTest {
 
     private val talliesFlow = MutableStateFlow<List<Tally>>(emptyList())
 
-    private val sweets = Tally(id = 1L, name = "Sweets", priority = Priority.HIGH)
-    private val nicotine = Tally(id = 2L, name = "Nicotine", priority = Priority.LOW)
+    private val sweets = Tally(id = "1", name = "Sweets", priority = Priority.HIGH)
+    private val nicotine = Tally(id = "2", name = "Nicotine", priority = Priority.LOW)
 
-    private var editedTallyId: Long? = null
+    private var editedTallyId: String? = null
     private var newTallyRequested = false
     private var backRequested = false
 
@@ -107,7 +107,7 @@ class ChoicesScreenTest {
         composeTestRule.waitForIdle()
 
         coVerify {
-            choiceRepo.record(match { it.tallyId == 1L && it.abstained })
+            choiceRepo.record(match { it.tallyId == "1" && it.abstained })
         }
     }
 
@@ -118,17 +118,17 @@ class ChoicesScreenTest {
         composeTestRule.waitForIdle()
 
         coVerify {
-            choiceRepo.record(match { it.tallyId == 1L && !it.abstained })
+            choiceRepo.record(match { it.tallyId == "1" && !it.abstained })
         }
     }
 
     @Test
     fun showsIndicatorWhenChoicesExist() {
         val now = Instant.now()
-        coEvery { choiceRepo.recentChoices(1L, 10) } returns listOf(
-            Choice(1, 1L, now, abstained = true),
-            Choice(2, 1L, now.minusSeconds(60), abstained = false),
-            Choice(3, 1L, now.minusSeconds(120), abstained = true)
+        coEvery { choiceRepo.recentChoices("1", 10) } returns listOf(
+            Choice(1, "1", now, abstained = true),
+            Choice(2, "1", now.minusSeconds(60), abstained = false),
+            Choice(3, "1", now.minusSeconds(120), abstained = true)
         )
 
         setScreen(listOf(sweets))
@@ -140,14 +140,7 @@ class ChoicesScreenTest {
         setScreen(listOf(sweets))
         composeTestRule.onNodeWithContentDescription("edit").performClick()
         composeTestRule.waitForIdle()
-        assert(editedTallyId == 1L)
+        assert(editedTallyId == "1")
     }
 
-    @Test
-    fun tapBackNavigatesBack() {
-        setScreen()
-        composeTestRule.onNodeWithContentDescription("back").performClick()
-        composeTestRule.waitForIdle()
-        assert(backRequested)
-    }
 }

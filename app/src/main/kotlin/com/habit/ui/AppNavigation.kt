@@ -79,8 +79,7 @@ fun AppNavigation(
             )
             TallyEditorScreen(
                 viewModel = editorVm,
-                tallyId = if (tallyIdStr == "new") null
-                    else tallyIdStr?.toLongOrNull(),
+                tallyId = if (tallyIdStr == "new") null else tallyIdStr,
                 onBack = { navController.popBackStack() }
             )
         }

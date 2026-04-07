@@ -18,7 +18,7 @@ class ChoiceDaoTest {
     private lateinit var database: HabitDatabase
     private lateinit var choiceDao: ChoiceDao
     private lateinit var tallyDao: TallyDao
-    private var tallyId: Long = 0
+    private val tallyId = "sweets"
 
     private val now = Instant.now()
 
@@ -30,7 +30,7 @@ class ChoiceDaoTest {
             .build()
         choiceDao = database.choiceDao()
         tallyDao = database.tallyDao()
-        tallyId = tallyDao.insert(Tally(name = "Sweets", priority = Priority.HIGH))
+        tallyDao.insert(Tally(id = tallyId, name = "Sweets", priority = Priority.HIGH))
     }
 
     @After
@@ -81,9 +81,8 @@ class ChoiceDaoTest {
 
     @Test
     fun choiceCountsSinceGroupsByTally() = runTest {
-        val tallyId2 = tallyDao.insert(
-            Tally(name = "Nicotine", priority = Priority.LOW)
-        )
+        val tallyId2 = "nicotine"
+        tallyDao.insert(Tally(id = tallyId2, name = "Nicotine", priority = Priority.LOW))
 
         choiceDao.insert(Choice(tallyId = tallyId, timestamp = now, abstained = true))
         choiceDao.insert(

@@ -263,10 +263,12 @@
   ],
   "tallies": [
     {
+      "id": "coffee",
       "name": "Coffee",
       "priority": "MEDIUM"
     },
     {
+      "id": "sweets",
       "name": "Sweets",
       "priority": "MEDIUM"
     }

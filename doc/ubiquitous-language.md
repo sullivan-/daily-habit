@@ -150,10 +150,16 @@ choices over time.
 
 ### Choices Screen
 
-A separate screen accessed from the menu. Displays the user's tallies as a
-list, each with inline Yes/No buttons for recording choices and an indicator
-showing the recent abstain ratio. Tallies are sorted by a blend of priority
-and recency of activity.
+A separate screen accessed from the menu. Displays the user's tallies as a list, each with an
+edit button, the tally name, an abstain ratio indicator, and Yes/No buttons for recording choices.
+Tallies are sorted by a blend of priority and recency of activity.
+
+### Choices Bar
+
+A status bar at the bottom of the choices screen, following the same pattern as the progress bar
+and agenda bar. Contains the menu button, the "Choices" label, a weekly running total showing the
+abstain-to-total ratio across all tallies for the past seven days, and a + button for creating
+new tallies.
 
 ## UX Context
 
@@ -188,19 +194,23 @@ and note previews.
 
 A compact bar at the bottom of the main layout showing overall daily progress
 (e.g., "9/14 activities complete"). Color-coded by status (blue = on track,
-green = ahead, red = behind). Tapping it switches to the review layout.
+green = ahead, red = behind). Tapping it switches to the review layout. Swiping
+left switches to review.
 
 ### Agenda Bar
 
 A compact bar at the bottom of the review and activity focused layouts. Shows
-remaining activity count. Tapping it switches to the main layout.
+remaining activity count. Tapping it switches to the main layout. Swiping right
+switches to main; swiping left navigates to the choices screen.
 
 ### Layout
 
 One of three arrangements of the primary screen: **main** (forward-looking,
 agenda + progress bar), **review** (backward-looking, completed list + agenda
 bar), or **activity focused** (expanded detail + agenda bar). The user switches
-between layouts by tapping the bars.
+between layouts by tapping or swiping the bars. The choices screen is a separate
+destination reachable by swiping left from the review/activity focused bars, and
+swiping right from the choices bar returns to the primary screen.
 
 ### Display Ordering
 

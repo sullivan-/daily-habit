@@ -34,7 +34,7 @@ class ChoicesViewModel(
         }
     }
 
-    fun recordChoice(tallyId: Long, abstained: Boolean) {
+    fun recordChoice(tallyId: String, abstained: Boolean) {
         viewModelScope.launch {
             choiceRepo.record(
                 Choice(
@@ -82,6 +82,13 @@ class ChoicesViewModel(
             )
         }.sortedByDescending { it.sortScore }
 
-        _uiState.value = ChoicesUiState(tallies = items)
+        val weeklyTotal = choiceRepo.totalCountSince(sevenDaysAgo)
+        val weeklyAbstain = choiceRepo.abstainCountSince(sevenDaysAgo)
+
+        _uiState.value = ChoicesUiState(
+            tallies = items,
+            weeklyAbstainCount = weeklyAbstain,
+            weeklyTotalCount = weeklyTotal
+        )
     }
 }

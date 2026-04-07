@@ -23,6 +23,7 @@ data class HabitJson(
 
 @Serializable
 data class TallyJson(
+    val id: String,
     val name: String,
     val priority: String
 )
@@ -57,6 +58,7 @@ class ConfigLoader(private val context: Context) {
     }
 
     private fun TallyJson.toTally() = Tally(
+        id = id,
         name = name,
         priority = Priority.valueOf(priority)
     )

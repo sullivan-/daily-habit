@@ -3,7 +3,7 @@ package com.habit.viewmodel
 import com.habit.data.Priority
 
 data class TallyEditorState(
-    val id: Long = 0,
+    val id: String = "",
     val name: String = "",
     val priority: Priority = Priority.MEDIUM,
     val isNew: Boolean = true,

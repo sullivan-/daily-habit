@@ -12,17 +12,17 @@ interface TallyDao {
     fun allTallies(): Flow<List<Tally>>
 
     @Query("SELECT * FROM tally WHERE id = :id")
-    suspend fun getById(id: Long): Tally?
+    suspend fun getById(id: String): Tally?
 
     @Insert(onConflict = androidx.room.OnConflictStrategy.IGNORE)
     suspend fun insertAll(tallies: List<Tally>)
 
     @Insert
-    suspend fun insert(tally: Tally): Long
+    suspend fun insert(tally: Tally)
 
     @Update
     suspend fun update(tally: Tally)
 
     @Query("DELETE FROM tally WHERE id = :id")
-    suspend fun deleteById(id: Long)
+    suspend fun deleteById(id: String)
 }

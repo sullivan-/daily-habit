@@ -15,6 +15,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
@@ -51,7 +52,7 @@ private val priorityLabels = mapOf(
 @Composable
 fun TallyEditorScreen(
     viewModel: TallyEditorViewModel,
-    tallyId: Long?,
+    tallyId: String?,
     onBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -159,14 +160,17 @@ fun TallyEditorScreen(
 
             if (!state.isNew) {
                 Spacer(Modifier.height(16.dp))
-                TextButton(
+                OutlinedButton(
                     onClick = { showDeleteDialog = true },
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                ) {
-                    Text(
-                        "Delete Tally",
-                        color = MaterialTheme.colorScheme.error
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp, MaterialTheme.colorScheme.error
                     )
+                ) {
+                    Text("Delete Tally")
                 }
             }
 

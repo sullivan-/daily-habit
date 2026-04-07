@@ -18,7 +18,7 @@ import java.time.Instant
 )
 data class Choice(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val tallyId: Long,
+    val tallyId: String,
     val timestamp: Instant,
     val abstained: Boolean
 )

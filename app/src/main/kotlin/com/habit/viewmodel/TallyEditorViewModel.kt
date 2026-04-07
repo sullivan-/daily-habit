@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.habit.data.Priority
 import com.habit.data.Tally
 import com.habit.data.TallyRepository
+import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +18,7 @@ class TallyEditorViewModel(
     private val _state = MutableStateFlow(TallyEditorState())
     val state: StateFlow<TallyEditorState> = _state.asStateFlow()
 
-    fun loadTally(tallyId: Long) {
+    fun loadTally(tallyId: String) {
         viewModelScope.launch {
             tallyRepo.getById(tallyId)?.let { tally ->
                 _state.value = TallyEditorState(
@@ -43,7 +44,9 @@ class TallyEditorViewModel(
         if (!s.isValid) return
         viewModelScope.launch {
             if (s.isNew) {
-                tallyRepo.insert(Tally(name = s.name, priority = s.priority))
+                val id = s.name.lowercase().replace(Regex("[^a-z0-9]+"), "-")
+                    .trim('-').ifEmpty { UUID.randomUUID().toString() }
+                tallyRepo.insert(Tally(id = id, name = s.name, priority = s.priority))
             } else {
                 tallyRepo.update(
                     Tally(id = s.id, name = s.name, priority = s.priority)

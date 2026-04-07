@@ -8,7 +8,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [Habit::class, Activity::class, Tally::class, Choice::class],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -56,6 +56,47 @@ abstract class HabitDatabase : RoomDatabase() {
                             ON DELETE CASCADE
                     )
                 """)
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_choice_tallyId ON choice(tallyId)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_choice_timestamp ON choice(timestamp)"
+                )
+            }
+        }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS tally_new (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        priority TEXT NOT NULL
+                    )
+                """)
+                db.execSQL("""
+                    INSERT INTO tally_new (id, name, priority)
+                    SELECT CAST(id AS TEXT), name, priority FROM tally
+                """)
+                db.execSQL("DROP TABLE tally")
+                db.execSQL("ALTER TABLE tally_new RENAME TO tally")
+
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS choice_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        tallyId TEXT NOT NULL,
+                        timestamp INTEGER NOT NULL,
+                        abstained INTEGER NOT NULL,
+                        FOREIGN KEY (tallyId) REFERENCES tally(id)
+                            ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL("""
+                    INSERT INTO choice_new (id, tallyId, timestamp, abstained)
+                    SELECT id, CAST(tallyId AS TEXT), timestamp, abstained FROM choice
+                """)
+                db.execSQL("DROP TABLE choice")
+                db.execSQL("ALTER TABLE choice_new RENAME TO choice")
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_choice_tallyId ON choice(tallyId)"
                 )
