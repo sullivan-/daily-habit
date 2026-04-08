@@ -442,12 +442,26 @@ class AgendaViewModel(
 
     private fun updateHistoryActivity(activityId: Long, transform: (Activity) -> Activity) {
         val state = _uiState.value
+
+        val activeUpdated = if (state.activeActivity?.id == activityId) {
+            transform(state.activeActivity)
+        } else null
+
         val idx = state.historyActivities.indexOfFirst { it.id == activityId }
-        if (idx < 0) return
-        val updated = transform(state.historyActivities[idx])
-        val newHistory = state.historyActivities.toMutableList()
-        newHistory[idx] = updated
-        _uiState.value = state.copy(historyActivities = newHistory)
+        val newHistory = if (idx >= 0) {
+            state.historyActivities.toMutableList().also {
+                it[idx] = activeUpdated ?: transform(it[idx])
+            }
+        } else state.historyActivities
+
+        val updated = activeUpdated
+            ?: newHistory.getOrNull(idx)
+            ?: return
+
+        _uiState.value = state.copy(
+            historyActivities = newHistory,
+            activeActivity = activeUpdated ?: state.activeActivity
+        )
         viewModelScope.launch { activityRepo.update(updated) }
     }
 

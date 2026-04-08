@@ -80,6 +80,7 @@ class AgendaViewModelTest {
     fun setUp() {
         Dispatchers.setMain(mainDispatcher)
         every { dayBoundary.today() } returns today
+        every { dayBoundary.attributedDate(any()) } returns today
         every { habitRepo.allHabits() } returns habitsFlow
         every { activityRepo.activitiesForDate(today) } returns activitiesFlow
         coEvery { activityRepo.create(any()) } returns 1L
@@ -502,6 +503,64 @@ class AgendaViewModelTest {
         val vm = createViewModel()
         val otherIds = vm.uiState.value.otherHabits.map { it.id }
         assertThat(otherIds).doesNotContain("vitamins")
+    }
+
+    @Test
+    fun `updateActivityStartTime on active activity updates activeActivity`() = runTest {
+        coEvery { activityRepo.completedHistoryForHabit("qigong") } returns emptyList()
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.startTimer()
+        vm.expandActivity()
+
+        val activity = vm.uiState.value.activeActivity!!
+        val newStart = Instant.now().minusSeconds(600)
+        vm.updateActivityStartTime(activity.id, newStart)
+
+        assertThat(vm.uiState.value.activeActivity!!.startTime).isEqualTo(newStart)
+        coVerify { activityRepo.update(match { it.startTime == newStart }) }
+    }
+
+    @Test
+    fun `updateActivityStartTime on history activity updates history list`() = runTest {
+        val completed = Activity(
+            id = 10, habitId = "qigong", attributedDate = today,
+            startTime = Instant.now().minusSeconds(3600),
+            note = "", completedAt = Instant.now()
+        )
+        coEvery { activityRepo.completedHistoryForHabit("qigong") } returns listOf(completed)
+
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.expandActivity()
+
+        val newStart = Instant.now().minusSeconds(1800)
+        vm.updateActivityStartTime(10, newStart)
+
+        val updated = vm.uiState.value.historyActivities.first { it.id == 10L }
+        assertThat(updated.startTime).isEqualTo(newStart)
+        coVerify { activityRepo.update(match { it.id == 10L && it.startTime == newStart }) }
+    }
+
+    @Test
+    fun `updateActivityCompletedAt on completed activity updates history and attributed date`() = runTest {
+        val completed = Activity(
+            id = 10, habitId = "qigong", attributedDate = today,
+            startTime = Instant.now().minusSeconds(3600),
+            note = "", completedAt = Instant.now()
+        )
+        coEvery { activityRepo.completedHistoryForHabit("qigong") } returns listOf(completed)
+
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.expandActivity()
+
+        val newCompleted = Instant.now().minusSeconds(600)
+        vm.updateActivityCompletedAt(10, newCompleted)
+
+        val updated = vm.uiState.value.historyActivities.first { it.id == 10L }
+        assertThat(updated.completedAt).isEqualTo(newCompleted)
+        coVerify { activityRepo.update(match { it.id == 10L && it.completedAt == newCompleted }) }
     }
 
     @Test
