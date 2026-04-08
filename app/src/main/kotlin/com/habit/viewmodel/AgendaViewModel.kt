@@ -77,8 +77,11 @@ class AgendaViewModel(
     }
 
     fun switchToMain() {
-        _uiState.value = _uiState.value.copy(
+        val state = _uiState.value
+        val resumeHabitId = if (state.timerRunning) state.timedHabitId else null
+        _uiState.value = state.copy(
             layout = Layout.MAIN,
+            selectedHabitId = resumeHabitId,
             selectedActivityId = null,
             historyActivities = emptyList(),
             historyIndex = -1
