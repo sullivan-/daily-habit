@@ -68,19 +68,17 @@ an elapsed timer, support chime intervals, and record duration. **Untimed**
 habits (Vitamins, Waterpick) are simple checkboxes — tap done, no timer, no
 duration recorded.
 
-### Chime Interval
+### Goal Time
 
-For timed habits: a recurring audio signal at a fixed interval while the timer
-is running. E.g., every 10 seconds (for counting in meditation) or every
-5 minutes (for awareness during a work session). Not all timed habits need a
-chime interval.
+For timed habits: an optional duration milestone meaning "you've done enough."
+when the timer reaches the goal time, a chime plays. e.g., 15 min for reading,
+30 min for qigong.
 
-### Time Threshold
+### Stop Time
 
-For timed habits: a duration milestone that triggers feedback. Three types:
-- **Minimum done**: "you've done enough" (e.g., 15 min for reading)
-- **Time to stop**: "wrap up now" (e.g., 50 min for work)
-- **Goal met**: "you hit your target" (e.g., 30 min for qigong)
+For timed habits: an optional duration milestone meaning "wrap up now." when the
+timer reaches the stop time, a chime plays. e.g., 50 min for a work session.
+a habit can have both a goal time and a stop time.
 
 ### Priority
 
@@ -109,26 +107,6 @@ pre-fills "sinus rinse", on Wednesday pre-fills "cholesterol." The daily text
 appears in the note field when the habit becomes the focus in the activity view.
 It is a default, not a locked value — the user can edit or replace it before
 checking off the activity.
-
-## Task Management
-
-### Task Backlog
-
-An optional ordered list of tasks associated with a habit. When present, each
-activity prompts the user to pick (or continue) a task from the backlog. The
-backlog is loosely prioritized — the user can reorder tasks at any time.
-
-Not all habits have a task backlog. "Vitamins" has no backlog. "Home" has a
-backlog of household tasks. "Badux" has a backlog of project work items.
-
-*Note:* Task backlogs are a post-MVP feature.
-
-### Task
-
-An item in a task backlog. A task has a name and optional notes. A task can span
-multiple activities and multiple days — completing an activity on a task does not
-automatically remove it from the backlog. The user explicitly marks a task as
-complete when it is finished.
 
 ## Choices Domain
 

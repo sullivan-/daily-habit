@@ -22,9 +22,9 @@ Before writing code:
    then `doc/open/`.
 
    Active specs:
-   !`ls doc/*tech* 2>/dev/null`
+   !`ls doc/*tech* 2>/dev/null || true`
    Paused/future:
-   !`ls doc/open/ 2>/dev/null`
+   !`ls doc/open/ 2>/dev/null || true`
 
 3. Read the functional spec and UX design as well — they provide the "why"
    behind decisions that the tech spec may not fully explain.

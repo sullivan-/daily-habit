@@ -295,13 +295,16 @@ private fun CurrentActivityView(
                     Text("Again")
                 }
             }
-            if (state.activeActivity?.completedAt == null) {
+            val activity = state.activeActivity
+            if (activity != null && activity.startTime == null && activity.completedAt == null) {
                 Button(onClick = onSkip, elevation = buttonElevation()) {
                     Text("Skip")
                 }
             }
-            Button(onClick = onDelete, elevation = buttonElevation()) {
-                Text("Delete")
+            if (activity?.completedAt != null) {
+                Button(onClick = onDelete, elevation = buttonElevation()) {
+                    Text("Delete")
+                }
             }
             Button(onClick = { onEditHabit(habit.id) }, elevation = buttonElevation()) {
                 Text("Edit Habit")

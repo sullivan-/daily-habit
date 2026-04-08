@@ -25,16 +25,16 @@ Before drafting:
    If either is missing, discuss whether it should be written first.
 
    Active specs and designs:
-   !`ls doc/*spec* doc/*ux* doc/*design* 2>/dev/null`
+   !`ls doc/*spec* doc/*ux* doc/*design* 2>/dev/null || true`
    Paused/future:
-   !`ls doc/open/ 2>/dev/null`
+   !`ls doc/open/ 2>/dev/null || true`
 
 3. Read 1-2 completed tech specs from `doc/completed/` that are most relevant
    to the feature. Use them to calibrate tone, depth, and structure — not
    as rigid templates.
 
    Completed tech specs:
-   !`ls doc/completed/*tech* 2>/dev/null`
+   !`ls doc/completed/*tech* 2>/dev/null || true`
 
 4. Read the actual code that will be modified — the relevant entities, DAOs,
    repositories, ViewModels, and Compose screens. A tech spec must be

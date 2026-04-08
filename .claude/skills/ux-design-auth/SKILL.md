@@ -24,17 +24,17 @@ Before drafting, do three things:
    redefine behavior — present it.
 
    Active func specs:
-   !`ls doc/*func* 2>/dev/null`
+   !`ls doc/*func* 2>/dev/null || true`
 
 3. Read 1-2 completed UX designs from `doc/completed/` that are most relevant
    to the feature. use them to calibrate tone, depth, and structure — not
    as rigid templates.
 
    Available completed UX designs:
-   !`ls doc/completed/*ux* 2>/dev/null`
+   !`ls doc/completed/*ux* 2>/dev/null || true`
 
    If no completed UX designs exist yet, read any active ones in `doc/`:
-   !`ls doc/*ux* 2>/dev/null`
+   !`ls doc/*ux* 2>/dev/null || true`
 
 Then explore specific code relevant to the feature to understand current
 state.

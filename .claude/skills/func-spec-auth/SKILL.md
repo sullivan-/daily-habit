@@ -23,11 +23,11 @@ Before drafting, do two things:
    structure — not as rigid templates.
 
    Available completed specs:
-   !`ls doc/completed/*func* 2>/dev/null`
+   !`ls doc/completed/*func* 2>/dev/null || true`
 
    If no completed specs exist yet, read any active specs in `doc/` for
    reference:
-   !`ls doc/*func* 2>/dev/null`
+   !`ls doc/*func* 2>/dev/null || true`
 
 Then explore specific code relevant to the feature to understand current
 state.
