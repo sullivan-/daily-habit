@@ -84,6 +84,7 @@ class AgendaViewModelTest {
         every { activityRepo.activitiesForDate(today) } returns activitiesFlow
         coEvery { activityRepo.create(any()) } returns 1L
         coEvery { activityRepo.inProgressActivity(any(), any()) } returns null
+        coEvery { activityRepo.activeActivity() } returns null
         coEvery { habitRepo.getById("qigong") } returns qigong
         coEvery { habitRepo.getById("vitamins") } returns vitamins
     }

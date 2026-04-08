@@ -79,6 +79,7 @@ class PrimaryScreenTest {
         every { activityRepo.activitiesForDate(today) } returns activitiesFlow
         coEvery { activityRepo.create(any()) } returns 1L
         coEvery { activityRepo.inProgressActivity(any(), any()) } returns null
+        coEvery { activityRepo.activeActivity() } returns null
         coEvery { activityRepo.completedHistoryForHabit(any()) } returns emptyList()
         coEvery { habitRepo.getById("qigong") } returns qigong
         coEvery { habitRepo.getById("vitamins") } returns vitamins

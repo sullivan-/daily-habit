@@ -515,7 +515,7 @@ private fun EditableActivityTimes(
             modifier = Modifier.clickable { editingEnd = true }
         )
     }
-    if (habit.timed && activity.elapsedMs > 0) {
+    if (habit.timed && activity.completedAt != null && activity.elapsedMs > 0) {
         Text(
             text = "duration: ${formatElapsed(activity.elapsedMs)}",
             style = MaterialTheme.typography.bodyMedium

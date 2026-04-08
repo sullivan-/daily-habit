@@ -29,6 +29,13 @@ interface ActivityDao {
 
     @Query(
         "SELECT * FROM activity " +
+        "WHERE startTime IS NOT NULL AND completedAt IS NULL " +
+        "LIMIT 1"
+    )
+    suspend fun activeActivity(): Activity?
+
+    @Query(
+        "SELECT * FROM activity " +
         "WHERE habitId = :habitId AND completedAt IS NOT NULL " +
         "ORDER BY completedAt ASC"
     )

@@ -55,6 +55,18 @@ class AgendaViewModel(
                 _uiState.value = newState
             }
         }
+        viewModelScope.launch {
+            val active = activityRepo.activeActivity() ?: return@launch
+            _uiState.value = _uiState.value.copy(
+                selectedHabitId = active.habitId,
+                activeActivity = active,
+                timedHabitId = active.habitId
+            )
+            val habit = habitRepo.getById(active.habitId)
+            if (habit?.timed == true) {
+                startTimerTick()
+            }
+        }
     }
 
     fun switchToReview() {
