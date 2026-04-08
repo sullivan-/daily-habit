@@ -262,7 +262,7 @@ class AgendaViewModel(
                 } ?: break
                 val elapsed = timedActivity.elapsedMs
 
-                _uiState.value = currentState.copy(timerTickMs = elapsed)
+                _uiState.value = _uiState.value.copy(timerTickMs = elapsed)
 
                 if (goalMs > 0 && !goalChimeFired && elapsed >= goalMs) {
                     _chimeEvents.tryEmit(ChimeEvent.Threshold)
