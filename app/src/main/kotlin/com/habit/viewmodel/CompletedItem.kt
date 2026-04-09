@@ -5,5 +5,6 @@ import com.habit.data.Habit
 
 data class CompletedItem(
     val activity: Activity,
-    val habit: Habit
+    val habit: Habit,
+    val trackName: String? = null
 )

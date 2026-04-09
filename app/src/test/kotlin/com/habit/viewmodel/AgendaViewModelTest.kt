@@ -685,4 +685,102 @@ class AgendaViewModelTest {
 
         assertThat(vm.uiState.value.availableTracks).isEmpty()
     }
+
+    @Test
+    fun `selectMilestone allows picking any incomplete milestone`() = runTest {
+        val track = Track(
+            id = "standing", habitId = "qigong", name = "Standing",
+            priority = Priority.HIGH
+        )
+        val milestone1 = Milestone(
+            id = 1, trackId = "standing", name = "Lesson 1",
+            sortOrder = 1, completed = false
+        )
+        val milestone2 = Milestone(
+            id = 2, trackId = "standing", name = "Lesson 2",
+            sortOrder = 2, completed = false
+        )
+        coEvery { trackRepo.getById("standing") } returns track
+        coEvery { trackRepo.defaultMilestone("standing") } returns milestone1
+        coEvery { trackRepo.incompleteMilestones("standing") } returns
+            listOf(milestone1, milestone2)
+        coEvery { trackRepo.getMilestoneById(2) } returns milestone2
+
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.selectTrack("standing")
+        vm.selectMilestone(2)
+
+        val state = vm.uiState.value
+        assertThat(state.selectedMilestone).isEqualTo(milestone2)
+        assertThat(state.activeActivity?.milestoneId).isEqualTo(2)
+    }
+
+    @Test
+    fun `completeMilestone marks done and advances to next`() = runTest {
+        val track = Track(
+            id = "standing", habitId = "qigong", name = "Standing",
+            priority = Priority.HIGH
+        )
+        val milestone1 = Milestone(
+            id = 1, trackId = "standing", name = "Lesson 1",
+            sortOrder = 1, completed = false
+        )
+        val milestone2 = Milestone(
+            id = 2, trackId = "standing", name = "Lesson 2",
+            sortOrder = 2, completed = false
+        )
+        coEvery { trackRepo.getById("standing") } returns track
+        // first call from selectTrack returns milestone1; second call from completeMilestone
+        // returns milestone2
+        coEvery { trackRepo.defaultMilestone("standing") } returnsMany
+            listOf(milestone1, milestone2)
+        coEvery { trackRepo.incompleteMilestones("standing") } returnsMany
+            listOf(listOf(milestone1, milestone2), listOf(milestone2))
+
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.selectTrack("standing")
+        vm.completeMilestone()
+
+        coVerify {
+            trackRepo.updateMilestone(milestone1.copy(completed = true))
+        }
+        val state = vm.uiState.value
+        assertThat(state.selectedMilestone).isEqualTo(milestone2)
+        assertThat(state.activeActivity?.milestoneId).isEqualTo(2)
+        assertThat(state.incompleteMilestones).hasSize(1)
+    }
+
+    @Test
+    fun `completeMilestone with last milestone leaves selectedMilestone null`() = runTest {
+        val track = Track(
+            id = "standing", habitId = "qigong", name = "Standing",
+            priority = Priority.HIGH
+        )
+        val milestone = Milestone(
+            id = 1, trackId = "standing", name = "Lesson 1",
+            sortOrder = 1, completed = false
+        )
+        coEvery { trackRepo.getById("standing") } returns track
+        // first call from selectTrack returns the milestone; second call from
+        // completeMilestone returns null (all done)
+        coEvery { trackRepo.defaultMilestone("standing") } returnsMany
+            listOf(milestone, null)
+        coEvery { trackRepo.incompleteMilestones("standing") } returnsMany
+            listOf(listOf(milestone), emptyList())
+
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.selectTrack("standing")
+        vm.completeMilestone()
+
+        coVerify {
+            trackRepo.updateMilestone(milestone.copy(completed = true))
+        }
+        val state = vm.uiState.value
+        assertThat(state.selectedMilestone).isNull()
+        assertThat(state.activeActivity?.milestoneId).isNull()
+        assertThat(state.incompleteMilestones).isEmpty()
+    }
 }

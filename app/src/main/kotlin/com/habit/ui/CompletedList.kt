@@ -48,7 +48,7 @@ fun CompletedList(
                         text = item.habit.name,
                         style = MaterialTheme.typography.bodyLarge
                     )
-                    item.activity.trackId?.let {
+                    item.trackName?.let {
                         Text(
                             text = it,
                             style = MaterialTheme.typography.bodySmall,

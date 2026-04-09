@@ -48,12 +48,19 @@ data class AgendaUiState(
     val completedItems: List<CompletedItem>
         get() {
             val habitsById = habits.associateBy { it.id }
+            val tracksById = availableTracks.associateBy { it.id }
             return todayActivities
                 .filter { it.completedAt != null }
                 .sortedBy { it.completedAt }
                 .mapNotNull { activity ->
                     habitsById[activity.habitId]?.let { habit ->
-                        CompletedItem(activity = activity, habit = habit)
+                        CompletedItem(
+                            activity = activity,
+                            habit = habit,
+                            trackName = activity.trackId?.let { id ->
+                                tracksById[id]?.name ?: id
+                            }
+                        )
                     }
                 }
         }

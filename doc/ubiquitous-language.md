@@ -21,7 +21,9 @@ Examples: "Qigong", "Home", "Badux", "Vitamins"
 
 A single recorded instance of performing a habit. An activity belongs to one
 habit and one calendar date. It captures when the work happened and an optional
-note. An activity is the actual accomplishment — the real thing that was done.
+note. An activity may optionally be associated with a track and a milestone
+within that track. An activity is the actual accomplishment — the real thing
+that was done.
 
 For timed habits, an activity also records: start time (first start tap), end
 time (done tap), and elapsed duration (accumulated running time, excluding
@@ -100,13 +102,12 @@ Ordering among habits with the same time of day. Lower values appear first in
 the agenda. Distinct from priority weight, which controls ordering of subsequent
 activities.
 
-### Daily Text
+### Daily Text (removed)
 
-Optional day-specific default text for a habit. E.g., Body Care on Monday
-pre-fills "sinus rinse", on Wednesday pre-fills "cholesterol." The daily text
-appears in the note field when the habit becomes the focus in the activity view.
-It is a default, not a locked value — the user can edit or replace it before
-checking off the activity.
+Replaced by track day-of-week defaults. Previously, this was optional
+day-specific default text for a habit that pre-populated the notes field.
+Now, day-of-week behavior is handled by assigning a default day to a track,
+which appears at the top of the track selector on that day.
 
 ## Choices Domain
 
@@ -138,6 +139,26 @@ A status bar at the bottom of the choices screen, following the same pattern as 
 and agenda bar. Contains the menu button, the "Choices" label, a weekly running total showing the
 abstain-to-total ratio across all tallies for the past seven days, and a + button for creating
 new tallies.
+
+## Tracks Domain
+
+### Track
+
+A named sub-category within a habit. A track has a name, optional day-of-week
+default, optional ordered milestone series, a priority, and an archived flag.
+Tracks persist across activities — selecting a track for an activity does not
+consume it.
+
+### Milestone
+
+An ordered item within a track's series. Milestones have a name, sort order,
+and completed flag. The sort order suggests which milestone to work on next,
+but the user can pick any incomplete milestone.
+
+### Archival
+
+Soft removal of a track from the suggestion dropdown. Preserves history — past
+activities that referenced the track remain intact. Reversible via un-archive.
 
 ## UX Context
 
@@ -196,3 +217,14 @@ The algorithm that sorts the agenda. Considers time of day (for first
 activities), activity level (first activities before second activities), and
 priority weight (within the same activity level). The ordering is a suggestion —
 the user can always tap any item to work on it out of order.
+
+### Track Selector
+
+A dropdown in the activity view for selecting a track. Appears between the
+habit name row and the timer. Only visible when the habit has tracks
+configured.
+
+### Milestone Selector
+
+A checkbox and dropdown below the track selector for series tracks. Defaults
+to the first incomplete milestone; the user can pick any incomplete one.
