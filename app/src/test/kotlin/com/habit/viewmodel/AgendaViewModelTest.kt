@@ -6,8 +6,11 @@ import com.habit.data.ActivityRepository
 import com.habit.data.DayBoundary
 import com.habit.data.Habit
 import com.habit.data.HabitRepository
+import com.habit.data.Milestone
 import com.habit.data.Priority
 import com.habit.data.TargetMode
+import com.habit.data.Track
+import com.habit.data.TrackRepository
 
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -38,6 +41,7 @@ class AgendaViewModelTest {
     private val habitRepo = mockk<HabitRepository>()
     private val activityRepo = mockk<ActivityRepository>(relaxed = true)
     private val dayBoundary = mockk<DayBoundary>()
+    private val trackRepo = mockk<TrackRepository>(relaxed = true)
 
     private val qigong = Habit(
         id = "qigong",
@@ -579,5 +583,106 @@ class AgendaViewModelTest {
         val vm = createViewModel()
         val otherIds = vm.uiState.value.otherHabits.map { it.id }
         assertThat(otherIds).contains("qigong")
+    }
+
+    // --- track-related tests ---
+
+    private fun createViewModelWithTracks() = AgendaViewModel(
+        habitRepo, activityRepo, dayBoundary,
+        trackRepo = trackRepo,
+        tickDispatcher = tickDispatcher
+    )
+
+    @Test
+    fun `loadTracksForHabit populates availableTracks sorted by day default then priority`() = runTest {
+        // today is Monday
+        val mondayTrack = Track(
+            id = "monday-form", habitId = "qigong", name = "Monday Form",
+            priority = Priority.MEDIUM, dayOfWeek = DayOfWeek.MONDAY
+        )
+        val highPriorityTrack = Track(
+            id = "standing", habitId = "qigong", name = "Standing",
+            priority = Priority.HIGH
+        )
+        val lowPriorityTrack = Track(
+            id = "seated", habitId = "qigong", name = "Seated",
+            priority = Priority.LOW
+        )
+        coEvery { trackRepo.activeTracksForHabit("qigong") } returns
+            listOf(lowPriorityTrack, highPriorityTrack, mondayTrack)
+
+        val vm = createViewModelWithTracks()
+        vm.loadTracksForHabit("qigong")
+
+        val tracks = vm.uiState.value.availableTracks
+        assertThat(tracks).hasSize(3)
+        // monday track first (day default match), then high priority, then low
+        assertThat(tracks[0].id).isEqualTo("monday-form")
+        assertThat(tracks[1].id).isEqualTo("standing")
+        assertThat(tracks[2].id).isEqualTo("seated")
+    }
+
+    @Test
+    fun `selectTrack updates activity trackId and loads milestone`() = runTest {
+        val track = Track(
+            id = "standing", habitId = "qigong", name = "Standing",
+            priority = Priority.HIGH
+        )
+        val milestone = Milestone(
+            id = 1, trackId = "standing", name = "Lesson 1",
+            sortOrder = 1, completed = false
+        )
+        val milestone2 = Milestone(
+            id = 2, trackId = "standing", name = "Lesson 2",
+            sortOrder = 2, completed = false
+        )
+        coEvery { trackRepo.getById("standing") } returns track
+        coEvery { trackRepo.defaultMilestone("standing") } returns milestone
+        coEvery { trackRepo.incompleteMilestones("standing") } returns
+            listOf(milestone, milestone2)
+
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.selectTrack("standing")
+
+        val state = vm.uiState.value
+        assertThat(state.activeActivity?.trackId).isEqualTo("standing")
+        assertThat(state.activeActivity?.milestoneId).isEqualTo(1)
+        assertThat(state.selectedTrack).isEqualTo(track)
+        assertThat(state.selectedMilestone).isEqualTo(milestone)
+        assertThat(state.incompleteMilestones).hasSize(2)
+    }
+
+    @Test
+    fun `selectTrack null clears track and milestone`() = runTest {
+        val track = Track(
+            id = "standing", habitId = "qigong", name = "Standing",
+            priority = Priority.HIGH
+        )
+        coEvery { trackRepo.getById("standing") } returns track
+        coEvery { trackRepo.defaultMilestone("standing") } returns null
+        coEvery { trackRepo.incompleteMilestones("standing") } returns emptyList()
+
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.selectTrack("standing")
+        vm.selectTrack(null)
+
+        val state = vm.uiState.value
+        assertThat(state.activeActivity?.trackId).isNull()
+        assertThat(state.activeActivity?.milestoneId).isNull()
+        assertThat(state.selectedTrack).isNull()
+        assertThat(state.selectedMilestone).isNull()
+        assertThat(state.incompleteMilestones).isEmpty()
+    }
+
+    @Test
+    fun `habits with no tracks have empty availableTracks`() = runTest {
+        coEvery { trackRepo.activeTracksForHabit("vitamins") } returns emptyList()
+
+        val vm = createViewModelWithTracks()
+        vm.loadTracksForHabit("vitamins")
+
+        assertThat(vm.uiState.value.availableTracks).isEmpty()
     }
 }

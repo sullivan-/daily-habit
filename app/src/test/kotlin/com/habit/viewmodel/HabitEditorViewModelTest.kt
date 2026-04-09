@@ -3,8 +3,10 @@ package com.habit.viewmodel
 import com.google.common.truth.Truth.assertThat
 import com.habit.data.Habit
 import com.habit.data.HabitRepository
+import com.habit.data.Milestone
 import com.habit.data.Priority
 import com.habit.data.TargetMode
+import com.habit.data.TrackRepository
 
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -25,6 +27,7 @@ class HabitEditorViewModelTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
     private val habitRepo = mockk<HabitRepository>(relaxed = true)
+    private val trackRepo = mockk<TrackRepository>(relaxed = true)
 
     private val existingHabit = Habit(
         id = "qigong",
@@ -303,5 +306,91 @@ class HabitEditorViewModelTest {
 
         vm.save()
         assertThat(vm.state.value.dirty).isFalse()
+    }
+
+    // --- track-related tests ---
+
+    private fun createViewModelWithTracks() = HabitEditorViewModel(
+        habitRepo, trackRepo = trackRepo
+    )
+
+    @Test
+    fun `addTrack adds an expanded new item`() {
+        val vm = createViewModelWithTracks()
+        vm.addTrack()
+
+        val tracks = vm.state.value.tracks
+        assertThat(tracks).hasSize(1)
+        assertThat(tracks[0].isNew).isTrue()
+        assertThat(tracks[0].expanded).isTrue()
+        assertThat(tracks[0].name).isEmpty()
+        assertThat(tracks[0].priority).isEqualTo(Priority.MEDIUM)
+        assertThat(vm.state.value.dirty).isTrue()
+    }
+
+    @Test
+    fun `archiveTrack sets archived and collapses`() {
+        val vm = createViewModelWithTracks()
+        vm.addTrack()
+        vm.archiveTrack(0)
+
+        val track = vm.state.value.tracks[0]
+        assertThat(track.archived).isTrue()
+        assertThat(track.expanded).isFalse()
+    }
+
+    @Test
+    fun `unarchiveTrack clears archived flag`() {
+        val vm = createViewModelWithTracks()
+        vm.addTrack()
+        vm.archiveTrack(0)
+        assertThat(vm.state.value.tracks[0].archived).isTrue()
+
+        vm.unarchiveTrack(0)
+        assertThat(vm.state.value.tracks[0].archived).isFalse()
+    }
+
+    @Test
+    fun `deleteTrack removes from list`() {
+        val vm = createViewModelWithTracks()
+        vm.addTrack()
+        vm.addTrack()
+        assertThat(vm.state.value.tracks).hasSize(2)
+
+        vm.deleteTrack(0)
+        assertThat(vm.state.value.tracks).hasSize(1)
+        assertThat(vm.state.value.dirty).isTrue()
+    }
+
+    @Test
+    fun `addMilestone appends with correct sort order`() {
+        val vm = createViewModelWithTracks()
+        vm.addTrack()
+        vm.addMilestone(0, "Lesson 1")
+        vm.addMilestone(0, "Lesson 2")
+
+        val milestones = vm.state.value.tracks[0].milestones
+        assertThat(milestones).hasSize(2)
+        assertThat(milestones[0].name).isEqualTo("Lesson 1")
+        assertThat(milestones[0].sortOrder).isEqualTo(1)
+        assertThat(milestones[1].name).isEqualTo("Lesson 2")
+        assertThat(milestones[1].sortOrder).isEqualTo(2)
+        assertThat(vm.state.value.dirty).isTrue()
+    }
+
+    @Test
+    fun `deleteMilestone removes from list`() {
+        val vm = createViewModelWithTracks()
+        vm.addTrack()
+        vm.addMilestone(0, "Lesson 1")
+        vm.addMilestone(0, "Lesson 2")
+        assertThat(vm.state.value.tracks[0].milestones).hasSize(2)
+
+        vm.deleteMilestone(0, 0)
+
+        val milestones = vm.state.value.tracks[0].milestones
+        assertThat(milestones).hasSize(1)
+        assertThat(milestones[0].name).isEqualTo("Lesson 2")
+        assertThat(vm.state.value.dirty).isTrue()
     }
 }
