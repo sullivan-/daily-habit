@@ -2,6 +2,7 @@ package com.habit.ui
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -64,6 +66,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.habit.data.Priority
 import com.habit.data.TargetMode
 import com.habit.viewmodel.HabitEditorViewModel
+import com.habit.viewmodel.TrackEditorItem
 import java.time.DayOfWeek
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -289,6 +292,24 @@ fun HabitEditorScreen(
             }
 
             if (!state.isNew) {
+                FieldGroup("Tracks") {
+                    TracksEditor(
+                        tracks = state.tracks,
+                        onAdd = viewModel::addTrack,
+                        onToggleExpanded = viewModel::toggleTrackExpanded,
+                        onUpdateName = viewModel::updateTrackName,
+                        onUpdatePriority = viewModel::updateTrackPriority,
+                        onUpdateDayOfWeek = viewModel::updateTrackDayOfWeek,
+                        onArchive = viewModel::archiveTrack,
+                        onUnarchive = viewModel::unarchiveTrack,
+                        onDelete = viewModel::deleteTrack,
+                        onAddMilestone = viewModel::addMilestone,
+                        onDeleteMilestone = viewModel::deleteMilestone
+                    )
+                }
+            }
+
+            if (!state.isNew) {
                 Spacer(Modifier.height(4.dp))
                 OutlinedButton(
                     onClick = { showDeleteDialog = true },
@@ -448,6 +469,256 @@ private fun PrioritySelector(
                 DropdownMenuItem(
                     text = { Text(labels[p] ?: p.name) },
                     onClick = { onSelect(p); expanded = false }
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TracksEditor(
+    tracks: List<TrackEditorItem>,
+    onAdd: () -> Unit,
+    onToggleExpanded: (Int) -> Unit,
+    onUpdateName: (Int, String) -> Unit,
+    onUpdatePriority: (Int, Priority) -> Unit,
+    onUpdateDayOfWeek: (Int, DayOfWeek?) -> Unit,
+    onArchive: (Int) -> Unit,
+    onUnarchive: (Int) -> Unit,
+    onDelete: (Int) -> Unit,
+    onAddMilestone: (Int, String) -> Unit,
+    onDeleteMilestone: (Int, Int) -> Unit
+) {
+    val active = tracks.withIndex().filter { !it.value.archived }
+    val archived = tracks.withIndex().filter { it.value.archived }
+
+    active.forEach { (index, track) ->
+        if (track.expanded) {
+            TrackInlineEditor(
+                track = track,
+                onUpdateName = { onUpdateName(index, it) },
+                onUpdatePriority = { onUpdatePriority(index, it) },
+                onUpdateDayOfWeek = { onUpdateDayOfWeek(index, it) },
+                onArchive = { onArchive(index) },
+                onDelete = { onDelete(index) },
+                onDone = { onToggleExpanded(index) },
+                onAddMilestone = { onAddMilestone(index, it) },
+                onDeleteMilestone = { msIdx -> onDeleteMilestone(index, msIdx) }
+            )
+        } else {
+            TrackRow(
+                track = track,
+                onClick = { onToggleExpanded(index) }
+            )
+        }
+    }
+
+    Button(
+        onClick = onAdd,
+        elevation = buttonElevation(),
+        modifier = Modifier.padding(top = 8.dp)
+    ) {
+        Text("+ Add track")
+    }
+
+    if (archived.isNotEmpty()) {
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "Archived",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+        )
+        archived.forEach { (index, track) ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = track.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = { onUnarchive(index) }) {
+                    Text("Restore")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrackRow(
+    track: TrackEditorItem,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = track.name.ifEmpty { "(new track)" },
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f)
+        )
+        track.dayOfWeek?.let { day ->
+            Text(
+                text = day.name.take(3).lowercase()
+                    .replaceFirstChar { it.uppercase() },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TrackInlineEditor(
+    track: TrackEditorItem,
+    onUpdateName: (String) -> Unit,
+    onUpdatePriority: (Priority) -> Unit,
+    onUpdateDayOfWeek: (DayOfWeek?) -> Unit,
+    onArchive: () -> Unit,
+    onDelete: () -> Unit,
+    onDone: () -> Unit,
+    onAddMilestone: (String) -> Unit,
+    onDeleteMilestone: (Int) -> Unit
+) {
+    var newMilestoneName by remember { mutableStateOf("") }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, MaterialTheme.colorScheme.outline, ControlShape)
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        OutlinedTextField(
+            value = track.name,
+            onValueChange = onUpdateName,
+            label = { Text("Name") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = ControlShape,
+            singleLine = true
+        )
+
+        DayOfWeekSelector(
+            selected = track.dayOfWeek,
+            onSelect = onUpdateDayOfWeek
+        )
+
+        if (track.milestones.isNotEmpty()) {
+            Text("Series", style = MaterialTheme.typography.labelMedium)
+            track.milestones.forEachIndexed { msIdx, milestone ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "${msIdx + 1}.",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.width(24.dp)
+                    )
+                    Checkbox(
+                        checked = milestone.completed,
+                        onCheckedChange = null,
+                        enabled = false
+                    )
+                    Text(
+                        text = milestone.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (milestone.id == 0L || track.canDelete) {
+                        IconButton(onClick = { onDeleteMilestone(msIdx) }) {
+                            Icon(Icons.Filled.Close, "delete milestone",
+                                modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            }
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedTextField(
+                value = newMilestoneName,
+                onValueChange = { newMilestoneName = it },
+                label = { Text("New milestone") },
+                modifier = Modifier.weight(1f),
+                shape = ControlShape,
+                singleLine = true
+            )
+            IconButton(
+                onClick = {
+                    if (newMilestoneName.isNotBlank()) {
+                        onAddMilestone(newMilestoneName.trim())
+                        newMilestoneName = ""
+                    }
+                }
+            ) {
+                Icon(Icons.Filled.Add, "add milestone")
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+        ) {
+            if (track.canDelete) {
+                TextButton(onClick = onDelete) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            } else {
+                TextButton(onClick = onArchive) {
+                    Text("Archive")
+                }
+            }
+            Button(onClick = onDone, elevation = buttonElevation()) {
+                Text("Done")
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DayOfWeekSelector(
+    selected: DayOfWeek?,
+    onSelect: (DayOfWeek?) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val labels = listOf(null to "None") + DayOfWeek.entries.map {
+        it to it.name.take(3).lowercase().replaceFirstChar { c -> c.uppercase() }
+    }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it }
+    ) {
+        OutlinedTextField(
+            value = labels.first { it.first == selected }.second,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Day") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            shape = ControlShape,
+            modifier = Modifier.menuAnchor().width(140.dp)
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            labels.forEach { (day, label) ->
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = { onSelect(day); expanded = false }
                 )
             }
         }
