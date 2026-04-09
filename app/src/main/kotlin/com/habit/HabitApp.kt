@@ -35,8 +35,14 @@ class HabitApp : Application() {
 
     private fun loadHabits() {
         appScope.launch {
-            container.habitRepo.loadFromConfig(container.habits)
-            container.tallyRepo.loadFromConfig(container.tallies)
+            if (container.habitRepo.count() == 0) {
+                container.habitRepo.loadFromConfig(container.habits)
+                container.tallyRepo.loadFromConfig(container.tallies)
+                container.trackRepo.loadFromConfig(
+                    container.tracks,
+                    container.milestones
+                )
+            }
         }
     }
 

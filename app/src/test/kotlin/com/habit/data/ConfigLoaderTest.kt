@@ -35,8 +35,7 @@ class ConfigLoaderTest {
                 "timed": true,
                 "goalMinutes": 30,
                 "stopMinutes": null,
-                "priority": "HIGH",
-                "dailyTexts": {"MONDAY": "standing form"}
+                "priority": "HIGH"
             }]
         }
         """).load()
@@ -58,9 +57,6 @@ class ConfigLoaderTest {
         assertThat(habit.goalMinutes).isEqualTo(30)
         assertThat(habit.stopMinutes).isNull()
         assertThat(habit.priority).isEqualTo(Priority.HIGH)
-        assertThat(habit.dailyTexts).isEqualTo(
-            mapOf(DayOfWeek.MONDAY to "standing form")
-        )
     }
 
     @Test
@@ -85,7 +81,6 @@ class ConfigLoaderTest {
         val habit = config.habits[0]
         assertThat(habit.goalMinutes).isNull()
         assertThat(habit.stopMinutes).isNull()
-        assertThat(habit.dailyTexts).isEmpty()
     }
 
     @Test

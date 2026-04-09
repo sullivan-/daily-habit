@@ -50,8 +50,7 @@ class PrimaryScreenTest {
         timed = true,
         goalMinutes = 30,
         stopMinutes = null,
-        priority = Priority.HIGH,
-        dailyTexts = emptyMap()
+        priority = Priority.HIGH
     )
 
     private val vitamins = Habit(
@@ -65,8 +64,7 @@ class PrimaryScreenTest {
         timed = false,
         goalMinutes = null,
         stopMinutes = null,
-        priority = Priority.MEDIUM,
-        dailyTexts = emptyMap()
+        priority = Priority.MEDIUM
     )
 
     private val habitsFlow = MutableStateFlow(listOf(qigong, vitamins))

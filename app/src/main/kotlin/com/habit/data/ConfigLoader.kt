@@ -17,8 +17,7 @@ data class HabitJson(
     val timed: Boolean,
     val goalMinutes: Int? = null,
     val stopMinutes: Int? = null,
-    val priority: String,
-    val dailyTexts: Map<String, String> = emptyMap()
+    val priority: String
 )
 
 @Serializable
@@ -29,16 +28,29 @@ data class TallyJson(
 )
 
 @Serializable
+data class TrackJson(
+    val id: String,
+    val habitId: String,
+    val name: String,
+    val priority: String,
+    val dayOfWeek: String? = null,
+    val milestones: List<String> = emptyList()
+)
+
+@Serializable
 data class AppConfigJson(
     val dayBoundaryHour: Int,
     val habits: List<HabitJson>,
-    val tallies: List<TallyJson> = emptyList()
+    val tallies: List<TallyJson> = emptyList(),
+    val tracks: List<TrackJson> = emptyList()
 )
 
 data class AppConfig(
     val dayBoundaryHour: Int,
     val habits: List<Habit>,
-    val tallies: List<Tally>
+    val tallies: List<Tally>,
+    val tracks: List<Track>,
+    val milestones: Map<String, List<Milestone>>
 )
 
 class ConfigLoader(private val context: Context) {
@@ -50,10 +62,24 @@ class ConfigLoader(private val context: Context) {
             .bufferedReader()
             .use { it.readText() }
         val raw = json.decodeFromString<AppConfigJson>(text)
+        val tracks = raw.tracks.map { it.toTrack() }
+        val milestones = raw.tracks
+            .filter { it.milestones.isNotEmpty() }
+            .associate { t ->
+                t.id to t.milestones.mapIndexed { i, name ->
+                    Milestone(
+                        trackId = t.id,
+                        name = name,
+                        sortOrder = i + 1
+                    )
+                }
+            }
         return AppConfig(
             dayBoundaryHour = raw.dayBoundaryHour,
             habits = raw.habits.map { it.toHabit() },
-            tallies = raw.tallies.map { it.toTally() }
+            tallies = raw.tallies.map { it.toTally() },
+            tracks = tracks,
+            milestones = milestones
         )
     }
 
@@ -61,6 +87,14 @@ class ConfigLoader(private val context: Context) {
         id = id,
         name = name,
         priority = Priority.valueOf(priority)
+    )
+
+    private fun TrackJson.toTrack() = Track(
+        id = id,
+        habitId = habitId,
+        name = name,
+        priority = Priority.valueOf(priority),
+        dayOfWeek = dayOfWeek?.let { DayOfWeek.valueOf(it) }
     )
 
     private fun HabitJson.toHabit() = Habit(
@@ -74,7 +108,6 @@ class ConfigLoader(private val context: Context) {
         timed = timed,
         goalMinutes = goalMinutes,
         stopMinutes = stopMinutes,
-        priority = Priority.valueOf(priority),
-        dailyTexts = dailyTexts.mapKeys { DayOfWeek.valueOf(it.key) }
+        priority = Priority.valueOf(priority)
     )
 }

@@ -24,7 +24,6 @@ data class HabitEditorState(
     val goalMinutes: Int? = null,
     val stopMinutes: Int? = null,
     val priority: Priority = Priority.MEDIUM,
-    val dailyTexts: Map<DayOfWeek, String> = emptyMap(),
     val isNew: Boolean = true,
     val dirty: Boolean = false,
     val saved: Boolean = false,
@@ -59,7 +58,6 @@ class HabitEditorViewModel(
                 goalMinutes = habit.goalMinutes,
                 stopMinutes = habit.stopMinutes,
                 priority = habit.priority,
-                dailyTexts = habit.dailyTexts,
                 isNew = false,
                 dirty = false
             )
@@ -135,12 +133,6 @@ class HabitEditorViewModel(
         _state.value = _state.value.copy(priority = priority, dirty = true)
     }
 
-    fun setDailyText(day: DayOfWeek, text: String) {
-        val current = _state.value.dailyTexts.toMutableMap()
-        if (text.isBlank()) current.remove(day) else current[day] = text
-        _state.value = _state.value.copy(dailyTexts = current, dirty = true)
-    }
-
     fun save() {
         val s = _state.value
         if (!s.isValid) return
@@ -158,8 +150,7 @@ class HabitEditorViewModel(
                 timed = s.timed,
                 goalMinutes = s.goalMinutes,
                 stopMinutes = s.stopMinutes,
-                priority = s.priority,
-                dailyTexts = s.dailyTexts
+                priority = s.priority
             )
             if (s.isNew) {
                 habitRepo.insert(habit)

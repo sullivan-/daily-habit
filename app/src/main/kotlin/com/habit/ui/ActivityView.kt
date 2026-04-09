@@ -8,7 +8,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material.icons.Icons
@@ -32,6 +36,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.habit.data.Activity
 import com.habit.data.Habit
+import com.habit.data.Milestone
+import com.habit.data.Track
 import com.habit.viewmodel.AgendaUiState
 import com.habit.viewmodel.Layout
 import java.time.Instant
@@ -57,6 +63,9 @@ fun ActivityView(
     onDoAgain: (String) -> Unit,
     onSkip: () -> Unit = {},
     onDelete: () -> Unit = {},
+    onSelectTrack: (String?) -> Unit = {},
+    onSelectMilestone: (Long) -> Unit = {},
+    onCompleteMilestone: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val habit = state.selectedHabit
@@ -96,6 +105,9 @@ fun ActivityView(
                 onDoAgain = onDoAgain,
                 onSkip = onSkip,
                 onDelete = onDelete,
+                onSelectTrack = onSelectTrack,
+                onSelectMilestone = onSelectMilestone,
+                onCompleteMilestone = onCompleteMilestone,
                 isExpanded = state.layout == Layout.ACTIVITY_FOCUSED
             )
         }
@@ -138,6 +150,9 @@ private fun HabitView(
     onDoAgain: (String) -> Unit,
     onSkip: () -> Unit,
     onDelete: () -> Unit,
+    onSelectTrack: (String?) -> Unit,
+    onSelectMilestone: (Long) -> Unit,
+    onCompleteMilestone: () -> Unit,
     isExpanded: Boolean
 ) {
     val showHistory = isExpanded && state.browsingHistory &&
@@ -173,6 +188,9 @@ private fun HabitView(
             onDoAgain = onDoAgain,
             onSkip = onSkip,
             onDelete = onDelete,
+            onSelectTrack = onSelectTrack,
+            onSelectMilestone = onSelectMilestone,
+            onCompleteMilestone = onCompleteMilestone,
             onUpdateStartTime = onUpdateStartTime,
             onUpdateCompletedAt = onUpdateCompletedAt,
             isExpanded = isExpanded
@@ -196,6 +214,9 @@ private fun CurrentActivityView(
     onDoAgain: (String) -> Unit,
     onSkip: () -> Unit,
     onDelete: () -> Unit,
+    onSelectTrack: (String?) -> Unit,
+    onSelectMilestone: (Long) -> Unit,
+    onCompleteMilestone: () -> Unit,
     onUpdateStartTime: (Long, java.time.Instant?) -> Unit,
     onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
     isExpanded: Boolean
@@ -246,6 +267,22 @@ private fun CurrentActivityView(
                     if (habit.timed) onFinish(note) else onCompleteUntimed(habit.id, note)
                 }
             )
+        }
+
+        if (state.availableTracks.isNotEmpty()) {
+            TrackSelector(
+                tracks = state.availableTracks,
+                selectedTrackId = state.activeActivity?.trackId,
+                onSelect = onSelectTrack
+            )
+            if (state.incompleteMilestones.isNotEmpty() || state.selectedMilestone != null) {
+                MilestoneSelector(
+                    selected = state.selectedMilestone,
+                    incomplete = state.incompleteMilestones,
+                    onSelect = onSelectMilestone,
+                    onComplete = onCompleteMilestone
+                )
+            }
         }
 
         if (habit.timed) {
@@ -378,6 +415,14 @@ private fun HistoryActivityView(
             modifier = Modifier.padding(top = 4.dp)
         )
 
+        activity.trackId?.let { trackId ->
+            Text(
+                text = state.availableTracks.find { it.id == trackId }?.name ?: trackId,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
         EditableActivityTimes(
             activity = activity,
             habit = habit,
@@ -480,6 +525,94 @@ private fun CompletedActivityDetail(
             },
             modifier = Modifier.padding(top = 8.dp)
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TrackSelector(
+    tracks: List<Track>,
+    selectedTrackId: String?,
+    onSelect: (String?) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedName = tracks.find { it.id == selectedTrackId }?.name ?: "Select track..."
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it }
+    ) {
+        OutlinedTextField(
+            value = selectedName,
+            onValueChange = {},
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            shape = ControlShape,
+            modifier = Modifier.menuAnchor().fillMaxWidth(),
+            textStyle = if (selectedTrackId == null)
+                MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+            else MaterialTheme.typography.bodyLarge
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            tracks.forEach { track ->
+                DropdownMenuItem(
+                    text = { Text(track.name) },
+                    onClick = { onSelect(track.id); expanded = false }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MilestoneSelector(
+    selected: Milestone?,
+    incomplete: List<Milestone>,
+    onSelect: (Long) -> Unit,
+    onComplete: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(top = 4.dp)
+    ) {
+        Checkbox(
+            checked = false,
+            onCheckedChange = { onComplete() }
+        )
+        if (incomplete.size > 1) {
+            Text(
+                text = selected?.name ?: "",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { expanded = true }
+            )
+            androidx.compose.material3.DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                incomplete.forEach { ms ->
+                    DropdownMenuItem(
+                        text = { Text(ms.name) },
+                        onClick = { onSelect(ms.id); expanded = false }
+                    )
+                }
+            }
+        } else {
+            Text(
+                text = selected?.name ?: "",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }
 

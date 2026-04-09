@@ -211,7 +211,7 @@ fun HabitEditorScreen(
                 }
             }
 
-            FieldGroup("Tracking") {
+            FieldGroup("Timekeeping") {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         value = state.dailyTarget.toString(),
@@ -286,13 +286,6 @@ fun HabitEditorScreen(
                         )
                     }
                 }
-            }
-
-            FieldGroup("Daily texts") {
-                DailyTextsEditor(
-                    dailyTexts = state.dailyTexts,
-                    onSetText = viewModel::setDailyText
-                )
             }
 
             if (!state.isNew) {
@@ -458,32 +451,6 @@ private fun PrioritySelector(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun DailyTextsEditor(
-    dailyTexts: Map<DayOfWeek, String>,
-    onSetText: (DayOfWeek, String) -> Unit
-) {
-    val days = listOf(
-        DayOfWeek.SUNDAY to "Sun",
-        DayOfWeek.MONDAY to "Mon",
-        DayOfWeek.TUESDAY to "Tue",
-        DayOfWeek.WEDNESDAY to "Wed",
-        DayOfWeek.THURSDAY to "Thu",
-        DayOfWeek.FRIDAY to "Fri",
-        DayOfWeek.SATURDAY to "Sat"
-    )
-    days.forEach { (day, label) ->
-        OutlinedTextField(
-            value = dailyTexts[day] ?: "",
-            onValueChange = { onSetText(day, it) },
-            label = { Text(label) },
-            modifier = Modifier.fillMaxWidth(),
-            shape = ControlShape,
-            singleLine = true
-        )
     }
 }
 

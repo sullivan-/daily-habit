@@ -26,21 +26,18 @@ class ConvertersTest {
     }
 
     @Test
-    fun `round-trip daily texts`() {
-        val texts = mapOf(
-            DayOfWeek.MONDAY to "sinus rinse",
-            DayOfWeek.WEDNESDAY to "cholesterol"
-        )
-        val encoded = converters.fromDailyTexts(texts)
-        val decoded = converters.toDailyTexts(encoded)
-        assertThat(decoded).isEqualTo(texts)
+    fun `round-trip nullable DayOfWeek`() {
+        val encoded = converters.fromDayOfWeek(DayOfWeek.MONDAY)
+        val decoded = converters.toDayOfWeek(encoded)
+        assertThat(decoded).isEqualTo(DayOfWeek.MONDAY)
     }
 
     @Test
-    fun `empty daily texts`() {
-        val encoded = converters.fromDailyTexts(emptyMap())
-        val decoded = converters.toDailyTexts(encoded)
-        assertThat(decoded).isEmpty()
+    fun `null DayOfWeek round-trip`() {
+        val encoded = converters.fromDayOfWeek(null)
+        assertThat(encoded).isNull()
+        val decoded = converters.toDayOfWeek(null)
+        assertThat(decoded).isNull()
     }
 
     @Test

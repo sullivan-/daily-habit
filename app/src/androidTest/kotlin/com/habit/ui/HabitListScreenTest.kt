@@ -49,8 +49,7 @@ class HabitListScreenTest {
         timed = true,
         goalMinutes = 30,
         stopMinutes = null,
-        priority = Priority.HIGH,
-        dailyTexts = emptyMap()
+        priority = Priority.HIGH
     )
 
     private val vitamins = Habit(
@@ -64,8 +63,7 @@ class HabitListScreenTest {
         timed = false,
         goalMinutes = null,
         stopMinutes = null,
-        priority = Priority.MEDIUM,
-        dailyTexts = emptyMap()
+        priority = Priority.MEDIUM
     )
 
     private val badux = Habit(
@@ -82,8 +80,7 @@ class HabitListScreenTest {
         timed = true,
         goalMinutes = 50,
         stopMinutes = null,
-        priority = Priority.MEDIUM_HIGH,
-        dailyTexts = emptyMap()
+        priority = Priority.MEDIUM_HIGH
     )
 
     private var editedHabitId: String? = null

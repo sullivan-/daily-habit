@@ -37,8 +37,7 @@ class DisplayOrderingTest {
 
         goalMinutes = null,
         stopMinutes = null,
-        priority = priority,
-        dailyTexts = emptyMap()
+        priority = priority
     )
 
     private fun completed(habitId: String) = Activity(

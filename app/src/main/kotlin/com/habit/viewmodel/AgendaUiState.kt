@@ -2,7 +2,9 @@ package com.habit.viewmodel
 
 import com.habit.data.Activity
 import com.habit.data.Habit
+import com.habit.data.Milestone
 import com.habit.data.TargetMode
+import com.habit.data.Track
 import java.time.LocalDate
 
 data class AgendaUiState(
@@ -19,7 +21,11 @@ data class AgendaUiState(
     val previousLayout: Layout = Layout.MAIN,
     val historyActivities: List<Activity> = emptyList(),
     val historyIndex: Int = -1,
-    val historyAnchorIndex: Int = -1
+    val historyAnchorIndex: Int = -1,
+    val availableTracks: List<Track> = emptyList(),
+    val selectedTrack: Track? = null,
+    val selectedMilestone: Milestone? = null,
+    val incompleteMilestones: List<Milestone> = emptyList()
 ) {
     val browsingHistory: Boolean
         get() = historyIndex >= 0 && historyActivities.isNotEmpty()

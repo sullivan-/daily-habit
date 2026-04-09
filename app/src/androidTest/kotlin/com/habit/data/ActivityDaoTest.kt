@@ -38,8 +38,7 @@ class ActivityDaoTest {
 
         goalMinutes = 30,
         stopMinutes = null,
-        priority = Priority.HIGH,
-        dailyTexts = emptyMap()
+        priority = Priority.HIGH
     )
 
     @Before

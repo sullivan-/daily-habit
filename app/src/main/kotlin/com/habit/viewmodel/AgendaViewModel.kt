@@ -6,6 +6,8 @@ import com.habit.data.Activity
 import com.habit.data.ActivityRepository
 import com.habit.data.DayBoundary
 import com.habit.data.HabitRepository
+import com.habit.data.priorityToScore
+import com.habit.data.TrackRepository
 import com.habit.data.TargetMode
 import java.time.Instant
 import kotlinx.coroutines.CoroutineDispatcher
@@ -26,6 +28,7 @@ class AgendaViewModel(
     private val habitRepo: HabitRepository,
     private val activityRepo: ActivityRepository,
     private val dayBoundary: DayBoundary,
+    private val trackRepo: TrackRepository? = null,
     private val tickDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
 
@@ -130,7 +133,7 @@ class AgendaViewModel(
                     habitId = habitId,
                     attributedDate = today,
                     startTime = null,
-                    note = habit.dailyTexts[today.dayOfWeek] ?: "",
+                    note = "",
                     completedAt = null
                 )
                 val id = activityRepo.create(new)
@@ -139,6 +142,7 @@ class AgendaViewModel(
                 )
             }
             loadHistory(habitId)
+            loadTracksForHabit(habitId)
         }
     }
 
@@ -306,7 +310,7 @@ class AgendaViewModel(
                 habitId = habitId,
                 attributedDate = today,
                 startTime = null,
-                note = habit.dailyTexts[today.dayOfWeek] ?: "",
+                note = "",
                 completedAt = null
             )
             val id = activityRepo.create(new)
@@ -377,9 +381,7 @@ class AgendaViewModel(
                     habitId = habitId,
                     attributedDate = today,
                     startTime = null,
-                    note = note.ifEmpty {
-                        habit.dailyTexts[today.dayOfWeek] ?: ""
-                    },
+                    note = note,
                     completedAt = Instant.now()
                 )
                 activityRepo.create(new)
@@ -427,6 +429,76 @@ class AgendaViewModel(
                 historyActivities = newHistory
             )
             viewModelScope.launch { activityRepo.update(updated) }
+        }
+    }
+
+    fun loadTracksForHabit(habitId: String) {
+        val repo = trackRepo ?: return
+        viewModelScope.launch {
+            val tracks = repo.activeTracksForHabit(habitId)
+            val today = dayBoundary.today().dayOfWeek
+            val sorted = tracks.sortedWith(
+                compareByDescending<com.habit.data.Track> { it.dayOfWeek == today }
+                    .thenByDescending { priorityToScore(it.priority) }
+            )
+            _uiState.value = _uiState.value.copy(availableTracks = sorted)
+        }
+    }
+
+    fun selectTrack(trackId: String?) {
+        val repo = trackRepo ?: return
+        viewModelScope.launch {
+            val activity = _uiState.value.activeActivity ?: return@launch
+            val track = trackId?.let { repo.getById(it) }
+            val milestone = track?.let { repo.defaultMilestone(it.id) }
+            val incomplete = track?.let { repo.incompleteMilestones(it.id) } ?: emptyList()
+
+            val updated = activity.copy(trackId = trackId, milestoneId = milestone?.id)
+            activityRepo.update(updated)
+
+            _uiState.value = _uiState.value.copy(
+                activeActivity = updated,
+                selectedTrack = track,
+                selectedMilestone = milestone,
+                incompleteMilestones = incomplete
+            )
+        }
+    }
+
+    fun selectMilestone(milestoneId: Long) {
+        val repo = trackRepo ?: return
+        viewModelScope.launch {
+            val activity = _uiState.value.activeActivity ?: return@launch
+            val milestone = repo.getMilestoneById(milestoneId) ?: return@launch
+            val updated = activity.copy(milestoneId = milestoneId)
+            activityRepo.update(updated)
+
+            _uiState.value = _uiState.value.copy(
+                activeActivity = updated,
+                selectedMilestone = milestone
+            )
+        }
+    }
+
+    fun completeMilestone() {
+        val repo = trackRepo ?: return
+        viewModelScope.launch {
+            val milestone = _uiState.value.selectedMilestone ?: return@launch
+            repo.updateMilestone(milestone.copy(completed = true))
+
+            val track = _uiState.value.selectedTrack ?: return@launch
+            val next = repo.defaultMilestone(track.id)
+            val incomplete = repo.incompleteMilestones(track.id)
+
+            val activity = _uiState.value.activeActivity ?: return@launch
+            val updated = activity.copy(milestoneId = next?.id)
+            activityRepo.update(updated)
+
+            _uiState.value = _uiState.value.copy(
+                activeActivity = updated,
+                selectedMilestone = next,
+                incompleteMilestones = incomplete
+            )
         }
     }
 

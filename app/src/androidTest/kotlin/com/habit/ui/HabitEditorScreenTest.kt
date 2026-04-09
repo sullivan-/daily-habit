@@ -48,8 +48,7 @@ class HabitEditorScreenTest {
         timed = true,
         goalMinutes = 30,
         stopMinutes = null,
-        priority = Priority.HIGH,
-        dailyTexts = mapOf(DayOfWeek.MONDAY to "morning session")
+        priority = Priority.HIGH
     )
 
     @Before
@@ -220,21 +219,6 @@ class HabitEditorScreenTest {
         composeTestRule.onNode(isToggleable()).performScrollTo().performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("Goal").assertExists()
-    }
-
-    // --- daily texts ---
-
-    @Test
-    fun editHabitShowsDailyText() {
-        setScreen(habitId = "qigong")
-        composeTestRule.onNodeWithText("morning session").performScrollTo().assertIsDisplayed()
-    }
-
-    @Test
-    fun dailyTextsFieldsVisible() {
-        setScreen()
-        composeTestRule.onNodeWithText("Mon").performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText("Sat").performScrollTo().assertIsDisplayed()
     }
 
     // --- delete ---

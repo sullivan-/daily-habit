@@ -16,6 +16,5 @@ data class Habit(
     val timed: Boolean,
     val goalMinutes: Int?,
     val stopMinutes: Int?,
-    val priority: Priority,
-    val dailyTexts: Map<DayOfWeek, String>
+    val priority: Priority
 )

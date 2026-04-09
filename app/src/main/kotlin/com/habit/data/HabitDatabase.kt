@@ -7,8 +7,11 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [Habit::class, Activity::class, Tally::class, Choice::class],
-    version = 8,
+    entities = [
+        Habit::class, Activity::class, Tally::class, Choice::class,
+        Track::class, Milestone::class
+    ],
+    version = 9,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -17,6 +20,8 @@ abstract class HabitDatabase : RoomDatabase() {
     abstract fun activityDao(): ActivityDao
     abstract fun tallyDao(): TallyDao
     abstract fun choiceDao(): ChoiceDao
+    abstract fun trackDao(): TrackDao
+    abstract fun milestoneDao(): MilestoneDao
 
     companion object {
         val MIGRATION_2_3 = object : Migration(2, 3) {
@@ -117,6 +122,51 @@ abstract class HabitDatabase : RoomDatabase() {
                     WHERE thresholdType = 'TIME_TO_STOP'
                 """)
                 db.execSQL("ALTER TABLE habit DROP COLUMN thresholdType")
+            }
+        }
+
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS track (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        habitId TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        priority TEXT NOT NULL,
+                        dayOfWeek TEXT,
+                        archived INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY (habitId) REFERENCES habit(id) ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_track_habitId ON track(habitId)"
+                )
+
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS milestone (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        trackId TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        sortOrder INTEGER NOT NULL,
+                        completed INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY (trackId) REFERENCES track(id) ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_milestone_trackId ON milestone(trackId)"
+                )
+
+                db.execSQL("ALTER TABLE activity ADD COLUMN trackId TEXT")
+                db.execSQL("ALTER TABLE activity ADD COLUMN milestoneId INTEGER")
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_activity_trackId ON activity(trackId)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_activity_milestoneId " +
+                    "ON activity(milestoneId)"
+                )
+
+                db.execSQL("ALTER TABLE habit DROP COLUMN dailyTexts")
             }
         }
     }

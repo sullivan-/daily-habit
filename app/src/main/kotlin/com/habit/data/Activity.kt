@@ -9,13 +9,32 @@ import java.time.LocalDate
 
 @Entity(
     tableName = "activity",
-    foreignKeys = [ForeignKey(
-        entity = Habit::class,
-        parentColumns = ["id"],
-        childColumns = ["habitId"],
-        onDelete = ForeignKey.CASCADE
-    )],
-    indices = [Index("habitId"), Index("attributedDate")]
+    foreignKeys = [
+        ForeignKey(
+            entity = Habit::class,
+            parentColumns = ["id"],
+            childColumns = ["habitId"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = Track::class,
+            parentColumns = ["id"],
+            childColumns = ["trackId"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = Milestone::class,
+            parentColumns = ["id"],
+            childColumns = ["milestoneId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index("habitId"),
+        Index("attributedDate"),
+        Index("trackId"),
+        Index("milestoneId")
+    ]
 )
 data class Activity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -23,7 +42,9 @@ data class Activity(
     val attributedDate: LocalDate,
     val startTime: Instant?,
     val note: String,
-    val completedAt: Instant?
+    val completedAt: Instant?,
+    val trackId: String? = null,
+    val milestoneId: Long? = null
 ) {
     val elapsedMs: Long
         get() = when {

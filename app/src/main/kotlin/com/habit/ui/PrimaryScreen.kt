@@ -106,6 +106,9 @@ fun PrimaryScreen(
             onDoAgain = viewModel::doAgain,
             onSkip = viewModel::skipActivity,
             onDelete = viewModel::deleteActivity,
+            onSelectTrack = viewModel::selectTrack,
+            onSelectMilestone = viewModel::selectMilestone,
+            onCompleteMilestone = viewModel::completeMilestone,
             modifier = expandedModifier
         )
 

@@ -9,6 +9,7 @@ import com.habit.data.DayBoundary
 import com.habit.data.HabitDatabase
 import com.habit.data.HabitRepository
 import com.habit.data.TallyRepository
+import com.habit.data.TrackRepository
 
 class AppContainer(context: Context) {
     private val config = ConfigLoader(context).load()
@@ -23,14 +24,18 @@ class AppContainer(context: Context) {
         HabitDatabase.MIGRATION_4_5,
         HabitDatabase.MIGRATION_5_6,
         HabitDatabase.MIGRATION_6_7,
-        HabitDatabase.MIGRATION_7_8
+        HabitDatabase.MIGRATION_7_8,
+        HabitDatabase.MIGRATION_8_9
     ).build()
 
     val habitRepo = HabitRepository(database.habitDao())
     val activityRepo = ActivityRepository(database.activityDao())
     val tallyRepo = TallyRepository(database.tallyDao())
     val choiceRepo = ChoiceRepository(database.choiceDao())
+    val trackRepo = TrackRepository(database.trackDao(), database.milestoneDao())
     val dayBoundary = DayBoundary(config.dayBoundaryHour)
     val habits = config.habits
     val tallies = config.tallies
+    val tracks = config.tracks
+    val milestones = config.milestones
 }

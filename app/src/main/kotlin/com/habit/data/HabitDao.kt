@@ -12,6 +12,9 @@ interface HabitDao {
     @Query("SELECT * FROM habit")
     fun allHabits(): Flow<List<Habit>>
 
+    @Query("SELECT COUNT(*) FROM habit")
+    suspend fun count(): Int
+
     @Query("SELECT * FROM habit WHERE id = :id")
     suspend fun getById(id: String): Habit?
 

@@ -37,8 +37,7 @@ class HabitEditorViewModelTest {
         timed = true,
         goalMinutes = 30,
         stopMinutes = null,
-        priority = Priority.HIGH,
-        dailyTexts = mapOf(DayOfWeek.MONDAY to "standing form")
+        priority = Priority.HIGH
     )
 
     @Before
@@ -77,7 +76,6 @@ class HabitEditorViewModelTest {
         assertThat(state.timesOfDay).isEqualTo(listOf(7, 15))
         assertThat(state.priority).isEqualTo(Priority.HIGH)
         assertThat(state.goalMinutes).isEqualTo(30)
-        assertThat(state.dailyTexts[DayOfWeek.MONDAY]).isEqualTo("standing form")
         assertThat(state.dirty).isFalse()
     }
 
@@ -208,16 +206,6 @@ class HabitEditorViewModelTest {
         vm.setStopMinutes(45)
         vm.setStopMinutes(null)
         assertThat(vm.state.value.stopMinutes).isNull()
-    }
-
-    @Test
-    fun `setDailyText adds and removes`() {
-        val vm = createViewModel()
-        vm.setDailyText(DayOfWeek.MONDAY, "sinus rinse")
-        assertThat(vm.state.value.dailyTexts[DayOfWeek.MONDAY]).isEqualTo("sinus rinse")
-
-        vm.setDailyText(DayOfWeek.MONDAY, "")
-        assertThat(vm.state.value.dailyTexts).doesNotContainKey(DayOfWeek.MONDAY)
     }
 
     @Test

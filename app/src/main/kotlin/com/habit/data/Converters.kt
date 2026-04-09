@@ -4,10 +4,6 @@ import androidx.room.TypeConverter
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
-
 class Converters {
 
     @TypeConverter
@@ -20,17 +16,10 @@ class Converters {
         else value.split(",").map { DayOfWeek.valueOf(it) }.toSet()
 
     @TypeConverter
-    fun fromDailyTexts(texts: Map<DayOfWeek, String>): String {
-        val stringMap = texts.mapKeys { it.key.name }
-        return Json.encodeToString(stringMap)
-    }
+    fun fromDayOfWeek(day: DayOfWeek?): String? = day?.name
 
     @TypeConverter
-    fun toDailyTexts(value: String): Map<DayOfWeek, String> {
-        if (value.isEmpty() || value == "{}") return emptyMap()
-        val stringMap: Map<String, String> = Json.decodeFromString(value)
-        return stringMap.mapKeys { DayOfWeek.valueOf(it.key) }
-    }
+    fun toDayOfWeek(value: String?): DayOfWeek? = value?.let { DayOfWeek.valueOf(it) }
 
     @TypeConverter
     fun fromIntList(list: List<Int>): String =

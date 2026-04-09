@@ -52,8 +52,7 @@ class AgendaViewModelTest {
 
         goalMinutes = 30,
         stopMinutes = null,
-        priority = Priority.HIGH,
-        dailyTexts = emptyMap()
+        priority = Priority.HIGH
     )
 
     private val vitamins = Habit(
@@ -69,8 +68,7 @@ class AgendaViewModelTest {
 
         goalMinutes = null,
         stopMinutes = null,
-        priority = Priority.MEDIUM,
-        dailyTexts = emptyMap()
+        priority = Priority.MEDIUM
     )
 
     private val habitsFlow = MutableStateFlow(listOf(qigong, vitamins))
@@ -96,7 +94,8 @@ class AgendaViewModelTest {
     }
 
     private fun createViewModel() = AgendaViewModel(
-        habitRepo, activityRepo, dayBoundary, tickDispatcher
+        habitRepo, activityRepo, dayBoundary,
+        tickDispatcher = tickDispatcher
     )
 
     @Test

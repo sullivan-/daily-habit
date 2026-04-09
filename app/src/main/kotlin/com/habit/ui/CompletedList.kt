@@ -48,6 +48,13 @@ fun CompletedList(
                         text = item.habit.name,
                         style = MaterialTheme.typography.bodyLarge
                     )
+                    item.activity.trackId?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     if (item.activity.note.isNotEmpty()) {
                         Text(
                             text = item.activity.note,

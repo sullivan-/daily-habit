@@ -12,7 +12,8 @@ class AgendaViewModelFactory(
         return AgendaViewModel(
             container.habitRepo,
             container.activityRepo,
-            container.dayBoundary
+            container.dayBoundary,
+            container.trackRepo
         ) as T
     }
 }

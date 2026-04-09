@@ -34,8 +34,7 @@ class HabitDaoTest {
 
         goalMinutes = 30,
         stopMinutes = null,
-        priority = Priority.HIGH,
-        dailyTexts = mapOf(DayOfWeek.MONDAY to "standing form")
+        priority = Priority.HIGH
     )
 
     @Before
@@ -59,7 +58,6 @@ class HabitDaoTest {
         assertEquals(1, all.size)
         assertEquals("Qigong", all[0].name)
         assertEquals(setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY), all[0].daysActive)
-        assertEquals(mapOf(DayOfWeek.MONDAY to "standing form"), all[0].dailyTexts)
     }
 
     @Test
