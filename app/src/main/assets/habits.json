@@ -394,24 +394,6 @@
   ],
   "tracks": [
     {
-      "id": "baduxgo-server",
-      "habitId": "badux",
-      "name": "baduxgo server",
-      "priority": "MEDIUM"
-    },
-    {
-      "id": "baduxgo-web",
-      "habitId": "badux",
-      "name": "baduxgo web",
-      "priority": "MEDIUM"
-    },
-    {
-      "id": "baduxgo-bot",
-      "habitId": "badux",
-      "name": "baduxgo bot",
-      "priority": "MEDIUM"
-    },
-    {
       "id": "sinus-rinse",
       "habitId": "body-care",
       "name": "sinus rinse",
@@ -461,10 +443,24 @@
       "dayOfWeek": "SUNDAY"
     },
     {
+      "id": "church",
+      "habitId": "prayer",
+      "name": "church",
+      "priority": "HIGH",
+      "dayOfWeek": "SUNDAY"
+    },
+    {
+      "id": "th-mf-class",
+      "habitId": "qigong-training",
+      "name": "TH MF class",
+      "priority": "HIGH",
+      "dayOfWeek": "WEDNESDAY"
+    },
+    {
       "id": "foundational-qigong",
       "habitId": "qigong-training",
       "name": "Foundational Qigong",
-      "priority": "HIGH",
+      "priority": "MEDIUM_HIGH",
       "milestones": [
         "lesson 1",
         "practice 1",
@@ -473,36 +469,203 @@
         "lesson 3",
         "practice 3",
         "lesson 4",
-        "practice 4"
-      ]
+        "practice 4",
+        "lesson 5",
+        "practice 5",
+        "lesson 6",
+        "practice 6",
+        "lesson 7",
+        "practice 7",
+        "lesson 8",
+        "practice 8"
+      ],
+      "completedMilestones": 12
     },
     {
-      "id": "tend-plants",
-      "habitId": "home-todo",
-      "name": "tend plants",
+      "id": "self-training-eg",
+      "habitId": "qigong-training",
+      "name": "Self Training: EG: TS & SS Level 1",
+      "priority": "MEDIUM_HIGH"
+    },
+    {
+      "id": "romans",
+      "habitId": "bible-study",
+      "name": "Romans",
       "priority": "MEDIUM",
-      "dayOfWeek": "MONDAY"
+      "milestones": [
+        "chapter 1",
+        "chapter 2",
+        "chapter 3",
+        "chapter 4",
+        "chapter 5",
+        "chapter 6",
+        "chapter 7",
+        "chapter 8",
+        "chapter 9",
+        "chapter 10",
+        "chapter 11",
+        "chapter 12",
+        "chapter 13",
+        "chapter 14",
+        "chapter 15",
+        "chapter 16"
+      ],
+      "completedMilestones": 2
     },
     {
-      "id": "backups",
-      "habitId": "home-todo",
-      "name": "backups",
+      "id": "coding",
+      "habitId": "badux",
+      "name": "Coding",
+      "priority": "HIGH"
+    },
+    {
+      "id": "alphago-course",
+      "habitId": "badux",
+      "name": "AlphaGo Course",
+      "priority": "MEDIUM"
+    },
+    {
+      "id": "ux-design-course",
+      "habitId": "badux",
+      "name": "UX Design Course",
+      "priority": "MEDIUM"
+    },
+    {
+      "id": "claude-talk",
+      "habitId": "badux",
+      "name": "Claude Talk",
+      "priority": "HIGH"
+    },
+    {
+      "id": "the-iliad",
+      "habitId": "read",
+      "name": "The Iliad",
       "priority": "MEDIUM",
-      "dayOfWeek": "WEDNESDAY"
+      "milestones": [
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11",
+        "Chapter 12",
+        "Chapter 13",
+        "Chapter 14",
+        "Chapter 15",
+        "Chapter 16",
+        "Chapter 17",
+        "Chapter 18",
+        "Chapter 19",
+        "Chapter 20",
+        "Chapter 21",
+        "Chapter 22",
+        "Chapter 23",
+        "Chapter 24"
+      ],
+      "completedMilestones": 11
     },
     {
-      "id": "cleaning",
+      "id": "daily-habit-app",
+      "habitId": "health-research",
+      "name": "Daily Habit App",
+      "priority": "HIGH"
+    },
+    {
+      "id": "sayer-ji-regenerate",
+      "habitId": "health-research",
+      "name": "Sayer Ji Regenerate",
+      "priority": "MEDIUM"
+    },
+    {
+      "id": "dragon-tiger",
+      "habitId": "qigong-practice",
+      "name": "Dragon Tiger",
+      "priority": "MEDIUM_HIGH"
+    },
+    {
+      "id": "energy-gates",
+      "habitId": "qigong-practice",
+      "name": "Energy Gates",
+      "priority": "MEDIUM_HIGH"
+    },
+    {
+      "id": "wu-style",
+      "habitId": "qigong-practice",
+      "name": "Wu Style",
+      "priority": "MEDIUM_HIGH"
+    },
+    {
+      "id": "heaven-and-earth",
+      "habitId": "qigong-practice",
+      "name": "Heaven and Earth",
+      "priority": "MEDIUM_HIGH"
+    },
+    {
+      "id": "new-resume",
       "habitId": "home-todo",
-      "name": "cleaning",
-      "priority": "MEDIUM",
-      "dayOfWeek": "FRIDAY"
+      "name": "New Resume",
+      "priority": "MEDIUM"
     },
     {
-      "id": "church",
-      "habitId": "prayer",
-      "name": "church",
-      "priority": "HIGH",
-      "dayOfWeek": "SUNDAY"
+      "id": "investigate-trust",
+      "habitId": "home-todo",
+      "name": "Investigate Trust",
+      "priority": "MEDIUM"
+    },
+    {
+      "id": "service-corolla",
+      "habitId": "home-todo",
+      "name": "Service Corolla",
+      "priority": "MEDIUM"
+    },
+    {
+      "id": "hidden-gospel-essay",
+      "habitId": "home-todo",
+      "name": "Hidden Gospel Essay",
+      "priority": "MEDIUM"
+    },
+    {
+      "id": "paul-cavel",
+      "habitId": "meditate",
+      "name": "Paul Cavel",
+      "priority": "MEDIUM",
+      "milestones": [
+        "Guided Practice 1",
+        "Guided Practice 2",
+        "Guided Practice 3",
+        "Guided Practice 4",
+        "Guided Practice 5",
+        "Guided Practice 6",
+        "Guided Practice 7",
+        "Guided Practice 8",
+        "Guided Practice 9",
+        "Guided Practice 10",
+        "Guided Practice 11",
+        "Guided Practice 12",
+        "Guided Practice 13",
+        "Guided Practice 14",
+        "Guided Practice 15",
+        "Guided Practice 16",
+        "Guided Practice 17",
+        "Guided Practice 18",
+        "Guided Practice 19",
+        "Guided Practice 20",
+        "Guided Practice 21",
+        "Guided Practice 22",
+        "Guided Practice 23"
+      ],
+      "completedMilestones": 8
+    },
+    {
+      "id": "standing",
+      "habitId": "meditate",
+      "name": "Standing",
+      "priority": "MEDIUM"
     }
   ]
 }

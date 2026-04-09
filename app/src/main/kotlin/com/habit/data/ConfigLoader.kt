@@ -34,7 +34,8 @@ data class TrackJson(
     val name: String,
     val priority: String,
     val dayOfWeek: String? = null,
-    val milestones: List<String> = emptyList()
+    val milestones: List<String> = emptyList(),
+    val completedMilestones: Int = 0
 )
 
 @Serializable
@@ -70,7 +71,8 @@ class ConfigLoader(private val context: Context) {
                     Milestone(
                         trackId = t.id,
                         name = name,
-                        sortOrder = i + 1
+                        sortOrder = i + 1,
+                        completed = i < t.completedMilestones
                     )
                 }
             }
