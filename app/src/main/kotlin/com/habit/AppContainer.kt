@@ -3,6 +3,7 @@ package com.habit
 import android.content.Context
 import androidx.room.Room
 import com.habit.data.ActivityRepository
+import com.habit.data.AppConfigEntity
 import com.habit.data.ChoiceRepository
 import com.habit.data.ConfigLoader
 import com.habit.data.DayBoundary
@@ -12,9 +13,9 @@ import com.habit.data.TallyRepository
 import com.habit.data.TrackRepository
 
 class AppContainer(context: Context) {
-    private val config = ConfigLoader(context).load()
+    val config = ConfigLoader(context).load()
 
-    private val database = Room.databaseBuilder(
+    val database = Room.databaseBuilder(
         context,
         HabitDatabase::class.java,
         "habit.db"
@@ -25,7 +26,8 @@ class AppContainer(context: Context) {
         HabitDatabase.MIGRATION_5_6,
         HabitDatabase.MIGRATION_6_7,
         HabitDatabase.MIGRATION_7_8,
-        HabitDatabase.MIGRATION_8_9
+        HabitDatabase.MIGRATION_8_9,
+        HabitDatabase.MIGRATION_9_10
     ).build()
 
     val habitRepo = HabitRepository(database.habitDao())
@@ -33,9 +35,14 @@ class AppContainer(context: Context) {
     val tallyRepo = TallyRepository(database.tallyDao())
     val choiceRepo = ChoiceRepository(database.choiceDao())
     val trackRepo = TrackRepository(database.trackDao(), database.milestoneDao())
+    private val appConfigDao = database.appConfigDao()
     val dayBoundary = DayBoundary(config.dayBoundaryHour)
-    val habits = config.habits
-    val tallies = config.tallies
-    val tracks = config.tracks
-    val milestones = config.milestones
+
+    suspend fun seedIfEmpty() {
+        if (appConfigDao.get() != null) return
+        appConfigDao.insert(AppConfigEntity(dayBoundaryHour = config.dayBoundaryHour))
+        habitRepo.loadFromConfig(config.habits)
+        tallyRepo.loadFromConfig(config.tallies)
+        trackRepo.loadFromConfig(config.tracks, config.milestones)
+    }
 }

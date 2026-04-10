@@ -9,9 +9,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 @Database(
     entities = [
         Habit::class, Activity::class, Tally::class, Choice::class,
-        Track::class, Milestone::class
+        Track::class, Milestone::class, AppConfigEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -22,6 +22,7 @@ abstract class HabitDatabase : RoomDatabase() {
     abstract fun choiceDao(): ChoiceDao
     abstract fun trackDao(): TrackDao
     abstract fun milestoneDao(): MilestoneDao
+    abstract fun appConfigDao(): AppConfigDao
 
     companion object {
         val MIGRATION_2_3 = object : Migration(2, 3) {
@@ -167,6 +168,20 @@ abstract class HabitDatabase : RoomDatabase() {
                 )
 
                 db.execSQL("ALTER TABLE habit DROP COLUMN dailyTexts")
+            }
+        }
+
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS app_config (
+                        id INTEGER NOT NULL PRIMARY KEY,
+                        dayBoundaryHour INTEGER NOT NULL
+                    )
+                """)
+                db.execSQL(
+                    "INSERT INTO app_config (id, dayBoundaryHour) VALUES (1, 2)"
+                )
             }
         }
     }

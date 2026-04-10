@@ -230,7 +230,9 @@ fun HabitEditorScreen(
                         singleLine = true
                     )
                     Spacer(Modifier.width(16.dp))
-                    SingleChoiceSegmentedButtonRow {
+                    SingleChoiceSegmentedButtonRow(
+                        modifier = Modifier.height(56.dp)
+                    ) {
                         SegmentedButton(
                             selected = state.dailyTargetMode == TargetMode.AT_LEAST,
                             onClick = {
@@ -681,7 +683,7 @@ private fun TrackInlineEditor(
                 }
             }
             Button(onClick = onDone, elevation = buttonElevation()) {
-                Text("Done")
+                Text("Close")
             }
         }
     }

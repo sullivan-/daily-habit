@@ -18,7 +18,9 @@ class HabitApp : Application() {
         super.onCreate()
         container = AppContainer(this)
         createNotificationChannel()
-        loadHabits()
+        appScope.launch {
+            container.seedIfEmpty()
+        }
     }
 
     private fun createNotificationChannel() {
@@ -31,19 +33,6 @@ class HabitApp : Application() {
         }
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(channel)
-    }
-
-    private fun loadHabits() {
-        appScope.launch {
-            if (container.habitRepo.count() == 0) {
-                container.habitRepo.loadFromConfig(container.habits)
-                container.tallyRepo.loadFromConfig(container.tallies)
-                container.trackRepo.loadFromConfig(
-                    container.tracks,
-                    container.milestones
-                )
-            }
-        }
     }
 
     companion object {
