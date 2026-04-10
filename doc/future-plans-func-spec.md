@@ -5,13 +5,6 @@ they come up. items here are not committed to, just captured.
 
 ## planned features
 
-### multiple thresholds per habit
-
-a habit should be able to have both a Goal threshold and a Time to Stop
-threshold. e.g., Qigong: goal at 30 minutes, time to stop at 45 minutes.
-each triggers its own chime. the current model only supports one
-threshold — this needs a schema change to support a list.
-
 ### ephemeral chime interval
 
 the chime interval (e.g., every 10 seconds) is not a property of the
@@ -20,41 +13,6 @@ expanded view for an active activity, the user can choose a chime
 interval and start the chimes. the interval runs alongside the normal
 timer. the habit definition no longer stores chimeIntervalSeconds;
 instead the user sets it per-session in the activity view.
-
-### timer value editing
-
-- allow the user to manually adjust an activity's start time, end time,
-  or elapsed duration after the fact
-- handles cases where the user forgot to start/stop the timer
-
-### task backlogs
-
-activities can optionally have a prioritized list of tasks. when present, each
-session prompts the user to pick (or continue) a task from the backlog.
-
-- each task has a name and optional notes
-- tasks can span multiple sessions and multiple days — a task stays in the
-  backlog until explicitly marked complete
-- user can reorder tasks to adjust priority
-- daily target interacts with the backlog: "Home" with target=1 means "do at
-  least one home task today," picking from the backlog
-- habits like "Badux" with target=3 can continue the same task across
-  activities or pick different ones
-
-### progression tracking
-
-track position in multi-step sequences. examples:
-- qigong: position in two parallel recorded courses
-- reading: current book in each reading track (Peter Kingsley, The Bible, Greek
-  History, New Science, Health)
-- work: position in ongoing work streams
-
-a progression has:
-- a name (e.g., "Old Testament reading")
-- an ordered list of steps (e.g., Genesis, Exodus, Leviticus...)
-- a current position
-- optional linkage to a daily habit (e.g., "Read" habit auto-shows current
-  progression state)
 
 ### in-app configuration
 
@@ -138,9 +96,3 @@ implemented. remaining:*
 
 - avoid the "ruined day" effect where missing one thing makes you give up on the rest
 - maybe track partial completion positively rather than showing failures
-
-### diet evolution tracking
-
-- diet improvement is not a checkbox — it's a gradual process
-- could track specific dietary changes being attempted and how they're going
-- weekly notes on what dietary experiments are in progress
