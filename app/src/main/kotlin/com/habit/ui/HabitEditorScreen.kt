@@ -306,7 +306,8 @@ fun HabitEditorScreen(
                         onUnarchive = viewModel::unarchiveTrack,
                         onDelete = viewModel::deleteTrack,
                         onAddMilestone = viewModel::addMilestone,
-                        onDeleteMilestone = viewModel::deleteMilestone
+                        onDeleteMilestone = viewModel::deleteMilestone,
+                        onToggleMilestone = viewModel::toggleMilestone
                     )
                 }
             }
@@ -490,7 +491,8 @@ private fun TracksEditor(
     onUnarchive: (Int) -> Unit,
     onDelete: (Int) -> Unit,
     onAddMilestone: (Int, String) -> Unit,
-    onDeleteMilestone: (Int, Int) -> Unit
+    onDeleteMilestone: (Int, Int) -> Unit,
+    onToggleMilestone: (Int, Int) -> Unit
 ) {
     val active = tracks.withIndex().filter { !it.value.archived }
     val archived = tracks.withIndex().filter { it.value.archived }
@@ -506,7 +508,8 @@ private fun TracksEditor(
                 onDelete = { onDelete(index) },
                 onDone = { onToggleExpanded(index) },
                 onAddMilestone = { onAddMilestone(index, it) },
-                onDeleteMilestone = { msIdx -> onDeleteMilestone(index, msIdx) }
+                onDeleteMilestone = { msIdx -> onDeleteMilestone(index, msIdx) },
+                onToggleMilestone = { msIdx -> onToggleMilestone(index, msIdx) }
             )
         } else {
             TrackRow(
@@ -591,7 +594,8 @@ private fun TrackInlineEditor(
     onDelete: () -> Unit,
     onDone: () -> Unit,
     onAddMilestone: (String) -> Unit,
-    onDeleteMilestone: (Int) -> Unit
+    onDeleteMilestone: (Int) -> Unit,
+    onToggleMilestone: (Int) -> Unit
 ) {
     var newMilestoneName by remember { mutableStateOf("") }
 
@@ -627,8 +631,7 @@ private fun TrackInlineEditor(
                     )
                     Checkbox(
                         checked = milestone.completed,
-                        onCheckedChange = null,
-                        enabled = false
+                        onCheckedChange = { onToggleMilestone(msIdx) }
                     )
                     Text(
                         text = milestone.name,

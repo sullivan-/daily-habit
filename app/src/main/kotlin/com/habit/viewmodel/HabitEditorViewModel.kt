@@ -223,6 +223,16 @@ class HabitEditorViewModel(
         _state.value = _state.value.copy(tracks = items, dirty = true)
     }
 
+    fun toggleMilestone(trackIndex: Int, milestoneIndex: Int) {
+        val items = _state.value.tracks.toMutableList()
+        val track = items[trackIndex]
+        val milestones = track.milestones.toMutableList()
+        val ms = milestones[milestoneIndex]
+        milestones[milestoneIndex] = ms.copy(completed = !ms.completed)
+        items[trackIndex] = track.copy(milestones = milestones)
+        _state.value = _state.value.copy(tracks = items, dirty = true)
+    }
+
     fun deleteMilestone(trackIndex: Int, milestoneIndex: Int) {
         val items = _state.value.tracks.toMutableList()
         val track = items[trackIndex]
