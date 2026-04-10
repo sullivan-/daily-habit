@@ -9,7 +9,7 @@ data class Habit(
     @PrimaryKey val id: String,
     val name: String,
     val timesOfDay: List<Int>,
-    val sortOrder: Int,
+    val tieBreaker: Int,
     val daysActive: Set<DayOfWeek>,
     val dailyTarget: Int,
     val dailyTargetMode: TargetMode,

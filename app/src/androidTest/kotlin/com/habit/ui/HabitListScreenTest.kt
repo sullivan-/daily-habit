@@ -42,7 +42,7 @@ class HabitListScreenTest {
         id = "qigong",
         name = "Qigong",
         timesOfDay = listOf(7),
-        sortOrder = 1,
+        tieBreaker = 4,
         daysActive = DayOfWeek.entries.toSet(),
         dailyTarget = 2,
         dailyTargetMode = TargetMode.AT_LEAST,
@@ -56,7 +56,7 @@ class HabitListScreenTest {
         id = "vitamins",
         name = "Vitamins",
         timesOfDay = listOf(7),
-        sortOrder = 2,
+        tieBreaker = 3,
         daysActive = DayOfWeek.entries.toSet(),
         dailyTarget = 1,
         dailyTargetMode = TargetMode.EXACTLY,
@@ -70,7 +70,7 @@ class HabitListScreenTest {
         id = "badux",
         name = "Badux",
         timesOfDay = listOf(14),
-        sortOrder = 1,
+        tieBreaker = 4,
         daysActive = setOf(
             DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
             DayOfWeek.THURSDAY, DayOfWeek.FRIDAY
@@ -192,10 +192,10 @@ class HabitListScreenTest {
     }
 
     @Test
-    fun sortsByTimeOfDayThenPriorityThenSortOrder() {
-        // qigong: time=7, priority=HIGH(0), sort=1
-        // vitamins: time=7, priority=MEDIUM(2), sort=2
-        // badux: time=14, priority=MEDIUM_HIGH(1), sort=1
+    fun sortsByTimeOfDayThenPriorityThenTieBreaker() {
+        // qigong: time=7, priority=HIGH(0), tieBreaker=4
+        // vitamins: time=7, priority=MEDIUM(2), tieBreaker=3
+        // badux: time=14, priority=MEDIUM_HIGH(1), tieBreaker=4
         // expected order: Qigong, Vitamins, Badux
         setScreen(listOf(badux, vitamins, qigong))
 

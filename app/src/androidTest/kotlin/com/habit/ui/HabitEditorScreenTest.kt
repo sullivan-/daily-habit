@@ -41,7 +41,7 @@ class HabitEditorScreenTest {
         id = "qigong",
         name = "Qigong",
         timesOfDay = listOf(7),
-        sortOrder = 1,
+        tieBreaker = 4,
         daysActive = DayOfWeek.entries.toSet(),
         dailyTarget = 2,
         dailyTargetMode = TargetMode.AT_LEAST,

@@ -21,7 +21,7 @@ data class HabitEditorState(
     val id: String = "",
     val name: String = "",
     val timesOfDay: List<Int> = listOf(8),
-    val sortOrder: Int = 1,
+    val tieBreaker: Int = 1,
     val daysActive: Set<DayOfWeek> = DayOfWeek.entries.toSet(),
     val dailyTarget: Int = 1,
     val dailyTargetMode: TargetMode = TargetMode.AT_LEAST,
@@ -73,7 +73,7 @@ class HabitEditorViewModel(
                 id = habit.id,
                 name = habit.name,
                 timesOfDay = habit.timesOfDay,
-                sortOrder = habit.sortOrder,
+                tieBreaker = habit.tieBreaker,
                 daysActive = habit.daysActive,
                 dailyTarget = habit.dailyTarget,
                 dailyTargetMode = habit.dailyTargetMode,
@@ -112,8 +112,8 @@ class HabitEditorViewModel(
         }
     }
 
-    fun setSortOrder(order: Int) {
-        _state.value = _state.value.copy(sortOrder = order, dirty = true)
+    fun setTieBreaker(order: Int) {
+        _state.value = _state.value.copy(tieBreaker = order, dirty = true)
     }
 
     fun toggleDayActive(day: DayOfWeek) {
@@ -244,7 +244,7 @@ class HabitEditorViewModel(
                 id = id,
                 name = s.name,
                 timesOfDay = s.timesOfDay,
-                sortOrder = s.sortOrder,
+                tieBreaker = s.tieBreaker,
                 daysActive = s.daysActive,
                 dailyTarget = s.dailyTarget,
                 dailyTargetMode = s.dailyTargetMode,

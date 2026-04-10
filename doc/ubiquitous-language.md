@@ -88,7 +88,7 @@ The importance of a habit. Five tiers: high, medium-high, medium, medium-low,
 low. Affects both agenda ordering (higher priority habits appear earlier at the
 same activity level) and progress bar color calculation (missing a low-priority
 habit has less impact on daily status than missing a high-priority one). Within
-the same priority tier, sort order breaks ties.
+the same priority tier, tie breaker breaks ties.
 
 ### Time of Day
 
@@ -96,10 +96,10 @@ The hour when a habit is typically performed (e.g., 7, 8, 14). Used to position
 the habit's **first** activity in the agenda. Subsequent activities (activity 2,
 3, etc.) are positioned by priority weight, not by time of day.
 
-### Sort Order
+### Tie Breaker
 
-Ordering among habits with the same time of day. Lower values appear first in
-the agenda. Distinct from priority weight, which controls ordering of subsequent
+Ordering among habits with the same time of day. Higher values appear first in
+the agenda. Distinct from priority, which controls ordering of subsequent
 activities.
 
 ### Daily Text (removed)

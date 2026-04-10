@@ -28,7 +28,7 @@ class ConfigLoaderTest {
                 "id": "qigong",
                 "name": "Qigong",
                 "timesOfDay": [7, 15],
-                "sortOrder": 1,
+                "tieBreaker": 4,
                 "daysActive": ["MONDAY", "WEDNESDAY", "FRIDAY"],
                 "dailyTarget": 2,
                 "dailyTargetMode": "AT_LEAST",
@@ -47,7 +47,7 @@ class ConfigLoaderTest {
         assertThat(habit.id).isEqualTo("qigong")
         assertThat(habit.name).isEqualTo("Qigong")
         assertThat(habit.timesOfDay).isEqualTo(listOf(7, 15))
-        assertThat(habit.sortOrder).isEqualTo(1)
+        assertThat(habit.tieBreaker).isEqualTo(4)
         assertThat(habit.daysActive).isEqualTo(
             setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY)
         )
@@ -68,7 +68,7 @@ class ConfigLoaderTest {
                 "id": "vitamins",
                 "name": "Vitamins",
                 "timesOfDay": [10],
-                "sortOrder": 1,
+                "tieBreaker": 4,
                 "daysActive": ["SUNDAY"],
                 "dailyTarget": 1,
                 "dailyTargetMode": "EXACTLY",
@@ -94,7 +94,7 @@ class ConfigLoaderTest {
                     "id": "test",
                     "name": "Test",
                     "timesOfDay": [8],
-                    "sortOrder": 1,
+                    "tieBreaker": 4,
                     "daysActive": ["MONDAY"],
                     "dailyTarget": 1,
                     "dailyTargetMode": "EXACTLY",
@@ -116,7 +116,7 @@ class ConfigLoaderTest {
                 "id": "test",
                 "name": "Test",
                 "timesOfDay": [8],
-                "sortOrder": 1,
+                "tieBreaker": 4,
                 "daysActive": ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY",
                                 "THURSDAY", "FRIDAY", "SATURDAY"],
                 "dailyTarget": 1,
@@ -139,7 +139,7 @@ class ConfigLoaderTest {
                 "id": "test",
                 "name": "Test",
                 "timesOfDay": [8],
-                "sortOrder": 1,
+                "tieBreaker": 4,
                 "daysActive": ["MONDAY"],
                 "dailyTarget": 1,
                 "dailyTargetMode": "AT_LEAST",
@@ -164,7 +164,7 @@ class ConfigLoaderTest {
                 "id": "test",
                 "name": "Test",
                 "timesOfDay": [8],
-                "sortOrder": 1,
+                "tieBreaker": 4,
                 "daysActive": ["MONDAY"],
                 "dailyTarget": 1,
                 "dailyTargetMode": "EXACTLY",
@@ -188,7 +188,7 @@ class ConfigLoaderTest {
                     "id": "a",
                     "name": "A",
                     "timesOfDay": [8],
-                    "sortOrder": 1,
+                    "tieBreaker": 4,
                     "daysActive": ["MONDAY"],
                     "dailyTarget": 1,
                     "dailyTargetMode": "EXACTLY",
@@ -199,7 +199,7 @@ class ConfigLoaderTest {
                     "id": "b",
                     "name": "B",
                     "timesOfDay": [12],
-                    "sortOrder": 2,
+                    "tieBreaker": 3,
                     "daysActive": ["TUESDAY"],
                     "dailyTarget": 3,
                     "dailyTargetMode": "AT_LEAST",

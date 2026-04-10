@@ -114,6 +114,6 @@ fun sortAgenda(
         compareBy<AgendaItem> { it.isPastTime(now) }
             .thenBy { it.timeOfDay }
             .thenBy { it.habit.priority.ordinal }
-            .thenBy { it.habit.sortOrder }
+            .thenByDescending { it.habit.tieBreaker }
     )
 }

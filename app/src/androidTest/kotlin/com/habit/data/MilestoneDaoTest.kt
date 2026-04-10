@@ -28,7 +28,7 @@ class MilestoneDaoTest {
         id = "qigong",
         name = "Qigong",
         timesOfDay = listOf(7),
-        sortOrder = 1,
+        tieBreaker = 4,
         daysActive = DayOfWeek.entries.toSet(),
         dailyTarget = 2,
         dailyTargetMode = TargetMode.AT_LEAST,
@@ -84,7 +84,7 @@ class MilestoneDaoTest {
         habitDao.insert(habit)
         trackDao.insert(track)
         milestoneDao.insert(
-            Milestone(trackId = "standing", name = "Lesson 1", sortOrder = 1, completed = true)
+            Milestone(trackId = "standing", name = "Lesson 1", tieBreaker = 4, completed = true)
         )
         milestoneDao.insert(
             Milestone(trackId = "standing", name = "Lesson 2", sortOrder = 2)
@@ -102,7 +102,7 @@ class MilestoneDaoTest {
         habitDao.insert(habit)
         trackDao.insert(track)
         milestoneDao.insert(
-            Milestone(trackId = "standing", name = "Lesson 1", sortOrder = 1, completed = true)
+            Milestone(trackId = "standing", name = "Lesson 1", tieBreaker = 4, completed = true)
         )
 
         val default = milestoneDao.defaultMilestone("standing")
@@ -114,7 +114,7 @@ class MilestoneDaoTest {
         habitDao.insert(habit)
         trackDao.insert(track)
         milestoneDao.insert(
-            Milestone(trackId = "standing", name = "Lesson 1", sortOrder = 1, completed = true)
+            Milestone(trackId = "standing", name = "Lesson 1", tieBreaker = 4, completed = true)
         )
         milestoneDao.insert(
             Milestone(trackId = "standing", name = "Lesson 2", sortOrder = 2)

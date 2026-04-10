@@ -20,7 +20,7 @@ class DisplayOrderingTest {
     private fun habit(
         id: String,
         timesOfDay: List<Int> = listOf(8),
-        sortOrder: Int = 1,
+        tieBreaker: Int = 4,
         dailyTarget: Int = 1,
         priority: Priority = Priority.MEDIUM,
         daysActive: Set<DayOfWeek> = DayOfWeek.entries.toSet()
@@ -28,7 +28,7 @@ class DisplayOrderingTest {
         id = id,
         name = id,
         timesOfDay = timesOfDay,
-        sortOrder = sortOrder,
+        tieBreaker = tieBreaker,
         daysActive = daysActive,
         dailyTarget = dailyTarget,
         dailyTargetMode = TargetMode.AT_LEAST,
@@ -54,11 +54,11 @@ class DisplayOrderingTest {
     )
 
     @Test
-    fun `first activities sort by time of day then sort order`() {
+    fun `first activities sort by time of day then tie breaker`() {
         val habits = listOf(
-            habit("afternoon", timesOfDay = listOf(14), sortOrder = 1),
-            habit("morning-b", timesOfDay = listOf(7), sortOrder = 2),
-            habit("morning-a", timesOfDay = listOf(7), sortOrder = 1)
+            habit("afternoon", timesOfDay = listOf(14), tieBreaker = 4),
+            habit("morning-b", timesOfDay = listOf(7), tieBreaker = 3),
+            habit("morning-a", timesOfDay = listOf(7), tieBreaker = 4)
         )
         val result = sortAgenda(habits, emptyList(), monday, earlyMorning)
         assertThat(result.map { it.habit.id })
@@ -80,10 +80,10 @@ class DisplayOrderingTest {
     }
 
     @Test
-    fun `subsequent activities sort by priority then sort order`() {
+    fun `subsequent activities sort by priority then tie breaker`() {
         val habits = listOf(
-            habit("low", dailyTarget = 2, priority = Priority.LOW, sortOrder = 1),
-            habit("high", dailyTarget = 2, priority = Priority.HIGH, sortOrder = 1)
+            habit("low", dailyTarget = 2, priority = Priority.LOW, tieBreaker = 4),
+            habit("high", dailyTarget = 2, priority = Priority.HIGH, tieBreaker = 4)
         )
         val activities = listOf(completed("low"), completed("high"))
         val result = sortAgenda(habits, activities, monday, earlyMorning)

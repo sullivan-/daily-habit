@@ -11,7 +11,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         Habit::class, Activity::class, Tally::class, Choice::class,
         Track::class, Milestone::class, AppConfigEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -182,6 +182,12 @@ abstract class HabitDatabase : RoomDatabase() {
                 db.execSQL(
                     "INSERT INTO app_config (id, dayBoundaryHour) VALUES (1, 2)"
                 )
+            }
+        }
+
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE habit RENAME COLUMN sortOrder TO tieBreaker")
             }
         }
     }

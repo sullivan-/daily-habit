@@ -22,7 +22,7 @@ class ProgressStatusTest {
         id = "h$timeOfDay-$priority",
         name = "habit",
         timesOfDay = listOf(timeOfDay),
-        sortOrder = 1,
+        tieBreaker = 4,
         daysActive = DayOfWeek.entries.toSet(),
         dailyTarget = 1,
         dailyTargetMode = TargetMode.EXACTLY,

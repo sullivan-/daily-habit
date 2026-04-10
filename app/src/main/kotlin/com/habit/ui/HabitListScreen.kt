@@ -41,7 +41,7 @@ fun HabitListScreen(
     val habits = uiState.habits.sortedWith(
         compareBy<Habit> { it.timesOfDay.firstOrNull() ?: 0 }
             .thenBy { it.priority.ordinal }
-            .thenBy { it.sortOrder }
+            .thenByDescending { it.tieBreaker }
     )
 
     Scaffold(

@@ -9,7 +9,7 @@
         12,
         16
       ],
-      "sortOrder": 1,
+      "tieBreaker": 4,
       "daysActive": [
         "SUNDAY",
         "MONDAY",
@@ -30,7 +30,7 @@
       "timesOfDay": [
         9
       ],
-      "sortOrder": 1,
+      "tieBreaker": 4,
       "daysActive": [
         "MONDAY",
         "TUESDAY",
@@ -50,7 +50,7 @@
       "timesOfDay": [
         9
       ],
-      "sortOrder": 2,
+      "tieBreaker": 3,
       "daysActive": [
         "SUNDAY",
         "MONDAY",
@@ -72,7 +72,7 @@
       "timesOfDay": [
         9
       ],
-      "sortOrder": 3,
+      "tieBreaker": 2,
       "daysActive": [
         "MONDAY",
         "TUESDAY",
@@ -92,7 +92,7 @@
       "timesOfDay": [
         10
       ],
-      "sortOrder": 1,
+      "tieBreaker": 4,
       "daysActive": [
         "SUNDAY",
         "MONDAY",
@@ -113,7 +113,7 @@
       "timesOfDay": [
         10
       ],
-      "sortOrder": 2,
+      "tieBreaker": 3,
       "daysActive": [
         "SUNDAY",
         "MONDAY",
@@ -135,7 +135,7 @@
         11,
         15
       ],
-      "sortOrder": 1,
+      "tieBreaker": 4,
       "daysActive": [
         "MONDAY",
         "TUESDAY",
@@ -155,7 +155,7 @@
       "timesOfDay": [
         13
       ],
-      "sortOrder": 1,
+      "tieBreaker": 4,
       "daysActive": [
         "SUNDAY",
         "MONDAY",
@@ -176,7 +176,7 @@
       "timesOfDay": [
         13
       ],
-      "sortOrder": 2,
+      "tieBreaker": 3,
       "daysActive": [
         "MONDAY",
         "TUESDAY",
@@ -196,7 +196,7 @@
       "timesOfDay": [
         13
       ],
-      "sortOrder": 3,
+      "tieBreaker": 2,
       "daysActive": [
         "MONDAY",
         "TUESDAY",
@@ -216,7 +216,7 @@
       "timesOfDay": [
         15
       ],
-      "sortOrder": 1,
+      "tieBreaker": 4,
       "daysActive": [
         "SUNDAY",
         "MONDAY",
@@ -237,7 +237,7 @@
       "timesOfDay": [
         15
       ],
-      "sortOrder": 2,
+      "tieBreaker": 3,
       "daysActive": [
         "SUNDAY",
         "MONDAY",
@@ -259,7 +259,7 @@
       "timesOfDay": [
         16
       ],
-      "sortOrder": 1,
+      "tieBreaker": 4,
       "daysActive": [
         "SUNDAY",
         "MONDAY",
@@ -280,7 +280,7 @@
       "timesOfDay": [
         16
       ],
-      "sortOrder": 2,
+      "tieBreaker": 3,
       "daysActive": [
         "MONDAY",
         "TUESDAY",
@@ -300,7 +300,7 @@
       "timesOfDay": [
         16
       ],
-      "sortOrder": 3,
+      "tieBreaker": 2,
       "daysActive": [
         "SUNDAY",
         "MONDAY",
@@ -321,7 +321,7 @@
       "timesOfDay": [
         21
       ],
-      "sortOrder": 1,
+      "tieBreaker": 4,
       "daysActive": [
         "SUNDAY",
         "MONDAY",
@@ -343,7 +343,7 @@
       "timesOfDay": [
         21
       ],
-      "sortOrder": 2,
+      "tieBreaker": 3,
       "daysActive": [
         "SUNDAY",
         "MONDAY",
@@ -364,7 +364,7 @@
       "timesOfDay": [
         22
       ],
-      "sortOrder": 1,
+      "tieBreaker": 4,
       "daysActive": [
         "SUNDAY",
         "MONDAY",

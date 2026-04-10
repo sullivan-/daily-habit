@@ -25,7 +25,7 @@ class HabitDaoTest {
         id = "qigong",
         name = "Qigong",
         timesOfDay = listOf(7),
-        sortOrder = 1,
+        tieBreaker = 4,
         daysActive = setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY),
         dailyTarget = 2,
         dailyTargetMode = TargetMode.AT_LEAST,

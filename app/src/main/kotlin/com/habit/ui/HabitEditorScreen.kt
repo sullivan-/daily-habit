@@ -199,9 +199,9 @@ fun HabitEditorScreen(
                         modifier = Modifier.weight(1f)
                     )
                     OutlinedTextField(
-                        value = state.sortOrder.toString(),
+                        value = state.tieBreaker.toString(),
                         onValueChange = {
-                            it.toIntOrNull()?.let(viewModel::setSortOrder)
+                            it.toIntOrNull()?.let(viewModel::setTieBreaker)
                         },
                         label = { Text("Tie breaker") },
                         modifier = Modifier.weight(1f),
