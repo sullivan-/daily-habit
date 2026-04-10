@@ -559,6 +559,10 @@ private fun TrackSelector(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
+            DropdownMenuItem(
+                text = { Text("None", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)) },
+                onClick = { onSelect(null); expanded = false }
+            )
             tracks.forEach { track ->
                 DropdownMenuItem(
                     text = { Text(track.name) },
