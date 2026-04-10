@@ -278,9 +278,10 @@ private fun CurrentActivityView(
             if (state.incompleteMilestones.isNotEmpty() || state.selectedMilestone != null) {
                 MilestoneSelector(
                     selected = state.selectedMilestone,
+                    checked = state.milestoneChecked,
                     incomplete = state.incompleteMilestones,
                     onSelect = onSelectMilestone,
-                    onComplete = onCompleteMilestone
+                    onToggle = onCompleteMilestone
                 )
             }
         }
@@ -576,9 +577,10 @@ private fun TrackSelector(
 @Composable
 private fun MilestoneSelector(
     selected: Milestone?,
+    checked: Boolean,
     incomplete: List<Milestone>,
     onSelect: (Long) -> Unit,
-    onComplete: () -> Unit
+    onToggle: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -587,8 +589,8 @@ private fun MilestoneSelector(
         modifier = Modifier.padding(top = 4.dp)
     ) {
         Checkbox(
-            checked = false,
-            onCheckedChange = { onComplete() }
+            checked = checked,
+            onCheckedChange = { onToggle() }
         )
         if (incomplete.size > 1) {
             Text(

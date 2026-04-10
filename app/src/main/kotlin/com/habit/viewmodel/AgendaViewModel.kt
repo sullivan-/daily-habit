@@ -362,6 +362,7 @@ class AgendaViewModel(
                     completedAt = now
                 ))
             }
+            persistMilestoneIfChecked()
         }
 
         nextHabit?.let { selectHabit(it.habit.id) }
@@ -390,6 +391,8 @@ class AgendaViewModel(
                 )
                 activityRepo.create(new)
             }
+
+            persistMilestoneIfChecked()
 
             val nextHabit = _uiState.value.agendaItems
                 .firstOrNull { it.habit.id != habitId }
@@ -484,26 +487,17 @@ class AgendaViewModel(
         }
     }
 
-    fun completeMilestone() {
+    fun toggleMilestoneChecked() {
+        val current = _uiState.value.milestoneChecked
+        _uiState.value = _uiState.value.copy(milestoneChecked = !current)
+    }
+
+    private suspend fun persistMilestoneIfChecked() {
         val repo = trackRepo ?: return
-        viewModelScope.launch {
-            val milestone = _uiState.value.selectedMilestone ?: return@launch
-            repo.updateMilestone(milestone.copy(completed = true))
-
-            val track = _uiState.value.selectedTrack ?: return@launch
-            val next = repo.defaultMilestone(track.id)
-            val incomplete = repo.incompleteMilestones(track.id)
-
-            val activity = _uiState.value.activeActivity ?: return@launch
-            val updated = activity.copy(milestoneId = next?.id)
-            activityRepo.update(updated)
-
-            _uiState.value = _uiState.value.copy(
-                activeActivity = updated,
-                selectedMilestone = next,
-                incompleteMilestones = incomplete
-            )
-        }
+        if (!_uiState.value.milestoneChecked) return
+        val milestone = _uiState.value.selectedMilestone ?: return
+        repo.updateMilestone(milestone.copy(completed = true))
+        _uiState.value = _uiState.value.copy(milestoneChecked = false)
     }
 
     fun updateActivityStartTime(activityId: Long, startTime: Instant?) {

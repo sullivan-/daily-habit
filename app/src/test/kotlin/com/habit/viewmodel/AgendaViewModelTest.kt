@@ -731,56 +731,35 @@ class AgendaViewModelTest {
             sortOrder = 2, completed = false
         )
         coEvery { trackRepo.getById("standing") } returns track
-        // first call from selectTrack returns milestone1; second call from completeMilestone
-        // returns milestone2
-        coEvery { trackRepo.defaultMilestone("standing") } returnsMany
+        coEvery { trackRepo.defaultMilestone("standing") } returns milestone1
+        coEvery { trackRepo.incompleteMilestones("standing") } returns
             listOf(milestone1, milestone2)
-        coEvery { trackRepo.incompleteMilestones("standing") } returnsMany
-            listOf(listOf(milestone1, milestone2), listOf(milestone2))
 
         val vm = createViewModelWithTracks()
         vm.selectHabit("qigong")
         vm.selectTrack("standing")
-        vm.completeMilestone()
 
+        // toggle checkbox — should be visual only, no DB write yet
+        vm.toggleMilestoneChecked()
+        assertThat(vm.uiState.value.milestoneChecked).isTrue()
+        coVerify(exactly = 0) {
+            trackRepo.updateMilestone(any())
+        }
+
+        // complete the activity — milestone should now persist
+        vm.completeActivity("")
         coVerify {
             trackRepo.updateMilestone(milestone1.copy(completed = true))
         }
-        val state = vm.uiState.value
-        assertThat(state.selectedMilestone).isEqualTo(milestone2)
-        assertThat(state.activeActivity?.milestoneId).isEqualTo(2)
-        assertThat(state.incompleteMilestones).hasSize(1)
     }
 
     @Test
-    fun `completeMilestone with last milestone leaves selectedMilestone null`() = runTest {
-        val track = Track(
-            id = "standing", habitId = "qigong", name = "Standing",
-            priority = Priority.HIGH
-        )
-        val milestone = Milestone(
-            id = 1, trackId = "standing", name = "Lesson 1",
-            sortOrder = 1, completed = false
-        )
-        coEvery { trackRepo.getById("standing") } returns track
-        // first call from selectTrack returns the milestone; second call from
-        // completeMilestone returns null (all done)
-        coEvery { trackRepo.defaultMilestone("standing") } returnsMany
-            listOf(milestone, null)
-        coEvery { trackRepo.incompleteMilestones("standing") } returnsMany
-            listOf(listOf(milestone), emptyList())
-
+    fun `toggleMilestoneChecked toggles state`() = runTest {
         val vm = createViewModelWithTracks()
-        vm.selectHabit("qigong")
-        vm.selectTrack("standing")
-        vm.completeMilestone()
-
-        coVerify {
-            trackRepo.updateMilestone(milestone.copy(completed = true))
-        }
-        val state = vm.uiState.value
-        assertThat(state.selectedMilestone).isNull()
-        assertThat(state.activeActivity?.milestoneId).isNull()
-        assertThat(state.incompleteMilestones).isEmpty()
+        assertThat(vm.uiState.value.milestoneChecked).isFalse()
+        vm.toggleMilestoneChecked()
+        assertThat(vm.uiState.value.milestoneChecked).isTrue()
+        vm.toggleMilestoneChecked()
+        assertThat(vm.uiState.value.milestoneChecked).isFalse()
     }
 }

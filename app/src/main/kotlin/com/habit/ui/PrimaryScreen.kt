@@ -108,7 +108,7 @@ fun PrimaryScreen(
             onDelete = viewModel::deleteActivity,
             onSelectTrack = viewModel::selectTrack,
             onSelectMilestone = viewModel::selectMilestone,
-            onCompleteMilestone = viewModel::completeMilestone,
+            onCompleteMilestone = viewModel::toggleMilestoneChecked,
             modifier = expandedModifier
         )
 
