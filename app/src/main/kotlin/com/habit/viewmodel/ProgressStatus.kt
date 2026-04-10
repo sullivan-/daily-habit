@@ -37,7 +37,7 @@ fun progressRatios(
     if (totalWeight == 0) return ProgressRatios(0f, 1f)
 
     val completedByHabit = activities
-        .filter { it.completedAt != null }
+        .filter { it.completedAt != null && !it.skipped }
         .groupBy { it.habitId }
         .mapValues { it.value.size }
 

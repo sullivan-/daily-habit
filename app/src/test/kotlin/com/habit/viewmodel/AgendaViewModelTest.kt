@@ -449,7 +449,7 @@ class AgendaViewModelTest {
     }
 
     @Test
-    fun `skipActivity deletes in-progress activity and clears selection`() = runTest {
+    fun `skipActivity marks activity as skipped and clears selection`() = runTest {
         val vm = createViewModel()
         vm.selectHabit("qigong")
         assertThat(vm.uiState.value.activeActivity).isNotNull()
@@ -459,7 +459,7 @@ class AgendaViewModelTest {
         assertThat(vm.uiState.value.selectedHabitId).isNull()
         assertThat(vm.uiState.value.activeActivity).isNull()
         assertThat(vm.uiState.value.layout).isEqualTo(Layout.MAIN)
-        coVerify { activityRepo.delete(any()) }
+        coVerify { activityRepo.update(match { it.skipped && it.completedAt != null }) }
     }
 
     @Test

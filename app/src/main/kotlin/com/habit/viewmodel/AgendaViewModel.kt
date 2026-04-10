@@ -188,6 +188,10 @@ class AgendaViewModel(
     fun skipActivity() {
         val activity = _uiState.value.activeActivity ?: return
         if (activity.completedAt != null) return
+        val skipped = activity.copy(
+            completedAt = Instant.now(),
+            skipped = true
+        )
         _uiState.value = _uiState.value.copy(
             selectedHabitId = null,
             selectedActivityId = null,
@@ -198,7 +202,7 @@ class AgendaViewModel(
             historyAnchorIndex = -1
         )
         viewModelScope.launch {
-            activityRepo.delete(activity)
+            activityRepo.update(skipped)
         }
     }
 

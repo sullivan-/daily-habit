@@ -44,7 +44,8 @@ data class Activity(
     val note: String,
     val completedAt: Instant?,
     val trackId: String? = null,
-    val milestoneId: Long? = null
+    val milestoneId: Long? = null,
+    val skipped: Boolean = false
 ) {
     val elapsedMs: Long
         get() = when {

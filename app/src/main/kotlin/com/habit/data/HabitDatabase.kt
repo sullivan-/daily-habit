@@ -11,7 +11,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         Habit::class, Activity::class, Tally::class, Choice::class,
         Track::class, Milestone::class, AppConfigEntity::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -188,6 +188,14 @@ abstract class HabitDatabase : RoomDatabase() {
         val MIGRATION_10_11 = object : Migration(10, 11) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE habit RENAME COLUMN sortOrder TO tieBreaker")
+            }
+        }
+
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE activity ADD COLUMN skipped INTEGER NOT NULL DEFAULT 0"
+                )
             }
         }
     }
