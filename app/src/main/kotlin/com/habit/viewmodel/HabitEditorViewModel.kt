@@ -272,9 +272,15 @@ class HabitEditorViewModel(
             trackRepo?.let { repo ->
                 for (trackItem in s.tracks) {
                     val trackId = if (trackItem.isNew) {
-                        val generated = trackItem.name.lowercase()
+                        val base = trackItem.name.lowercase()
                             .replace(Regex("[^a-z0-9]+"), "-").trim('-')
                             .ifEmpty { UUID.randomUUID().toString() }
+                        var generated = base
+                        var suffix = 2
+                        while (repo.getById(generated) != null) {
+                            generated = "$base-$suffix"
+                            suffix++
+                        }
                         val track = Track(
                             id = generated,
                             habitId = id,

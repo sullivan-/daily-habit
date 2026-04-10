@@ -69,6 +69,16 @@ class AgendaViewModel(
             if (habit?.timed == true) {
                 startTimerTick()
             }
+            loadTracksForHabit(active.habitId)
+            if (active.trackId != null) {
+                val repo = trackRepo ?: return@launch
+                val track = repo.getById(active.trackId)
+                val milestone = active.milestoneId?.let { repo.getMilestoneById(it) }
+                _uiState.value = _uiState.value.copy(
+                    selectedTrack = track,
+                    selectedMilestone = milestone
+                )
+            }
         }
     }
 
