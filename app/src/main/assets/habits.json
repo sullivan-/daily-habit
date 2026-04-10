@@ -208,7 +208,8 @@
       "dailyTargetMode": "AT_LEAST",
       "timed": true,
       "priority": "MEDIUM_HIGH",
-      "goalMinutes": 15
+      "goalMinutes": 15,
+      "stopMinutes": 50
     },
     {
       "id": "ginseng",
