@@ -127,7 +127,12 @@ class AgendaViewModel(
             selectedHabitId = habitId,
             selectedActivityId = null,
             activeActivity = null,
-            layout = Layout.MAIN
+            layout = Layout.MAIN,
+            selectedTrack = null,
+            selectedMilestone = null,
+            milestoneChecked = false,
+            incompleteMilestones = emptyList(),
+            availableTracks = emptyList()
         )
         viewModelScope.launch {
             val today = dayBoundary.today()

@@ -135,7 +135,8 @@ fun PrimaryScreen(
                     onNewHabit = onNewHabit,
                     onHabitList = onHabitList,
                     onChoices = onChoices,
-                    onSwipeLeft = viewModel::switchToReview
+                    onSwipeLeft = onChoices,
+                    onSwipeRight = viewModel::switchToReview
                 )
             }
             Layout.REVIEW -> {
@@ -151,8 +152,7 @@ fun PrimaryScreen(
                     onNewHabit = onNewHabit,
                     onHabitList = onHabitList,
                     onChoices = onChoices,
-                    onSwipeLeft = onChoices,
-                    onSwipeRight = viewModel::switchToMain
+                    onSwipeLeft = viewModel::switchToMain
                 )
             }
             Layout.ACTIVITY_FOCUSED -> {
@@ -163,8 +163,7 @@ fun PrimaryScreen(
                     onNewHabit = onNewHabit,
                     onHabitList = onHabitList,
                     onChoices = onChoices,
-                    onSwipeLeft = onChoices,
-                    onSwipeRight = viewModel::switchToMain
+                    onSwipeLeft = viewModel::switchToMain
                 )
             }
         }
