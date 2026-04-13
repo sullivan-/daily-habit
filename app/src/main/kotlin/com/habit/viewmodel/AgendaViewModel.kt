@@ -69,7 +69,7 @@ class AgendaViewModel(
             if (habit?.timed == true) {
                 startTimerTick()
             }
-            loadTracksForHabit(active.habitId)
+            loadAndSetTracks(active.habitId)
             if (active.trackId != null) {
                 val repo = trackRepo ?: return@launch
                 val track = repo.getById(active.trackId)
@@ -157,7 +157,8 @@ class AgendaViewModel(
                 )
             }
             loadHistory(habitId)
-            loadTracksForHabit(habitId)
+            loadAndSetTracks(habitId)
+            autoSelectTodayTrack()
         }
     }
 
@@ -455,16 +456,37 @@ class AgendaViewModel(
     }
 
     fun loadTracksForHabit(habitId: String) {
+        viewModelScope.launch { loadAndSetTracks(habitId) }
+    }
+
+    private suspend fun loadAndSetTracks(habitId: String) {
         val repo = trackRepo ?: return
-        viewModelScope.launch {
-            val tracks = repo.activeTracksForHabit(habitId)
-            val today = dayBoundary.today().dayOfWeek
-            val sorted = tracks.sortedWith(
-                compareByDescending<com.habit.data.Track> { it.dayOfWeek == today }
-                    .thenByDescending { priorityToScore(it.priority) }
-            )
-            _uiState.value = _uiState.value.copy(availableTracks = sorted)
-        }
+        val tracks = repo.activeTracksForHabit(habitId)
+        val today = dayBoundary.today().dayOfWeek
+        val sorted = tracks.sortedWith(
+            compareByDescending<com.habit.data.Track> { it.dayOfWeek == today }
+                .thenByDescending { priorityToScore(it.priority) }
+        )
+        _uiState.value = _uiState.value.copy(availableTracks = sorted)
+    }
+
+    private suspend fun autoSelectTodayTrack() {
+        val repo = trackRepo ?: return
+        val activity = _uiState.value.activeActivity ?: return
+        if (activity.trackId != null) return
+        val today = dayBoundary.today().dayOfWeek
+        val todayTrack = _uiState.value.availableTracks.find { it.dayOfWeek == today }
+            ?: return
+        val milestone = repo.defaultMilestone(todayTrack.id)
+        val incomplete = repo.incompleteMilestones(todayTrack.id)
+        val updated = activity.copy(trackId = todayTrack.id, milestoneId = milestone?.id)
+        activityRepo.update(updated)
+        _uiState.value = _uiState.value.copy(
+            activeActivity = updated,
+            selectedTrack = todayTrack,
+            selectedMilestone = milestone,
+            incompleteMilestones = incomplete
+        )
     }
 
     fun selectTrack(trackId: String?) {

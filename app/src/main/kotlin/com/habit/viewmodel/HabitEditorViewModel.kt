@@ -56,6 +56,11 @@ class HabitEditorViewModel(
             val tracks = trackRepo
                 ?.tracksForHabit(habitId)?.first()
                 ?: emptyList()
+            val weekOrder = listOf(
+                DayOfWeek.SUNDAY, DayOfWeek.MONDAY, DayOfWeek.TUESDAY,
+                DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY,
+                DayOfWeek.SATURDAY
+            )
             val trackItems = tracks.map { track ->
                 val milestones = trackRepo?.milestonesForTrack(track.id) ?: emptyList()
                 val canDelete = trackRepo?.canDelete(track.id) ?: true
@@ -68,7 +73,12 @@ class HabitEditorViewModel(
                     milestones = milestones,
                     canDelete = canDelete
                 )
-            }
+            }.sortedWith(
+                compareBy<TrackEditorItem> { it.archived }
+                    .thenBy { if (it.dayOfWeek != null) 0 else 1 }
+                    .thenBy { it.dayOfWeek?.let { d -> weekOrder.indexOf(d) } ?: Int.MAX_VALUE }
+                    .thenBy { it.name }
+            )
             _state.value = HabitEditorState(
                 id = habit.id,
                 name = habit.name,
