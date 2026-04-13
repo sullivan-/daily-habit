@@ -47,7 +47,7 @@ fun ChoicesScreen(
                 weeklyTotalCount = uiState.weeklyTotalCount,
                 onBack = onBack,
                 onNewTally = onNewTally,
-                onSwipeRight = onBack
+                onSwipeLeft = onBack
             )
         }
     ) { padding ->
