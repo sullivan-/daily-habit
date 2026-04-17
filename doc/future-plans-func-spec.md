@@ -1,3 +1,4 @@
+
 # future plans functional spec
 
 post-MVP features, ideas, and enhancements. this is a living document — add ideas as
@@ -38,6 +39,14 @@ implemented. remaining:*
 - space for brainstorming improvements to habits and routines
 - diet tracking / improvement notes
 - ability to journal about what's working and what isn't
+
+### quick track creation from activity view
+
+- add a way to create a simple track (no day-of-week default, no
+  milestones) directly from the activity view, both compact and expanded
+- avoids the round-trip to the habit editor just to add a new track name
+- the track is created with default priority and immediately selected on
+  the current activity
 
 ### activity day reassignment
 
