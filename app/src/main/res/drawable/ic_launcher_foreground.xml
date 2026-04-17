@@ -12,7 +12,7 @@
         android:fillColor="#00000000" />
     <!-- S-curve rotated 135 degrees clockwise -->
     <group
-        android:rotation="135"
+        android:rotation="225"
         android:pivotX="54"
         android:pivotY="54">
         <path
