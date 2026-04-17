@@ -84,7 +84,8 @@ fun ActivityView(
                 onNoteChange = onNoteChange,
                 onToggleDetail = onToggleDetail,
                 onHistoryOlder = onHistoryOlder,
-                onHistoryNewer = onHistoryNewer
+                onHistoryNewer = onHistoryNewer,
+                onDelete = onDelete
             )
         } else {
             HabitView(
@@ -473,7 +474,8 @@ private fun CompletedActivityDetail(
     onNoteChange: (String) -> Unit,
     onToggleDetail: () -> Unit,
     onHistoryOlder: () -> Unit,
-    onHistoryNewer: () -> Unit
+    onHistoryNewer: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val activity = state.todayActivities.find { it.id == state.selectedActivityId }
         ?: return
@@ -526,6 +528,12 @@ private fun CompletedActivityDetail(
             },
             modifier = Modifier.padding(top = 8.dp)
         )
+        Button(
+            onClick = onDelete,
+            modifier = Modifier.padding(top = 8.dp)
+        ) {
+            Text("Delete")
+        }
     }
 }
 

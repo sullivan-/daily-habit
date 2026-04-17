@@ -105,7 +105,13 @@ fun PrimaryScreen(
             onUpdateCompletedAt = viewModel::updateActivityCompletedAt,
             onDoAgain = viewModel::doAgain,
             onSkip = viewModel::skipActivity,
-            onDelete = viewModel::deleteActivity,
+            onDelete = {
+                if (uiState.selectedActivityId != null && uiState.activeActivity == null) {
+                    viewModel.deleteCompletedActivity()
+                } else {
+                    viewModel.deleteActivity()
+                }
+            },
             onSelectTrack = viewModel::selectTrack,
             onSelectMilestone = viewModel::selectMilestone,
             onCompleteMilestone = viewModel::toggleMilestoneChecked,
