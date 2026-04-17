@@ -57,7 +57,8 @@ class MainActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.chimeEvents.collect { event ->
                     when (event) {
-                        is ChimeEvent.Threshold -> chimePlayer.playThresholdChime()
+                        is ChimeEvent.Goal -> chimePlayer.playGoalChime()
+                        is ChimeEvent.Stop -> chimePlayer.playStopChime()
                     }
                 }
             }
@@ -73,9 +74,8 @@ class MainActivity : ComponentActivity() {
                         context = this@MainActivity,
                         habitName = habit.name,
                         startEpochMs = startEpochMs,
-                        thresholdMs = listOfNotNull(
-                            habit.goalMinutes, habit.stopMinutes
-                        ).minOrNull()?.let { it * 60 * 1000L } ?: 0L
+                        goalMs = habit.goalMinutes?.let { it * 60 * 1000L } ?: 0L,
+                        stopMs = habit.stopMinutes?.let { it * 60 * 1000L } ?: 0L
                     ))
                     serviceRunning = true
                 } else if (!state.timerRunning && serviceRunning) {

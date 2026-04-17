@@ -292,11 +292,11 @@ class AgendaViewModel(
                 _uiState.value = _uiState.value.copy(timerTickMs = elapsed)
 
                 if (goalMs > 0 && !goalChimeFired && elapsed >= goalMs) {
-                    _chimeEvents.tryEmit(ChimeEvent.Threshold)
+                    _chimeEvents.tryEmit(ChimeEvent.Goal)
                     goalChimeFired = true
                 }
                 if (stopMs > 0 && !stopChimeFired && elapsed >= stopMs) {
-                    _chimeEvents.tryEmit(ChimeEvent.Threshold)
+                    _chimeEvents.tryEmit(ChimeEvent.Stop)
                     stopChimeFired = true
                 }
             }

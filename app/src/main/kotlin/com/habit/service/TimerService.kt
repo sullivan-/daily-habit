@@ -25,8 +25,10 @@ class TimerService : Service() {
 
     private var habitName: String = ""
     private var startEpochMs: Long = 0
-    private var thresholdMs: Long = 0
-    private var thresholdChimeFired: Boolean = false
+    private var goalMs: Long = 0
+    private var stopMs: Long = 0
+    private var goalChimeFired: Boolean = false
+    private var stopChimeFired: Boolean = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -40,9 +42,11 @@ class TimerService : Service() {
             ACTION_START -> {
                 habitName = intent.getStringExtra(EXTRA_HABIT_NAME) ?: "Timer"
                 startEpochMs = intent.getLongExtra(EXTRA_START_EPOCH_MS, System.currentTimeMillis())
-                thresholdMs = intent.getLongExtra(EXTRA_THRESHOLD_MS, 0)
+                goalMs = intent.getLongExtra(EXTRA_GOAL_MS, 0)
+                stopMs = intent.getLongExtra(EXTRA_STOP_MS, 0)
                 val currentElapsed = System.currentTimeMillis() - startEpochMs
-                thresholdChimeFired = thresholdMs > 0 && currentElapsed >= thresholdMs
+                goalChimeFired = goalMs > 0 && currentElapsed >= goalMs
+                stopChimeFired = stopMs > 0 && currentElapsed >= stopMs
 
                 startForeground(NOTIFICATION_ID, buildNotification(habitName, "0:00"))
                 startTicking()
@@ -67,9 +71,13 @@ class TimerService : Service() {
                     as android.app.NotificationManager
                 manager.notify(NOTIFICATION_ID, buildNotification(habitName, formatElapsed(elapsed)))
 
-                if (thresholdMs > 0 && !thresholdChimeFired && elapsed >= thresholdMs) {
-                    chimePlayer?.playThresholdChime()
-                    thresholdChimeFired = true
+                if (goalMs > 0 && !goalChimeFired && elapsed >= goalMs) {
+                    chimePlayer?.playGoalChime()
+                    goalChimeFired = true
+                }
+                if (stopMs > 0 && !stopChimeFired && elapsed >= stopMs) {
+                    chimePlayer?.playStopChime()
+                    stopChimeFired = true
                 }
             }
         }
@@ -113,18 +121,21 @@ class TimerService : Service() {
         const val ACTION_STOP = "com.habit.timer.STOP"
         const val EXTRA_HABIT_NAME = "habit_name"
         const val EXTRA_START_EPOCH_MS = "start_epoch_ms"
-        const val EXTRA_THRESHOLD_MS = "threshold_ms"
+        const val EXTRA_GOAL_MS = "goal_ms"
+        const val EXTRA_STOP_MS = "stop_ms"
 
         fun startIntent(
             context: Context,
             habitName: String,
             startEpochMs: Long,
-            thresholdMs: Long
+            goalMs: Long,
+            stopMs: Long
         ): Intent = Intent(context, TimerService::class.java).apply {
             action = ACTION_START
             putExtra(EXTRA_HABIT_NAME, habitName)
             putExtra(EXTRA_START_EPOCH_MS, startEpochMs)
-            putExtra(EXTRA_THRESHOLD_MS, thresholdMs)
+            putExtra(EXTRA_GOAL_MS, goalMs)
+            putExtra(EXTRA_STOP_MS, stopMs)
         }
 
         fun stopIntent(context: Context): Intent =
