@@ -12,6 +12,7 @@ import com.habit.data.TargetMode
 import com.habit.data.Track
 import com.habit.data.TrackRepository
 
+import app.cash.turbine.test
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -24,6 +25,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -760,5 +762,141 @@ class AgendaViewModelTest {
         assertThat(vm.uiState.value.milestoneChecked).isTrue()
         vm.toggleMilestoneChecked()
         assertThat(vm.uiState.value.milestoneChecked).isFalse()
+    }
+
+    // --- interval chime tests ---
+
+    @Test
+    fun `openIntervalSelector sets state to SELECTING`() = runTest {
+        val vm = createViewModel()
+        vm.openIntervalSelector()
+        assertThat(vm.uiState.value.intervalChimeState)
+            .isEqualTo(IntervalChimeState.SELECTING)
+    }
+
+    @Test
+    fun `closeIntervalSelector returns state to IDLE`() = runTest {
+        val vm = createViewModel()
+        vm.openIntervalSelector()
+        vm.closeIntervalSelector()
+        assertThat(vm.uiState.value.intervalChimeState)
+            .isEqualTo(IntervalChimeState.IDLE)
+    }
+
+    @Test
+    fun `startIntervalChime sets state to RUNNING and sets intervalChimeMs`() = runTest {
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.startIntervalChime(8_000)
+
+        val state = vm.uiState.value
+        assertThat(state.intervalChimeState).isEqualTo(IntervalChimeState.RUNNING)
+        assertThat(state.intervalChimeMs).isEqualTo(8_000)
+        assertThat(state.intervalCountdownMs).isEqualTo(8_000)
+    }
+
+    @Test
+    fun `startIntervalChime emits immediate chime event`() = runTest {
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+
+        vm.chimeEvents.test {
+            vm.startIntervalChime(8_000)
+            val event = awaitItem()
+            assertThat(event).isInstanceOf(ChimeEvent.Interval::class.java)
+            assertThat((event as ChimeEvent.Interval).isSeconds).isTrue()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `startIntervalChime auto-starts timer if not running`() = runTest {
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        assertThat(vm.uiState.value.timerRunning).isFalse()
+
+        vm.startIntervalChime(8_000)
+        assertThat(vm.uiState.value.timerRunning).isTrue()
+    }
+
+    @Test
+    fun `cancelIntervalChime clears interval state`() = runTest {
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.startIntervalChime(8_000)
+        vm.cancelIntervalChime()
+
+        val state = vm.uiState.value
+        assertThat(state.intervalChimeState).isEqualTo(IntervalChimeState.IDLE)
+        assertThat(state.intervalChimeMs).isEqualTo(0)
+        assertThat(state.intervalCountdownMs).isEqualTo(0)
+    }
+
+    @Test
+    fun `completeActivity clears interval state`() = runTest {
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.startIntervalChime(8_000)
+        vm.completeActivity("")
+
+        val state = vm.uiState.value
+        assertThat(state.intervalChimeState).isEqualTo(IntervalChimeState.IDLE)
+        assertThat(state.intervalChimeMs).isEqualTo(0)
+        assertThat(state.intervalCountdownMs).isEqualTo(0)
+    }
+
+    @Test
+    fun `cancelTimer clears interval state`() = runTest {
+        coEvery { activityRepo.create(any()) } returns 1L
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.startIntervalChime(8_000)
+        vm.cancelTimer()
+
+        val state = vm.uiState.value
+        assertThat(state.intervalChimeState).isEqualTo(IntervalChimeState.IDLE)
+        assertThat(state.intervalChimeMs).isEqualTo(0)
+        assertThat(state.intervalCountdownMs).isEqualTo(0)
+    }
+
+    @Test
+    fun `skipActivity clears interval state`() = runTest {
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.startIntervalChime(8_000)
+        vm.skipActivity()
+
+        val state = vm.uiState.value
+        assertThat(state.intervalChimeState).isEqualTo(IntervalChimeState.IDLE)
+        assertThat(state.intervalChimeMs).isEqualTo(0)
+    }
+
+    @Test
+    fun `minutes interval emits isSeconds false`() = runTest {
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+
+        vm.chimeEvents.test {
+            vm.startIntervalChime(180_000)
+            val event = awaitItem()
+            assertThat(event).isInstanceOf(ChimeEvent.Interval::class.java)
+            assertThat((event as ChimeEvent.Interval).isSeconds).isFalse()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `tick loop updates intervalCountdownMs on each tick`() = runTest {
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.startTimer()
+        vm.startIntervalChime(8_000)
+
+        // advance enough ticks for the countdown to update
+        tickDispatcher.scheduler.advanceTimeBy(1_000)
+        val countdown = vm.uiState.value.intervalCountdownMs
+        // countdown should be set (timer just started so elapsed is tiny,
+        // countdown should be close to the full interval)
+        assertThat(countdown).isGreaterThan(0)
     }
 }

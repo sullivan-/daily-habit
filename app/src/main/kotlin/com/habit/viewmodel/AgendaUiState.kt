@@ -26,7 +26,10 @@ data class AgendaUiState(
     val selectedTrack: Track? = null,
     val selectedMilestone: Milestone? = null,
     val incompleteMilestones: List<Milestone> = emptyList(),
-    val milestoneChecked: Boolean = false
+    val milestoneChecked: Boolean = false,
+    val intervalChimeState: IntervalChimeState = IntervalChimeState.IDLE,
+    val intervalChimeMs: Long = 0,
+    val intervalCountdownMs: Long = 0
 ) {
     val browsingHistory: Boolean
         get() = historyIndex >= 0 && historyActivities.isNotEmpty()

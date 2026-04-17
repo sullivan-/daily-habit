@@ -29,6 +29,9 @@ class TimerService : Service() {
     private var stopMs: Long = 0
     private var goalChimeFired: Boolean = false
     private var stopChimeFired: Boolean = false
+    private var intervalMs: Long = 0
+    private var nextIntervalAtMs: Long = 0
+    private var isSecondsInterval: Boolean = true
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -50,6 +53,16 @@ class TimerService : Service() {
 
                 startForeground(NOTIFICATION_ID, buildNotification(habitName, "0:00"))
                 startTicking()
+            }
+            ACTION_START_INTERVAL -> {
+                intervalMs = intent.getLongExtra(EXTRA_INTERVAL_MS, 0)
+                val currentElapsed = intent.getLongExtra(EXTRA_CURRENT_ELAPSED_MS, 0)
+                isSecondsInterval = intent.getBooleanExtra(EXTRA_IS_SECONDS, true)
+                nextIntervalAtMs = currentElapsed + intervalMs
+            }
+            ACTION_STOP_INTERVAL -> {
+                intervalMs = 0
+                nextIntervalAtMs = 0
             }
             ACTION_STOP -> {
                 stopTicking()
@@ -78,6 +91,11 @@ class TimerService : Service() {
                 if (stopMs > 0 && !stopChimeFired && elapsed >= stopMs) {
                     chimePlayer?.playStopChime()
                     stopChimeFired = true
+                }
+
+                if (intervalMs > 0 && elapsed >= nextIntervalAtMs) {
+                    chimePlayer?.playIntervalChime(isSecondsInterval)
+                    nextIntervalAtMs += intervalMs
                 }
             }
         }
@@ -119,10 +137,15 @@ class TimerService : Service() {
         const val NOTIFICATION_ID = 1
         const val ACTION_START = "com.habit.timer.START"
         const val ACTION_STOP = "com.habit.timer.STOP"
+        const val ACTION_START_INTERVAL = "com.habit.timer.START_INTERVAL"
+        const val ACTION_STOP_INTERVAL = "com.habit.timer.STOP_INTERVAL"
         const val EXTRA_HABIT_NAME = "habit_name"
         const val EXTRA_START_EPOCH_MS = "start_epoch_ms"
         const val EXTRA_GOAL_MS = "goal_ms"
         const val EXTRA_STOP_MS = "stop_ms"
+        const val EXTRA_INTERVAL_MS = "interval_ms"
+        const val EXTRA_CURRENT_ELAPSED_MS = "current_elapsed_ms"
+        const val EXTRA_IS_SECONDS = "is_seconds"
 
         fun startIntent(
             context: Context,
@@ -141,6 +164,23 @@ class TimerService : Service() {
         fun stopIntent(context: Context): Intent =
             Intent(context, TimerService::class.java).apply {
                 action = ACTION_STOP
+            }
+
+        fun startIntervalIntent(
+            context: Context,
+            intervalMs: Long,
+            currentElapsedMs: Long,
+            isSeconds: Boolean
+        ): Intent = Intent(context, TimerService::class.java).apply {
+            action = ACTION_START_INTERVAL
+            putExtra(EXTRA_INTERVAL_MS, intervalMs)
+            putExtra(EXTRA_CURRENT_ELAPSED_MS, currentElapsedMs)
+            putExtra(EXTRA_IS_SECONDS, isSeconds)
+        }
+
+        fun stopIntervalIntent(context: Context): Intent =
+            Intent(context, TimerService::class.java).apply {
+                action = ACTION_STOP_INTERVAL
             }
 
         private fun formatElapsed(ms: Long): String {

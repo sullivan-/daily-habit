@@ -1,8 +1,10 @@
 package com.habit.service
 
 import android.content.Context
+import android.media.AudioManager
 import android.media.Ringtone
 import android.media.RingtoneManager
+import android.media.ToneGenerator
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -14,11 +16,12 @@ class ChimePlayer(private val context: Context) {
 
     private val handler = Handler(Looper.getMainLooper())
     private var activeRingtone: Ringtone? = null
+    private var toneGenerator: ToneGenerator? = null
 
     fun playGoalChime() {
         val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         RingtoneManager.getRingtone(context, uri)?.play()
-        vibrate()
+        vibrate(200)
     }
 
     fun playStopChime() {
@@ -43,7 +46,7 @@ class ChimePlayer(private val context: Context) {
         activeRingtone = null
     }
 
-    private fun vibrate() {
+    private fun vibrate(durationMs: Long = 500) {
         val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val manager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE)
                 as VibratorManager
@@ -53,12 +56,26 @@ class ChimePlayer(private val context: Context) {
             context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         }
         vibrator.vibrate(
-            VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE)
+            VibrationEffect.createOneShot(durationMs, VibrationEffect.DEFAULT_AMPLITUDE)
         )
+    }
+
+    fun playIntervalChime(isSeconds: Boolean) {
+        if (isSeconds) {
+            if (toneGenerator == null) {
+                toneGenerator = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
+            }
+            toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP2, 200)
+        } else {
+            val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            RingtoneManager.getRingtone(context, uri)?.play()
+        }
     }
 
     fun release() {
         stopRingtone()
+        toneGenerator?.release()
+        toneGenerator = null
         handler.removeCallbacksAndMessages(null)
     }
 }

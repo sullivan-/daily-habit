@@ -115,6 +115,10 @@ fun PrimaryScreen(
             onSelectTrack = viewModel::selectTrack,
             onSelectMilestone = viewModel::selectMilestone,
             onCompleteMilestone = viewModel::toggleMilestoneChecked,
+            onOpenIntervalSelector = viewModel::openIntervalSelector,
+            onCloseIntervalSelector = viewModel::closeIntervalSelector,
+            onStartIntervalChime = viewModel::startIntervalChime,
+            onCancelIntervalChime = viewModel::cancelIntervalChime,
             modifier = expandedModifier
         )
 

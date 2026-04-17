@@ -39,6 +39,7 @@ import com.habit.data.Habit
 import com.habit.data.Milestone
 import com.habit.data.Track
 import com.habit.viewmodel.AgendaUiState
+import com.habit.viewmodel.IntervalChimeState
 import com.habit.viewmodel.Layout
 import java.time.Instant
 import java.time.LocalTime
@@ -66,6 +67,10 @@ fun ActivityView(
     onSelectTrack: (String?) -> Unit = {},
     onSelectMilestone: (Long) -> Unit = {},
     onCompleteMilestone: () -> Unit = {},
+    onOpenIntervalSelector: () -> Unit = {},
+    onCloseIntervalSelector: () -> Unit = {},
+    onStartIntervalChime: (Long) -> Unit = {},
+    onCancelIntervalChime: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val habit = state.selectedHabit
@@ -109,6 +114,10 @@ fun ActivityView(
                 onSelectTrack = onSelectTrack,
                 onSelectMilestone = onSelectMilestone,
                 onCompleteMilestone = onCompleteMilestone,
+                onOpenIntervalSelector = onOpenIntervalSelector,
+                onCloseIntervalSelector = onCloseIntervalSelector,
+                onStartIntervalChime = onStartIntervalChime,
+                onCancelIntervalChime = onCancelIntervalChime,
                 isExpanded = state.layout == Layout.ACTIVITY_FOCUSED
             )
         }
@@ -154,6 +163,10 @@ private fun HabitView(
     onSelectTrack: (String?) -> Unit,
     onSelectMilestone: (Long) -> Unit,
     onCompleteMilestone: () -> Unit,
+    onOpenIntervalSelector: () -> Unit,
+    onCloseIntervalSelector: () -> Unit,
+    onStartIntervalChime: (Long) -> Unit,
+    onCancelIntervalChime: () -> Unit,
     isExpanded: Boolean
 ) {
     val showHistory = isExpanded && state.browsingHistory &&
@@ -192,6 +205,10 @@ private fun HabitView(
             onSelectTrack = onSelectTrack,
             onSelectMilestone = onSelectMilestone,
             onCompleteMilestone = onCompleteMilestone,
+            onOpenIntervalSelector = onOpenIntervalSelector,
+            onCloseIntervalSelector = onCloseIntervalSelector,
+            onStartIntervalChime = onStartIntervalChime,
+            onCancelIntervalChime = onCancelIntervalChime,
             onUpdateStartTime = onUpdateStartTime,
             onUpdateCompletedAt = onUpdateCompletedAt,
             isExpanded = isExpanded
@@ -218,6 +235,10 @@ private fun CurrentActivityView(
     onSelectTrack: (String?) -> Unit,
     onSelectMilestone: (Long) -> Unit,
     onCompleteMilestone: () -> Unit,
+    onOpenIntervalSelector: () -> Unit,
+    onCloseIntervalSelector: () -> Unit,
+    onStartIntervalChime: (Long) -> Unit,
+    onCancelIntervalChime: () -> Unit,
     onUpdateStartTime: (Long, java.time.Instant?) -> Unit,
     onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
     isExpanded: Boolean
@@ -299,6 +320,18 @@ private fun CurrentActivityView(
                 onStart = onStart,
                 onFinish = { onFinish(note) },
                 onCancel = onCancel
+            )
+        }
+
+        if (habit.timed && state.activeActivity?.completedAt == null) {
+            IntervalChimeControl(
+                state = state.intervalChimeState,
+                intervalMs = state.intervalChimeMs,
+                countdownMs = state.intervalCountdownMs,
+                onOpen = onOpenIntervalSelector,
+                onClose = onCloseIntervalSelector,
+                onSelect = onStartIntervalChime,
+                onCancel = onCancelIntervalChime
             )
         }
 

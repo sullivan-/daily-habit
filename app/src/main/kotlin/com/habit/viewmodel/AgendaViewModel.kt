@@ -41,6 +41,7 @@ class AgendaViewModel(
     private var timerJob: Job? = null
     private var goalChimeFired: Boolean = false
     private var stopChimeFired: Boolean = false
+    private var nextIntervalChimeAtMs: Long = 0
 
     init {
         viewModelScope.launch {
@@ -204,6 +205,7 @@ class AgendaViewModel(
     fun skipActivity() {
         val activity = _uiState.value.activeActivity ?: return
         if (activity.completedAt != null) return
+        nextIntervalChimeAtMs = 0
         val skipped = activity.copy(
             completedAt = Instant.now(),
             skipped = true
@@ -215,7 +217,10 @@ class AgendaViewModel(
             layout = Layout.MAIN,
             historyActivities = emptyList(),
             historyIndex = -1,
-            historyAnchorIndex = -1
+            historyAnchorIndex = -1,
+            intervalChimeState = IntervalChimeState.IDLE,
+            intervalChimeMs = 0,
+            intervalCountdownMs = 0
         )
         viewModelScope.launch {
             activityRepo.update(skipped)
@@ -316,6 +321,18 @@ class AgendaViewModel(
                     _chimeEvents.tryEmit(ChimeEvent.Stop)
                     stopChimeFired = true
                 }
+
+                val chimeMs = _uiState.value.intervalChimeMs
+                if (chimeMs > 0 && elapsed >= nextIntervalChimeAtMs) {
+                    val isSeconds = IntervalOptions.isSecondsInterval(chimeMs)
+                    _chimeEvents.tryEmit(ChimeEvent.Interval(isSeconds))
+                    nextIntervalChimeAtMs += chimeMs
+                }
+                if (chimeMs > 0) {
+                    _uiState.value = _uiState.value.copy(
+                        intervalCountdownMs = maxOf(0, nextIntervalChimeAtMs - elapsed)
+                    )
+                }
             }
         }
     }
@@ -326,6 +343,7 @@ class AgendaViewModel(
 
         timerJob?.cancel()
         timerJob = null
+        nextIntervalChimeAtMs = 0
 
         viewModelScope.launch {
             activityRepo.delete(activity)
@@ -337,7 +355,10 @@ class AgendaViewModel(
             activeActivity = null,
             timerRunning = false,
             timedHabitId = null,
-            timerTickMs = 0
+            timerTickMs = 0,
+            intervalChimeState = IntervalChimeState.IDLE,
+            intervalChimeMs = 0,
+            intervalCountdownMs = 0
         )
 
         viewModelScope.launch {
@@ -363,6 +384,7 @@ class AgendaViewModel(
 
         timerJob?.cancel()
         timerJob = null
+        nextIntervalChimeAtMs = 0
 
         val now = Instant.now()
 
@@ -375,7 +397,10 @@ class AgendaViewModel(
             selectedActivityId = null,
             historyActivities = emptyList(),
             historyIndex = -1,
-            historyAnchorIndex = -1
+            historyAnchorIndex = -1,
+            intervalChimeState = IntervalChimeState.IDLE,
+            intervalChimeMs = 0,
+            intervalCountdownMs = 0
         )
 
         viewModelScope.launch {
@@ -621,6 +646,47 @@ class AgendaViewModel(
             timerTickMs = 0,
             selectedHabitId = habitId,
             selectedActivityId = null
+        )
+    }
+
+    fun openIntervalSelector() {
+        _uiState.value = _uiState.value.copy(
+            intervalChimeState = IntervalChimeState.SELECTING
+        )
+    }
+
+    fun closeIntervalSelector() {
+        _uiState.value = _uiState.value.copy(
+            intervalChimeState = IntervalChimeState.IDLE
+        )
+    }
+
+    fun startIntervalChime(intervalMs: Long) {
+        val state = _uiState.value
+
+        if (!state.timerRunning) {
+            startTimer()
+        }
+
+        val isSeconds = IntervalOptions.isSecondsInterval(intervalMs)
+        _chimeEvents.tryEmit(ChimeEvent.Interval(isSeconds))
+
+        val elapsed = _uiState.value.activeActivity?.elapsedMs ?: 0
+        nextIntervalChimeAtMs = elapsed + intervalMs
+
+        _uiState.value = _uiState.value.copy(
+            intervalChimeState = IntervalChimeState.RUNNING,
+            intervalChimeMs = intervalMs,
+            intervalCountdownMs = intervalMs
+        )
+    }
+
+    fun cancelIntervalChime() {
+        nextIntervalChimeAtMs = 0
+        _uiState.value = _uiState.value.copy(
+            intervalChimeState = IntervalChimeState.IDLE,
+            intervalChimeMs = 0,
+            intervalCountdownMs = 0
         )
     }
 

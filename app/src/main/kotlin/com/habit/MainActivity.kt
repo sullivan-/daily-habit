@@ -27,6 +27,7 @@ import com.habit.ui.AppNavigation
 import com.habit.viewmodel.AgendaViewModel
 import com.habit.viewmodel.AgendaViewModelFactory
 import com.habit.viewmodel.ChimeEvent
+import com.habit.viewmodel.IntervalOptions
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -59,6 +60,8 @@ class MainActivity : ComponentActivity() {
                     when (event) {
                         is ChimeEvent.Goal -> chimePlayer.playGoalChime()
                         is ChimeEvent.Stop -> chimePlayer.playStopChime()
+                        is ChimeEvent.Interval ->
+                            chimePlayer.playIntervalChime(event.isSeconds)
                     }
                 }
             }
@@ -81,6 +84,28 @@ class MainActivity : ComponentActivity() {
                 } else if (!state.timerRunning && serviceRunning) {
                     startService(TimerService.stopIntent(this@MainActivity))
                     serviceRunning = false
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            var intervalRunning = false
+            viewModel.uiState.collect { state ->
+                if (state.intervalChimeMs > 0 && serviceRunning && !intervalRunning) {
+                    startService(TimerService.startIntervalIntent(
+                        context = this@MainActivity,
+                        intervalMs = state.intervalChimeMs,
+                        currentElapsedMs = state.activeActivity?.elapsedMs ?: 0,
+                        isSeconds = IntervalOptions.isSecondsInterval(
+                            state.intervalChimeMs
+                        )
+                    ))
+                    intervalRunning = true
+                } else if (state.intervalChimeMs == 0L && intervalRunning) {
+                    startService(
+                        TimerService.stopIntervalIntent(this@MainActivity)
+                    )
+                    intervalRunning = false
                 }
             }
         }
