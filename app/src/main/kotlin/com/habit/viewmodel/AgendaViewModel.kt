@@ -349,15 +349,16 @@ class AgendaViewModel(
 
         val now = Instant.now()
 
-        val nextHabit = state.agendaItems
-            .firstOrNull { it.habit.id != habitId }
-
         _uiState.value = state.copy(
             activeActivity = null,
             timerRunning = false,
             timedHabitId = null,
             timerTickMs = 0,
-            selectedHabitId = nextHabit?.habit?.id
+            selectedHabitId = null,
+            selectedActivityId = null,
+            historyActivities = emptyList(),
+            historyIndex = -1,
+            historyAnchorIndex = -1
         )
 
         viewModelScope.launch {
@@ -380,8 +381,6 @@ class AgendaViewModel(
             }
             persistMilestoneIfChecked()
         }
-
-        nextHabit?.let { selectHabit(it.habit.id) }
     }
 
     fun completeUntimed(habitId: String, note: String) {
@@ -410,13 +409,14 @@ class AgendaViewModel(
 
             persistMilestoneIfChecked()
 
-            val nextHabit = _uiState.value.agendaItems
-                .firstOrNull { it.habit.id != habitId }
             _uiState.value = _uiState.value.copy(
                 activeActivity = null,
-                selectedHabitId = nextHabit?.habit?.id
+                selectedHabitId = null,
+                selectedActivityId = null,
+                historyActivities = emptyList(),
+                historyIndex = -1,
+                historyAnchorIndex = -1
             )
-            nextHabit?.let { selectHabit(it.habit.id) }
         }
     }
 

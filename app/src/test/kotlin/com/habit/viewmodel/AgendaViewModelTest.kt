@@ -200,7 +200,7 @@ class AgendaViewModelTest {
     }
 
     @Test
-    fun `completeActivity finalizes and advances to next habit`() = runTest {
+    fun `completeActivity finalizes and clears selection`() = runTest {
         val vm = createViewModel()
         vm.selectHabit("qigong")
         vm.startTimer()
@@ -208,8 +208,7 @@ class AgendaViewModelTest {
 
         val state = vm.uiState.value
         assertThat(state.timerRunning).isFalse()
-        // should advance to next habit (vitamins)
-        assertThat(state.selectedHabitId).isEqualTo("vitamins")
+        assertThat(state.selectedHabitId).isNull()
     }
 
     @Test
