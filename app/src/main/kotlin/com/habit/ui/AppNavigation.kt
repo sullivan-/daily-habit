@@ -56,7 +56,10 @@ fun AppNavigation(
             HabitEditorScreen(
                 viewModel = editorVm,
                 habitId = if (habitId == "new") null else habitId,
-                onBack = { navController.popBackStack() }
+                onBack = {
+                    agendaViewModel.refreshTracks()
+                    navController.popBackStack()
+                }
             )
         }
         composable("choices") {

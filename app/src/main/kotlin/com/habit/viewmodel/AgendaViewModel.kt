@@ -497,6 +497,11 @@ class AgendaViewModel(
         }
     }
 
+    fun refreshTracks() {
+        val habitId = _uiState.value.selectedHabitId ?: return
+        viewModelScope.launch { loadAndSetTracks(habitId) }
+    }
+
     fun loadTracksForHabit(habitId: String) {
         viewModelScope.launch { loadAndSetTracks(habitId) }
     }
