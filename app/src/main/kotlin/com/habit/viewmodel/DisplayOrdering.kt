@@ -37,8 +37,8 @@ fun bestSlot(
         slots
     }
 
-    // assign completions to the best available slots:
-    // prefer non-past-time slots first, then past-time slots
+    // assign completions to past slots first (the ones already done),
+    // preserving upcoming slots for the next activity
     val nonPast = expandedSlots
         .filter { !isSlotPastTime(it, habit.priority, now) }
         .toMutableList()
@@ -47,12 +47,12 @@ fun bestSlot(
         .toMutableList()
 
     var remaining = completedCount
-    while (remaining > 0 && nonPast.isNotEmpty()) {
-        nonPast.removeAt(0)
-        remaining--
-    }
     while (remaining > 0 && past.isNotEmpty()) {
         past.removeAt(0)
+        remaining--
+    }
+    while (remaining > 0 && nonPast.isNotEmpty()) {
+        nonPast.removeAt(0)
         remaining--
     }
 

@@ -174,14 +174,14 @@ class DisplayOrderingTest {
             dailyTarget = 3, priority = Priority.LOW)
         val other = habit("other", timesOfDay = listOf(13), priority = Priority.MEDIUM)
 
-        // at 12:15, 1 completion: claims the 12:00 slot
-        // remaining: 8 (past time) and 16 (not past time)
-        // kegel should get the 16:00 slot
+        // at 12:15, 1 completion: claims the 8:00 slot (past first)
+        // remaining: 12 (not past time) and 16 (not past time)
+        // kegel should get the 12:00 slot (earliest non-past)
         val at1215 = LocalDateTime.of(2026, 3, 30, 12, 15)
         val activities = listOf(completed("kegel"))
         val result = sortAgenda(listOf(kegel, other), activities, monday, at1215)
         val kegelItem = result.find { it.habit.id == "kegel" }!!
-        assertThat(kegelItem.timeOfDay).isEqualTo(16)
+        assertThat(kegelItem.timeOfDay).isEqualTo(12)
     }
 
     @Test
@@ -223,17 +223,17 @@ class DisplayOrderingTest {
     }
 
     @Test
-    fun `multi-time habit completion claims non-past slots first`() {
+    fun `multi-time habit completion claims past slots first`() {
         val kegel = habit("kegel", timesOfDay = listOf(8, 12, 16),
             dailyTarget = 3, priority = Priority.LOW)
 
-        // at 12:15, 2 completions: claim 12:00 and 16:00 (non-past first)
-        // remaining: 8 (past time)
+        // at 12:15, 2 completions: claim 8:00 (past) then 12:00 (non-past)
+        // remaining: 16 (not past time)
         val at1215 = LocalDateTime.of(2026, 3, 30, 12, 15)
         val activities = listOf(completed("kegel"), completed("kegel"))
         val result = sortAgenda(listOf(kegel), activities, monday, at1215)
         val kegelItem = result.find { it.habit.id == "kegel" }!!
-        assertThat(kegelItem.timeOfDay).isEqualTo(8)
-        assertThat(kegelItem.isPastTime(at1215)).isTrue()
+        assertThat(kegelItem.timeOfDay).isEqualTo(16)
+        assertThat(kegelItem.isPastTime(at1215)).isFalse()
     }
 }
