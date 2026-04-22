@@ -6,13 +6,7 @@ import com.habit.data.Priority
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-fun graceMinutes(priority: Priority): Int = when (priority) {
-    Priority.HIGH -> 270
-    Priority.MEDIUM_HIGH -> 210
-    Priority.MEDIUM -> 150
-    Priority.MEDIUM_LOW -> 90
-    Priority.LOW -> 30
-}
+fun graceMinutes(@Suppress("UNUSED_PARAMETER") priority: Priority): Int = 270
 
 fun isSlotPastTime(hour: Int, priority: Priority, now: LocalDateTime): Boolean {
     val deadlineMinutes = hour * 60 + graceMinutes(priority)

@@ -122,30 +122,30 @@ class DisplayOrderingTest {
 
     @Test
     fun `past time items sort after non-past-time items`() {
-        // low prio at 8 => past time at 8:31
-        // high prio at 8 => past time at 12:31
+        // all priorities use 270min grace, so 8:00 slot is past at 12:31
         val habits = listOf(
             habit("low-8", timesOfDay = listOf(8), priority = Priority.LOW),
             habit("high-8", timesOfDay = listOf(8), priority = Priority.HIGH),
             habit("afternoon", timesOfDay = listOf(14), priority = Priority.MEDIUM)
         )
-        // at 9:00, low-8 is past time (8:00 + 30min = 8:30), high-8 is not
-        val at9am = LocalDateTime.of(2026, 3, 30, 9, 0)
-        val result = sortAgenda(habits, emptyList(), monday, at9am)
+        // at 13:00, both 8:00 slots are past time (8:00 + 270min = 12:30)
+        val at1pm = LocalDateTime.of(2026, 3, 30, 13, 0)
+        val result = sortAgenda(habits, emptyList(), monday, at1pm)
+        // afternoon (not past) sorts first, then the two past 8:00 slots by priority
         assertThat(result.map { it.habit.id })
-            .containsExactly("high-8", "afternoon", "low-8")
+            .containsExactly("afternoon", "high-8", "low-8")
             .inOrder()
     }
 
     @Test
-    fun `grace period scales with priority`() {
+    fun `grace period is uniform across priorities`() {
         val habits = listOf(
             habit("low", timesOfDay = listOf(8), priority = Priority.LOW),
             habit("med", timesOfDay = listOf(8), priority = Priority.MEDIUM),
             habit("high", timesOfDay = listOf(8), priority = Priority.HIGH)
         )
-        // at 11:00: low past (8:30), med not yet (10:30), high not yet (12:30)
-        // high and med both not past time, high sorts first by priority
+        // at 11:00: all have 270min grace (deadline 12:30), none past time
+        // all at same time slot, so sorted by priority
         val at11am = LocalDateTime.of(2026, 3, 30, 11, 0)
         val result = sortAgenda(habits, emptyList(), monday, at11am)
         assertThat(result.map { it.habit.id })
@@ -155,15 +155,15 @@ class DisplayOrderingTest {
 
     @Test
     fun `multi-time habit uses best unclaimed slot`() {
-        // kegel at 8, 12, 16 — low priority (30min grace)
+        // all priorities use 270min grace
         val kegel = habit("kegel", timesOfDay = listOf(8, 12, 16),
             dailyTarget = 3, priority = Priority.LOW)
         val other = habit("other", timesOfDay = listOf(13), priority = Priority.MEDIUM)
 
-        // at 12:15, 0 completions: 8 is past time (8:30), 12 is not (12:30)
-        // kegel should get the 12:00 slot
-        val at1215 = LocalDateTime.of(2026, 3, 30, 12, 15)
-        val result = sortAgenda(listOf(kegel, other), emptyList(), monday, at1215)
+        // at 13:00, 0 completions: 8 is past time (8+270min=12:30)
+        // 12 and 16 are not past; kegel should get the 12:00 slot
+        val at1300 = LocalDateTime.of(2026, 3, 30, 13, 0)
+        val result = sortAgenda(listOf(kegel, other), emptyList(), monday, at1300)
         assertThat(result.first().habit.id).isEqualTo("kegel")
         assertThat(result.first().timeOfDay).isEqualTo(12)
     }
@@ -174,9 +174,8 @@ class DisplayOrderingTest {
             dailyTarget = 3, priority = Priority.LOW)
         val other = habit("other", timesOfDay = listOf(13), priority = Priority.MEDIUM)
 
-        // at 12:15, 1 completion: claims the 8:00 slot (past first)
-        // remaining: 12 (not past time) and 16 (not past time)
-        // kegel should get the 12:00 slot (earliest non-past)
+        // at 12:15 (all slots non-past with 270min grace), 1 completion
+        // claims 8:00; remaining: 12 and 16; returns 12
         val at1215 = LocalDateTime.of(2026, 3, 30, 12, 15)
         val activities = listOf(completed("kegel"))
         val result = sortAgenda(listOf(kegel, other), activities, monday, at1215)
@@ -227,8 +226,8 @@ class DisplayOrderingTest {
         val kegel = habit("kegel", timesOfDay = listOf(8, 12, 16),
             dailyTarget = 3, priority = Priority.LOW)
 
-        // at 12:15, 2 completions: claim 8:00 (past) then 12:00 (non-past)
-        // remaining: 16 (not past time)
+        // at 12:15 (all non-past with 270min grace), 2 completions
+        // claim 8:00 and 12:00; remaining: 16
         val at1215 = LocalDateTime.of(2026, 3, 30, 12, 15)
         val activities = listOf(completed("kegel"), completed("kegel"))
         val result = sortAgenda(listOf(kegel), activities, monday, at1215)
