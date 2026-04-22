@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -215,7 +217,10 @@ fun HabitEditorScreen(
             }
 
             FieldGroup("Timekeeping") {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.height(IntrinsicSize.Min)
+                ) {
                     OutlinedTextField(
                         value = state.dailyTarget.toString(),
                         onValueChange = {
@@ -231,7 +236,7 @@ fun HabitEditorScreen(
                     )
                     Spacer(Modifier.width(16.dp))
                     SingleChoiceSegmentedButtonRow(
-                        modifier = Modifier.height(56.dp)
+                        modifier = Modifier.fillMaxHeight()
                     ) {
                         SegmentedButton(
                             selected = state.dailyTargetMode == TargetMode.AT_LEAST,
