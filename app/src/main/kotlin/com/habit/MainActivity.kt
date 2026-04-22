@@ -14,8 +14,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -113,7 +115,11 @@ class MainActivity : ComponentActivity() {
         val container = (application as HabitApp).container
 
         setContent {
-            MaterialTheme(colorScheme = darkColorScheme()) {
+            val defaultTypography = Typography()
+            val typography = defaultTypography.copy(
+                bodySmall = defaultTypography.bodySmall.copy(fontSize = 13.sp)
+            )
+            MaterialTheme(colorScheme = darkColorScheme(), typography = typography) {
                 val navController = rememberNavController()
                 Scaffold { innerPadding ->
                     AppNavigation(
