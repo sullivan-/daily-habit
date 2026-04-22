@@ -29,7 +29,9 @@ data class AgendaUiState(
     val milestoneChecked: Boolean = false,
     val intervalChimeState: IntervalChimeState = IntervalChimeState.IDLE,
     val intervalChimeMs: Long = 0,
-    val intervalCountdownMs: Long = 0
+    val intervalCountdownMs: Long = 0,
+    val trackHistory: List<TrackHistoryItem> = emptyList(),
+    val trackHistoryVisible: Boolean = false
 ) {
     val browsingHistory: Boolean
         get() = historyIndex >= 0 && historyActivities.isNotEmpty()

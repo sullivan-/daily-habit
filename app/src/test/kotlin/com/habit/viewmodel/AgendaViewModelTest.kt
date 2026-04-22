@@ -885,6 +885,67 @@ class AgendaViewModelTest {
         }
     }
 
+    // --- track history tests ---
+
+    @Test
+    fun `showTrackHistory sets trackHistoryVisible and loads items`() = runTest {
+        val completed1 = Activity(
+            id = 10, habitId = "qigong", attributedDate = today,
+            startTime = null, note = "session 1",
+            completedAt = Instant.now(), trackId = "standing", milestoneId = 1
+        )
+        val track = Track(
+            id = "standing", habitId = "qigong", name = "Standing",
+            priority = Priority.HIGH
+        )
+        val milestone = Milestone(
+            id = 1, trackId = "standing", name = "Lesson 1",
+            sortOrder = 1, completed = true
+        )
+        coEvery { activityRepo.completedHistoryForHabit("qigong") } returns
+            listOf(completed1)
+        coEvery { trackRepo.getById("standing") } returns track
+        coEvery { trackRepo.getMilestoneById(1) } returns milestone
+
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.showTrackHistory()
+
+        val state = vm.uiState.value
+        assertThat(state.trackHistoryVisible).isTrue()
+        assertThat(state.trackHistory).hasSize(1)
+        assertThat(state.trackHistory[0].trackName).isEqualTo("Standing")
+        assertThat(state.trackHistory[0].milestoneName).isEqualTo("Lesson 1")
+    }
+
+    @Test
+    fun `hideTrackHistory clears track history state`() = runTest {
+        coEvery { activityRepo.completedHistoryForHabit("qigong") } returns emptyList()
+
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.showTrackHistory()
+        vm.hideTrackHistory()
+
+        val state = vm.uiState.value
+        assertThat(state.trackHistoryVisible).isFalse()
+        assertThat(state.trackHistory).isEmpty()
+    }
+
+    @Test
+    fun `collapseActivity clears track history state`() = runTest {
+        coEvery { activityRepo.completedHistoryForHabit("qigong") } returns emptyList()
+
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.expandActivity()
+        vm.showTrackHistory()
+        vm.collapseActivity()
+
+        assertThat(vm.uiState.value.trackHistoryVisible).isFalse()
+        assertThat(vm.uiState.value.trackHistory).isEmpty()
+    }
+
     @Test
     fun `tick loop updates intervalCountdownMs on each tick`() = runTest {
         val vm = createViewModel()

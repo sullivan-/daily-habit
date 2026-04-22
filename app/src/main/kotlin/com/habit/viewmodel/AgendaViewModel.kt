@@ -107,7 +107,9 @@ class AgendaViewModel(
             layout = _uiState.value.previousLayout,
             historyActivities = emptyList(),
             historyIndex = -1,
-            historyAnchorIndex = -1
+            historyAnchorIndex = -1,
+            trackHistoryVisible = false,
+            trackHistory = emptyList()
         )
     }
 
@@ -190,7 +192,10 @@ class AgendaViewModel(
             selectedHabitId = habitId
         )
         if (habitId != null) {
-            viewModelScope.launch { loadHistory(habitId, activityId) }
+            viewModelScope.launch {
+                loadHistory(habitId, activityId)
+                loadAndSetTracks(habitId)
+            }
         }
     }
 
@@ -495,6 +500,39 @@ class AgendaViewModel(
             )
             viewModelScope.launch { activityRepo.update(updated) }
         }
+    }
+
+    fun showTrackHistory() {
+        val habitId = _uiState.value.selectedHabitId ?: return
+        viewModelScope.launch {
+            val repo = trackRepo ?: return@launch
+            val activities = activityRepo.completedHistoryForHabit(habitId)
+            val recent = activities.takeLast(10)
+            val items = recent.map { activity ->
+                val trackName = activity.trackId?.let { repo.getById(it)?.name }
+                val milestoneName = activity.milestoneId?.let {
+                    repo.getMilestoneById(it)?.name
+                }
+                TrackHistoryItem(
+                    activityId = activity.id,
+                    completedAt = activity.completedAt!!,
+                    trackName = trackName,
+                    milestoneName = milestoneName,
+                    note = activity.note
+                )
+            }.reversed()
+            _uiState.value = _uiState.value.copy(
+                trackHistory = items,
+                trackHistoryVisible = true
+            )
+        }
+    }
+
+    fun hideTrackHistory() {
+        _uiState.value = _uiState.value.copy(
+            trackHistoryVisible = false,
+            trackHistory = emptyList()
+        )
     }
 
     fun refreshTracks() {

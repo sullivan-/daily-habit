@@ -71,6 +71,8 @@ fun ActivityView(
     onCloseIntervalSelector: () -> Unit = {},
     onStartIntervalChime: (Long) -> Unit = {},
     onCancelIntervalChime: () -> Unit = {},
+    onShowTrackHistory: () -> Unit = {},
+    onHideTrackHistory: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val habit = state.selectedHabit
@@ -90,7 +92,10 @@ fun ActivityView(
                 onToggleDetail = onToggleDetail,
                 onHistoryOlder = onHistoryOlder,
                 onHistoryNewer = onHistoryNewer,
-                onDelete = onDelete
+                onDelete = onDelete,
+                onEditHabit = onEditHabit,
+                onShowTrackHistory = onShowTrackHistory,
+                onHideTrackHistory = onHideTrackHistory
             )
         } else {
             HabitView(
@@ -118,6 +123,8 @@ fun ActivityView(
                 onCloseIntervalSelector = onCloseIntervalSelector,
                 onStartIntervalChime = onStartIntervalChime,
                 onCancelIntervalChime = onCancelIntervalChime,
+                onShowTrackHistory = onShowTrackHistory,
+                onHideTrackHistory = onHideTrackHistory,
                 isExpanded = state.layout == Layout.ACTIVITY_FOCUSED
             )
         }
@@ -167,8 +174,18 @@ private fun HabitView(
     onCloseIntervalSelector: () -> Unit,
     onStartIntervalChime: (Long) -> Unit,
     onCancelIntervalChime: () -> Unit,
+    onShowTrackHistory: () -> Unit,
+    onHideTrackHistory: () -> Unit,
     isExpanded: Boolean
 ) {
+    if (state.trackHistoryVisible) {
+        TrackHistoryView(
+            habitName = habit.name,
+            items = state.trackHistory,
+            onClose = onHideTrackHistory
+        )
+        return
+    }
     val showHistory = isExpanded && state.browsingHistory &&
         (!state.isAtNewest || state.historyActivity?.completedAt != null)
     if (showHistory) {
@@ -184,7 +201,9 @@ private fun HabitView(
             onEditHabit = onEditHabit,
             onUpdateStartTime = onUpdateStartTime,
             onUpdateCompletedAt = onUpdateCompletedAt,
-            onDoAgain = onDoAgain
+            onDoAgain = onDoAgain,
+            onDelete = onDelete,
+            onShowTrackHistory = onShowTrackHistory
         )
     } else {
         CurrentActivityView(
@@ -209,6 +228,7 @@ private fun HabitView(
             onCloseIntervalSelector = onCloseIntervalSelector,
             onStartIntervalChime = onStartIntervalChime,
             onCancelIntervalChime = onCancelIntervalChime,
+            onShowTrackHistory = onShowTrackHistory,
             onUpdateStartTime = onUpdateStartTime,
             onUpdateCompletedAt = onUpdateCompletedAt,
             isExpanded = isExpanded
@@ -239,6 +259,7 @@ private fun CurrentActivityView(
     onCloseIntervalSelector: () -> Unit,
     onStartIntervalChime: (Long) -> Unit,
     onCancelIntervalChime: () -> Unit,
+    onShowTrackHistory: () -> Unit,
     onUpdateStartTime: (Long, java.time.Instant?) -> Unit,
     onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
     isExpanded: Boolean
@@ -378,6 +399,11 @@ private fun CurrentActivityView(
                     Text("Delete")
                 }
             }
+            if (state.availableTracks.isNotEmpty()) {
+                Button(onClick = onShowTrackHistory, elevation = buttonElevation()) {
+                    Text("Track History")
+                }
+            }
             Button(onClick = { onEditHabit(habit.id) }, elevation = buttonElevation()) {
                 Text("Edit Habit")
             }
@@ -398,7 +424,9 @@ private fun HistoryActivityView(
     onEditHabit: (String) -> Unit,
     onUpdateStartTime: (Long, java.time.Instant?) -> Unit,
     onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
-    onDoAgain: (String) -> Unit
+    onDoAgain: (String) -> Unit,
+    onDelete: () -> Unit,
+    onShowTrackHistory: () -> Unit
 ) {
     var note by remember(activity.id) { mutableStateOf(activity.note) }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("EEE, MMM d") }
@@ -494,6 +522,16 @@ private fun HistoryActivityView(
                     Text("Back to start")
                 }
             }
+            if (activity.completedAt != null) {
+                Button(onClick = onDelete, elevation = buttonElevation()) {
+                    Text("Delete")
+                }
+            }
+            if (state.availableTracks.isNotEmpty()) {
+                Button(onClick = onShowTrackHistory, elevation = buttonElevation()) {
+                    Text("Track History")
+                }
+            }
             Button(onClick = { onEditHabit(habit.id) }, elevation = buttonElevation()) {
                 Text("Edit Habit")
             }
@@ -508,11 +546,23 @@ private fun CompletedActivityDetail(
     onToggleDetail: () -> Unit,
     onHistoryOlder: () -> Unit,
     onHistoryNewer: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEditHabit: (String) -> Unit,
+    onShowTrackHistory: () -> Unit,
+    onHideTrackHistory: () -> Unit
 ) {
     val activity = state.todayActivities.find { it.id == state.selectedActivityId }
         ?: return
     val habit = state.habits.find { it.id == activity.habitId } ?: return
+
+    if (state.trackHistoryVisible) {
+        TrackHistoryView(
+            habitName = habit.name,
+            items = state.trackHistory,
+            onClose = onHideTrackHistory
+        )
+        return
+    }
 
     var note by remember(activity.id) { mutableStateOf(activity.note) }
     val timeFormatter = remember { DateTimeFormatter.ofPattern("h:mm a") }
@@ -561,11 +611,28 @@ private fun CompletedActivityDetail(
             },
             modifier = Modifier.padding(top = 8.dp)
         )
-        Button(
-            onClick = onDelete,
-            modifier = Modifier.padding(top = 8.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(
+                8.dp, Alignment.CenterHorizontally
+            )
         ) {
-            Text("Delete")
+            Button(onClick = onDelete, elevation = buttonElevation()) {
+                Text("Delete")
+            }
+            if (state.availableTracks.isNotEmpty()) {
+                Button(onClick = onShowTrackHistory, elevation = buttonElevation()) {
+                    Text("Track History")
+                }
+            }
+            Button(
+                onClick = { onEditHabit(habit.id) },
+                elevation = buttonElevation()
+            ) {
+                Text("Edit Habit")
+            }
         }
     }
 }
