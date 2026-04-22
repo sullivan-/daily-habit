@@ -41,7 +41,7 @@ fun TrackHistoryView(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "$habitName — track history",
+                text = "$habitName — Track History",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f)
             )
