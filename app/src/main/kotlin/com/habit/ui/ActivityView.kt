@@ -3,6 +3,8 @@ package com.habit.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -95,7 +97,8 @@ fun ActivityView(
                 onDelete = onDelete,
                 onEditHabit = onEditHabit,
                 onShowTrackHistory = onShowTrackHistory,
-                onHideTrackHistory = onHideTrackHistory
+                onHideTrackHistory = onHideTrackHistory,
+                onDoAgain = onDoAgain
             )
         } else {
             HabitView(
@@ -372,19 +375,20 @@ private fun CurrentActivityView(
             modifier = Modifier.padding(top = 8.dp)
         )
 
-        Row(
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(
                 8.dp, Alignment.CenterHorizontally
-            )
+            ),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (isExpanded &&
-                habit.dailyTargetMode == com.habit.data.TargetMode.AT_LEAST &&
+            if (habit.dailyTargetMode == com.habit.data.TargetMode.AT_LEAST &&
                 state.activeActivity?.completedAt != null
             ) {
-                TextButton(onClick = { onDoAgain(habit.id) }) {
+                Button(onClick = { onDoAgain(habit.id) }, elevation = buttonElevation()) {
                     Text("Again")
                 }
             }
@@ -502,18 +506,20 @@ private fun HistoryActivityView(
             modifier = Modifier.padding(top = 8.dp)
         )
 
-        Row(
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(
                 8.dp, Alignment.CenterHorizontally
-            )
+            ),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (habit.dailyTargetMode == com.habit.data.TargetMode.AT_LEAST &&
                 activity.completedAt != null
             ) {
-                TextButton(onClick = { onDoAgain(habit.id) }) {
+                Button(onClick = { onDoAgain(habit.id) }, elevation = buttonElevation()) {
                     Text("Again")
                 }
             }
@@ -549,7 +555,8 @@ private fun CompletedActivityDetail(
     onDelete: () -> Unit,
     onEditHabit: (String) -> Unit,
     onShowTrackHistory: () -> Unit,
-    onHideTrackHistory: () -> Unit
+    onHideTrackHistory: () -> Unit,
+    onDoAgain: (String) -> Unit
 ) {
     val activity = state.todayActivities.find { it.id == state.selectedActivityId }
         ?: return
@@ -611,14 +618,21 @@ private fun CompletedActivityDetail(
             },
             modifier = Modifier.padding(top = 8.dp)
         )
-        Row(
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(
                 8.dp, Alignment.CenterHorizontally
-            )
+            ),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            if (habit.dailyTargetMode == com.habit.data.TargetMode.AT_LEAST) {
+                Button(onClick = { onDoAgain(habit.id) }, elevation = buttonElevation()) {
+                    Text("Again")
+                }
+            }
             Button(onClick = onDelete, elevation = buttonElevation()) {
                 Text("Delete")
             }
@@ -627,10 +641,7 @@ private fun CompletedActivityDetail(
                     Text("Track History")
                 }
             }
-            Button(
-                onClick = { onEditHabit(habit.id) },
-                elevation = buttonElevation()
-            ) {
+            Button(onClick = { onEditHabit(habit.id) }, elevation = buttonElevation()) {
                 Text("Edit Habit")
             }
         }
