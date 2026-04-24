@@ -11,6 +11,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.habit.viewmodel.IntervalChimeState
 import com.habit.viewmodel.IntervalOptions
@@ -45,7 +46,14 @@ fun IntervalChimeControl(
                         FilterChip(
                             selected = false,
                             onClick = { onSelect(sec * 1000L) },
-                            label = { Text("${sec}s") }
+                            label = {
+                                Text(
+                                    "${sec}s",
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Visible,
+                                    softWrap = false
+                                )
+                            }
                         )
                     }
                 }
@@ -54,7 +62,14 @@ fun IntervalChimeControl(
                         FilterChip(
                             selected = false,
                             onClick = { onSelect(min * 60_000L) },
-                            label = { Text("${min}m") }
+                            label = {
+                                Text(
+                                    "${min}m",
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Visible,
+                                    softWrap = false
+                                )
+                            }
                         )
                     }
                 }
