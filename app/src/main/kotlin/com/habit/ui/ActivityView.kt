@@ -405,7 +405,7 @@ private fun CurrentActivityView(
             }
             if (state.availableTracks.isNotEmpty()) {
                 Button(onClick = onShowTrackHistory, elevation = buttonElevation()) {
-                    Text("Track History")
+                    Text("History")
                 }
             }
             Button(onClick = { onEditHabit(habit.id) }, elevation = buttonElevation()) {
@@ -535,7 +535,7 @@ private fun HistoryActivityView(
             }
             if (state.availableTracks.isNotEmpty()) {
                 Button(onClick = onShowTrackHistory, elevation = buttonElevation()) {
-                    Text("Track History")
+                    Text("History")
                 }
             }
             Button(onClick = { onEditHabit(habit.id) }, elevation = buttonElevation()) {
@@ -638,7 +638,7 @@ private fun CompletedActivityDetail(
             }
             if (state.availableTracks.isNotEmpty()) {
                 Button(onClick = onShowTrackHistory, elevation = buttonElevation()) {
-                    Text("Track History")
+                    Text("History")
                 }
             }
             Button(onClick = { onEditHabit(habit.id) }, elevation = buttonElevation()) {

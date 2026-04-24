@@ -41,7 +41,7 @@ fun TrackHistoryView(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "$habitName — Track History",
+                text = "$habitName — History",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f)
             )
@@ -119,6 +119,13 @@ private fun TrackHistoryRow(
             Text(
                 text = "no track",
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (item.note.isNotBlank()) {
+            Text(
+                text = item.note,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

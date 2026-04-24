@@ -6,14 +6,11 @@ they come up. items here are not committed to, just captured.
 
 ## planned features
 
-### ephemeral chime interval
+### navigate to previous days
 
-the chime interval (e.g., every 10 seconds) is not a property of the
-habit — it's ephemeral state associated with an active activity. in the
-expanded view for an active activity, the user can choose a chime
-interval and start the chimes. the interval runs alongside the normal
-timer. the habit definition no longer stores chimeIntervalSeconds;
-instead the user sets it per-session in the activity view.
+allow the user to go back to yesterday (or earlier) and check off items
+they forgot. currently there is no obvious way to record activities for
+a day that has already passed.
 
 ### in-app configuration
 
@@ -26,10 +23,12 @@ implemented. remaining:*
 
 ### history views
 
-- view completed items for the last 7 days
-- view has a big visual sense (heatmap) but also shows some content and drills
-  into details
-- see what was checked off each day, with notes
+*per-habit track history is implemented (TrackHistoryView shows
+completed activities with dates, tracks, milestones, and notes).
+today's completed items appear in the CompletedList. remaining:*
+
+- view completed items across multiple days (not just today)
+- heatmap or visual overview that drills into details
 - weekly summary: how many days each habit was completed
 - trend indicators: improving, steady, declining
 
@@ -43,29 +42,26 @@ implemented. remaining:*
 ### quick track creation from activity view
 
 - add a way to create a simple track (no day-of-week default, no
-  milestones) directly from the activity view, both compact and expanded
-- avoids the round-trip to the habit editor just to add a new track name
-- the track is created with default priority and immediately selected on
-  the current activity
+  milestones) directly from the activity view, both compact and
+  expanded
+- avoids the round-trip to the habit editor just to add a new
+  track name
+- the track is created with default priority and immediately
+  selected on the current activity
 
 ### activity day reassignment
 
-- allow the user to manually move an activity from one day to another
-- handles edge cases where the automatic day boundary doesn't match the
-  user's intent (e.g., a very late night that crosses the 2 AM boundary)
-- the activity keeps its actual timestamp but its attributed date changes
+*attributedDate exists on Activity and is automatically
+recalculated when completedAt changes, but there is no manual UI
+to reassign an activity to a different day. remaining:*
 
-### skip habit for the day
-
-- mark a habit as "skip" from the agenda list, excluding it from the
-  agenda for that day only
-- skipped habits don't count toward the daily target or progress bar
-- the skip is per-day, not permanent — the habit reappears the next day
-- useful for days when a habit genuinely doesn't apply (sick, traveling,
-  equipment unavailable)
-- skipped habits could appear in a separate "skipped" section or just
-  vanish from the agenda entirely
-- history should record that the habit was skipped (not just missing)
+- expose a UI control to manually change an activity's attributed
+  date
+- handles edge cases where the automatic day boundary doesn't
+  match the user's intent (e.g., a very late night that crosses
+  the 2 AM boundary)
+- the activity keeps its actual timestamp but its attributed date
+  changes
 
 ### time tracking history
 
@@ -89,6 +85,23 @@ implemented. remaining:*
 
 - home screen widget showing today's progress (e.g., "7/12 done")
 - quick-tap to check off simple items without opening the app
+
+### longest streak
+
+track and display the longest streak ever recorded for each tally.
+shown on the Details screen alongside the current streak. requires
+scanning full choice history rather than just finding the most recent
+Yes.
+
+### streak history
+
+a list or calendar view of all past streaks for a tally, showing when
+they started, ended, and how long they lasted.
+
+### streak milestones
+
+notifications or visual celebrations when a streak reaches a milestone
+(e.g., 30 days, 100 days, 1 year).
 
 ## ideas and notes
 

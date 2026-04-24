@@ -78,6 +78,6 @@ equally:
 these features are planned for the future but are not part of the initial
 implementation:
 
-- streak counting (days since last indulge)
+- streak counting (days since last indulge) — see `doc/streaks-func-spec.md`
 - visual calendar view of choice history
 - tags for grouping habits and tallies in historical analysis features
