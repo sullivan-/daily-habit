@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -218,8 +217,7 @@ fun HabitEditorScreen(
 
             FieldGroup("Timekeeping") {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.height(IntrinsicSize.Min)
+                    verticalAlignment = Alignment.Bottom
                 ) {
                     OutlinedTextField(
                         value = state.dailyTarget.toString(),
@@ -236,21 +234,23 @@ fun HabitEditorScreen(
                     )
                     Spacer(Modifier.width(16.dp))
                     SingleChoiceSegmentedButtonRow(
-                        modifier = Modifier.fillMaxHeight()
+                        modifier = Modifier.height(56.dp)
                     ) {
                         SegmentedButton(
                             selected = state.dailyTargetMode == TargetMode.AT_LEAST,
                             onClick = {
                                 viewModel.setDailyTargetMode(TargetMode.AT_LEAST)
                             },
-                            shape = segmentedShape(0, 2)
+                            shape = segmentedShape(0, 2),
+                            modifier = Modifier.fillMaxHeight()
                         ) { Text("At least") }
                         SegmentedButton(
                             selected = state.dailyTargetMode == TargetMode.EXACTLY,
                             onClick = {
                                 viewModel.setDailyTargetMode(TargetMode.EXACTLY)
                             },
-                            shape = segmentedShape(1, 2)
+                            shape = segmentedShape(1, 2),
+                            modifier = Modifier.fillMaxHeight()
                         ) { Text("Exactly") }
                     }
                 }
