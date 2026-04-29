@@ -1,5 +1,6 @@
 package com.habit.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -13,19 +14,25 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,11 +41,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.habit.data.Priority
-import com.habit.viewmodel.TallyEditorViewModel
+import com.habit.viewmodel.TallyDetailsViewModel
+import com.habit.viewmodel.formatStreakDuration
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 private val priorityLabels = mapOf(
     Priority.HIGH to "High",
@@ -48,10 +60,13 @@ private val priorityLabels = mapOf(
     Priority.LOW to "Low"
 )
 
+private val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
+private val timeFormatter = DateTimeFormatter.ofPattern("H:mm")
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TallyEditorScreen(
-    viewModel: TallyEditorViewModel,
+fun TallyDetailsScreen(
+    viewModel: TallyDetailsViewModel,
     tallyId: String?,
     onBack: () -> Unit
 ) {
@@ -71,6 +86,7 @@ fun TallyEditorScreen(
 
     var showDiscardDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -110,11 +126,25 @@ fun TallyEditorScreen(
         )
     }
 
+    if (showDatePicker) {
+        RecordFirstNoDatePicker(
+            earliestChoiceDate = state.earliestChoiceDate,
+            onConfirm = { date ->
+                showDatePicker = false
+                viewModel.recordFirstNo(date)
+            },
+            onDismiss = { showDatePicker = false }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(if (state.isNew) "New Tally" else "Edit Tally")
+                    Text(
+                        if (state.isNew) "New Tally"
+                        else state.name.ifBlank { "Details" }
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = {
@@ -155,10 +185,34 @@ fun TallyEditorScreen(
             )
 
             Text("Priority", style = MaterialTheme.typography.labelLarge)
-            TallyPrioritySelector(
+            DetailsPrioritySelector(
                 priority = state.priority,
                 onSelect = viewModel::setPriority
             )
+
+            if (state.hasChoices) {
+                SectionDivider("Streak")
+                StreakSection(
+                    streakStart = state.streakStart
+                )
+
+                SectionDivider("Choices")
+                ChoicesStatsSection(
+                    abstainCountLast10 = state.abstainCountLast10,
+                    totalCountLast10 = state.totalCountLast10,
+                    abstainCountToday = state.abstainCountToday,
+                    totalCountToday = state.totalCountToday,
+                    showToday = state.showTodayStats
+                )
+            }
+
+            OutlinedButton(
+                onClick = { showDatePicker = true },
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                elevation = buttonElevation()
+            ) {
+                Text("Record First No")
+            }
 
             if (!state.isNew) {
                 Spacer(Modifier.height(16.dp))
@@ -166,10 +220,10 @@ fun TallyEditorScreen(
                     onClick = { showDeleteDialog = true },
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                     elevation = buttonElevation(),
-                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                    colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
                     ),
-                    border = androidx.compose.foundation.BorderStroke(
+                    border = BorderStroke(
                         1.dp, MaterialTheme.colorScheme.error
                     )
                 ) {
@@ -182,9 +236,143 @@ fun TallyEditorScreen(
     }
 }
 
+@Composable
+private fun SectionDivider(title: String) {
+    HorizontalDivider(
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+    )
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+}
+
+@Composable
+private fun StreakSection(streakStart: Instant?) {
+    if (streakStart == null) {
+        Text(
+            text = "no current streak",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        return
+    }
+
+    val now = Instant.now()
+    val streakText = formatStreakDuration(streakStart, now)
+
+    if (streakText != null) {
+        Text(
+            text = streakText,
+            style = MaterialTheme.typography.bodyLarge,
+            color = Color.Green
+        )
+    }
+
+    val startZoned = streakStart.atZone(ZoneId.systemDefault())
+    val startDate = startZoned.toLocalDate()
+    val today = LocalDate.now()
+    val yesterday = today.minusDays(1)
+
+    val sinceText = when {
+        streakText == null && startDate == today ->
+            "since ${timeFormatter.format(startZoned)} today"
+        streakText == null && startDate == yesterday ->
+            "since ${timeFormatter.format(startZoned)} yesterday"
+        else ->
+            "since ${dateFormatter.format(startDate)}"
+    }
+
+    Text(
+        text = sinceText,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+}
+
+@Composable
+private fun ChoicesStatsSection(
+    abstainCountLast10: Int,
+    totalCountLast10: Int,
+    abstainCountToday: Int,
+    totalCountToday: Int,
+    showToday: Boolean
+) {
+    val last10Ratio = if (totalCountLast10 > 0) {
+        abstainCountLast10.toFloat() / totalCountLast10
+    } else 1f
+
+    Text(
+        text = "$abstainCountLast10/$totalCountLast10 last 10",
+        style = MaterialTheme.typography.bodyMedium,
+        color = indicatorColor(last10Ratio)
+    )
+
+    if (showToday) {
+        val todayRatio = if (totalCountToday > 0) {
+            abstainCountToday.toFloat() / totalCountToday
+        } else 1f
+
+        Text(
+            text = "$abstainCountToday/$totalCountToday today",
+            style = MaterialTheme.typography.bodyMedium,
+            color = indicatorColor(todayRatio)
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TallyPrioritySelector(
+private fun RecordFirstNoDatePicker(
+    earliestChoiceDate: LocalDate?,
+    onConfirm: (LocalDate) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val maxDateMillis = earliestChoiceDate?.let {
+        it.minusDays(1)
+            .atStartOfDay(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+    } ?: Instant.now().toEpochMilli()
+
+    val datePickerState = rememberDatePickerState(
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                return utcTimeMillis <= maxDateMillis
+            }
+        }
+    )
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val date = Instant.ofEpochMilli(millis)
+                            .atZone(ZoneId.of("UTC"))
+                            .toLocalDate()
+                        onConfirm(date)
+                    }
+                }
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    ) {
+        DatePicker(state = datePickerState)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DetailsPrioritySelector(
     priority: Priority,
     onSelect: (Priority) -> Unit
 ) {

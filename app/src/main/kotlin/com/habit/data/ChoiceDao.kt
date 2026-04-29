@@ -3,11 +3,15 @@ package com.habit.data
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ChoiceDao {
     @Insert
     suspend fun insert(choice: Choice): Long
+
+    @Query("SELECT COUNT(*) FROM choice")
+    fun choiceCountFlow(): Flow<Int>
 
     @Query(
         "SELECT * FROM choice WHERE tallyId = :tallyId " +
@@ -43,4 +47,35 @@ interface ChoiceDao {
         "ORDER BY timestamp DESC"
     )
     suspend fun choicesInRange(tallyId: String, since: Long, until: Long): List<Choice>
+
+    @Query(
+        "SELECT * FROM choice WHERE tallyId = :tallyId " +
+        "ORDER BY timestamp DESC LIMIT 1"
+    )
+    suspend fun mostRecentChoice(tallyId: String): Choice?
+
+    @Query(
+        "SELECT * FROM choice WHERE tallyId = :tallyId " +
+        "AND abstained = 0 ORDER BY timestamp DESC LIMIT 1"
+    )
+    suspend fun mostRecentIndulgence(tallyId: String): Choice?
+
+    @Query(
+        "SELECT * FROM choice WHERE tallyId = :tallyId " +
+        "AND abstained = 1 AND timestamp > :after " +
+        "ORDER BY timestamp ASC LIMIT 1"
+    )
+    suspend fun firstAbstentionAfter(tallyId: String, after: Long): Choice?
+
+    @Query(
+        "SELECT * FROM choice WHERE tallyId = :tallyId " +
+        "AND abstained = 1 ORDER BY timestamp ASC LIMIT 1"
+    )
+    suspend fun firstAbstention(tallyId: String): Choice?
+
+    @Query(
+        "SELECT * FROM choice WHERE tallyId = :tallyId " +
+        "ORDER BY timestamp ASC LIMIT 1"
+    )
+    suspend fun earliestChoice(tallyId: String): Choice?
 }

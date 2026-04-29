@@ -144,4 +144,78 @@ class ChoiceDaoTest {
         assertEquals(1, inRange.size)
         assertEquals(true, inRange[0].abstained)
     }
+
+    @Test
+    fun mostRecentChoiceReturnsMostRecent() = runTest {
+        choiceDao.insert(Choice(tallyId = tallyId, timestamp = now.minusSeconds(120), abstained = true))
+        choiceDao.insert(Choice(tallyId = tallyId, timestamp = now, abstained = false))
+        choiceDao.insert(Choice(tallyId = tallyId, timestamp = now.minusSeconds(60), abstained = true))
+
+        val result = choiceDao.mostRecentChoice(tallyId)
+        assertEquals(false, result?.abstained)
+    }
+
+    @Test
+    fun mostRecentChoiceReturnsNullWhenEmpty() = runTest {
+        val result = choiceDao.mostRecentChoice(tallyId)
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun mostRecentIndulgenceReturnsLastYes() = runTest {
+        choiceDao.insert(Choice(tallyId = tallyId, timestamp = now.minusSeconds(120), abstained = false))
+        choiceDao.insert(Choice(tallyId = tallyId, timestamp = now, abstained = true))
+        choiceDao.insert(Choice(tallyId = tallyId, timestamp = now.minusSeconds(60), abstained = false))
+
+        val result = choiceDao.mostRecentIndulgence(tallyId)
+        assertEquals(now.minusSeconds(60).toEpochMilli(), result?.timestamp?.toEpochMilli())
+    }
+
+    @Test
+    fun mostRecentIndulgenceReturnsNullWhenAllAbstain() = runTest {
+        choiceDao.insert(Choice(tallyId = tallyId, timestamp = now, abstained = true))
+        val result = choiceDao.mostRecentIndulgence(tallyId)
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun firstAbstentionAfterReturnsCorrectChoice() = runTest {
+        val t1 = now.minusSeconds(300)
+        val t2 = now.minusSeconds(200)
+        val t3 = now.minusSeconds(100)
+        choiceDao.insert(Choice(tallyId = tallyId, timestamp = t1, abstained = true))
+        choiceDao.insert(Choice(tallyId = tallyId, timestamp = t2, abstained = false))
+        choiceDao.insert(Choice(tallyId = tallyId, timestamp = t3, abstained = true))
+
+        val result = choiceDao.firstAbstentionAfter(tallyId, t2.toEpochMilli())
+        assertEquals(t3.toEpochMilli(), result?.timestamp?.toEpochMilli())
+    }
+
+    @Test
+    fun firstAbstentionReturnsEarliestNo() = runTest {
+        val t1 = now.minusSeconds(300)
+        val t2 = now.minusSeconds(200)
+        choiceDao.insert(Choice(tallyId = tallyId, timestamp = t2, abstained = true))
+        choiceDao.insert(Choice(tallyId = tallyId, timestamp = t1, abstained = true))
+
+        val result = choiceDao.firstAbstention(tallyId)
+        assertEquals(t1.toEpochMilli(), result?.timestamp?.toEpochMilli())
+    }
+
+    @Test
+    fun earliestChoiceReturnsOldest() = runTest {
+        val t1 = now.minusSeconds(300)
+        val t2 = now.minusSeconds(100)
+        choiceDao.insert(Choice(tallyId = tallyId, timestamp = t2, abstained = true))
+        choiceDao.insert(Choice(tallyId = tallyId, timestamp = t1, abstained = false))
+
+        val result = choiceDao.earliestChoice(tallyId)
+        assertEquals(t1.toEpochMilli(), result?.timestamp?.toEpochMilli())
+    }
+
+    @Test
+    fun earliestChoiceReturnsNullWhenEmpty() = runTest {
+        val result = choiceDao.earliestChoice(tallyId)
+        assertEquals(null, result)
+    }
 }

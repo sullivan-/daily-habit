@@ -63,6 +63,19 @@ to reassign an activity to a different day. remaining:*
 - the activity keeps its actual timestamp but its attributed date
   changes
 
+### tally archival
+
+allow the user to archive a tally instead of deleting it. archived
+tallies are hidden from the main choices list but their choice
+history is preserved. an archived section (similar to tracks) lets
+the user view and un-archive tallies.
+
+but this could result in false streaks — if a tally is archived
+while a streak is active, the streak would keep growing without
+the user actually making choices. one seemingly reasonable solution
+is to only allow a tally to be archived when the latest choice was
+Yes (or no choices logged at all).
+
 ### time tracking history
 
 - log of time spent per activity over days/weeks

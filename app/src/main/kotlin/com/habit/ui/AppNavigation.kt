@@ -12,8 +12,8 @@ import com.habit.viewmodel.ChoicesViewModel
 import com.habit.viewmodel.ChoicesViewModelFactory
 import com.habit.viewmodel.HabitEditorViewModel
 import com.habit.viewmodel.HabitEditorViewModelFactory
-import com.habit.viewmodel.TallyEditorViewModel
-import com.habit.viewmodel.TallyEditorViewModelFactory
+import com.habit.viewmodel.TallyDetailsViewModel
+import com.habit.viewmodel.TallyDetailsViewModelFactory
 
 @Composable
 fun AppNavigation(
@@ -68,20 +68,20 @@ fun AppNavigation(
             )
             ChoicesScreen(
                 viewModel = choicesVm,
-                onEditTally = { tallyId ->
-                    navController.navigate("tally-editor/$tallyId")
+                onDetails = { tallyId ->
+                    navController.navigate("tally-details/$tallyId")
                 },
-                onNewTally = { navController.navigate("tally-editor/new") },
+                onNewTally = { navController.navigate("tally-details/new") },
                 onBack = { navController.popBackStack() }
             )
         }
-        composable("tally-editor/{tallyId}") { backStackEntry ->
+        composable("tally-details/{tallyId}") { backStackEntry ->
             val tallyIdStr = backStackEntry.arguments?.getString("tallyId")
-            val editorVm: TallyEditorViewModel = viewModel(
-                factory = TallyEditorViewModelFactory(container)
+            val detailsVm: TallyDetailsViewModel = viewModel(
+                factory = TallyDetailsViewModelFactory(container)
             )
-            TallyEditorScreen(
-                viewModel = editorVm,
+            TallyDetailsScreen(
+                viewModel = detailsVm,
                 tallyId = if (tallyIdStr == "new") null else tallyIdStr,
                 onBack = { navController.popBackStack() }
             )

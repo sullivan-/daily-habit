@@ -1,6 +1,7 @@
 package com.habit.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -12,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,11 +30,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.habit.viewmodel.ChoicesViewModel
 import com.habit.viewmodel.TallyDisplayItem
+import com.habit.viewmodel.formatStreakDuration
+import java.time.Instant
 
 @Composable
 fun ChoicesScreen(
     viewModel: ChoicesViewModel,
-    onEditTally: (String) -> Unit,
+    onDetails: (String) -> Unit,
     onNewTally: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -61,7 +63,7 @@ fun ChoicesScreen(
                     item = item,
                     onNo = { viewModel.recordChoice(item.tally.id, abstained = true) },
                     onYes = { viewModel.recordChoice(item.tally.id, abstained = false) },
-                    onEdit = { onEditTally(item.tally.id) }
+                    onDetails = { onDetails(item.tally.id) }
                 )
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
@@ -126,7 +128,7 @@ fun TallyRow(
     item: TallyDisplayItem,
     onNo: () -> Unit,
     onYes: () -> Unit,
-    onEdit: () -> Unit
+    onDetails: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -135,19 +137,21 @@ fun TallyRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        IconButton(onClick = onEdit) {
-            Icon(Icons.Filled.Edit, "edit")
-        }
         Text(
             text = item.tally.name,
             style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
+                .clickable { onDetails() }
         )
-        if (item.totalCount > 0) {
+        val streakText = item.streakStart?.let {
+            formatStreakDuration(it, Instant.now())
+        }
+        if (streakText != null) {
             Text(
-                text = "${item.abstainCount}/${item.totalCount}",
+                text = streakText,
                 style = MaterialTheme.typography.bodyMedium,
-                color = indicatorColor(item.ratio)
+                color = Color.Green
             )
         }
         OutlinedButton(onClick = onNo, elevation = buttonElevation()) {

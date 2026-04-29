@@ -12,7 +12,8 @@ class ChoicesViewModelFactory(
         return ChoicesViewModel(
             container.tallyRepo,
             container.choiceRepo,
-            container.dayBoundary
+            container.dayBoundary,
+            container.streakCalculator
         ) as T
     }
 }

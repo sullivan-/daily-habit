@@ -10,6 +10,7 @@ import com.habit.data.TallyChoiceCount
 import com.habit.data.TallyRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -32,15 +33,22 @@ class ChoicesViewModelTest {
     private val choiceRepo = mockk<ChoiceRepository>(relaxed = true)
     private val dayBoundary = DayBoundary(2)
 
+    private val streakCalculator = StreakCalculator(choiceRepo)
+
     private val sweets = Tally(id = "1", name = "Sweets", priority = Priority.HIGH)
     private val nicotine = Tally(id = "2", name = "Nicotine", priority = Priority.LOW)
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        every { choiceRepo.choiceChanges() } returns flowOf(0)
         coEvery { choiceRepo.choiceCountsSince(any()) } returns emptyList()
         coEvery { choiceRepo.recentChoices(any(), any()) } returns emptyList()
         coEvery { choiceRepo.choicesToday(any(), any(), any()) } returns emptyList()
+        coEvery { choiceRepo.mostRecentChoice(any()) } returns null
+        coEvery { choiceRepo.mostRecentIndulgence(any()) } returns null
+        coEvery { choiceRepo.firstAbstentionAfter(any(), any()) } returns null
+        coEvery { choiceRepo.firstAbstention(any()) } returns null
     }
 
     @After
@@ -50,7 +58,7 @@ class ChoicesViewModelTest {
 
     private fun createViewModel(tallies: List<Tally> = listOf(sweets, nicotine)): ChoicesViewModel {
         coEvery { tallyRepo.allTallies() } returns flowOf(tallies)
-        return ChoicesViewModel(tallyRepo, choiceRepo, dayBoundary)
+        return ChoicesViewModel(tallyRepo, choiceRepo, dayBoundary, streakCalculator)
     }
 
     @Test
@@ -174,5 +182,37 @@ class ChoicesViewModelTest {
         // daily counts: 12 total, 6 abstained (even indices)
         assertThat(item.totalCount).isEqualTo(12)
         assertThat(item.abstainCount).isEqualTo(6)
+    }
+
+    @Test
+    fun `streakStart is populated when streak exists`() = runTest {
+        val now = Instant.now()
+        val twoDaysAgo = now.minus(2, ChronoUnit.DAYS)
+        coEvery { choiceRepo.mostRecentChoice("1") } returns
+            Choice(1, "1", now, abstained = true)
+        coEvery { choiceRepo.firstAbstention("1") } returns
+            Choice(1, "1", twoDaysAgo, abstained = true)
+
+        val vm = createViewModel(listOf(sweets))
+        val item = vm.uiState.value.tallies.first()
+        assertThat(item.streakStart).isEqualTo(twoDaysAgo)
+    }
+
+    @Test
+    fun `streakStart is null when most recent choice is Yes`() = runTest {
+        val now = Instant.now()
+        coEvery { choiceRepo.mostRecentChoice("1") } returns
+            Choice(1, "1", now, abstained = false)
+
+        val vm = createViewModel(listOf(sweets))
+        val item = vm.uiState.value.tallies.first()
+        assertThat(item.streakStart).isNull()
+    }
+
+    @Test
+    fun `streakStart is null when tally has no choices`() = runTest {
+        val vm = createViewModel(listOf(sweets))
+        val item = vm.uiState.value.tallies.first()
+        assertThat(item.streakStart).isNull()
     }
 }

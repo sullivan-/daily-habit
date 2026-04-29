@@ -14,13 +14,14 @@ import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 class ChoicesViewModel(
     private val tallyRepo: TallyRepository,
     private val choiceRepo: ChoiceRepository,
-    private val dayBoundary: DayBoundary
+    private val dayBoundary: DayBoundary,
+    private val streakCalculator: StreakCalculator
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChoicesUiState())
@@ -28,9 +29,11 @@ class ChoicesViewModel(
 
     init {
         viewModelScope.launch {
-            tallyRepo.allTallies().collect { tallies ->
-                refreshDisplay(tallies)
-            }
+            tallyRepo.allTallies()
+                .combine(choiceRepo.choiceChanges()) { tallies, _ -> tallies }
+                .collect { tallies ->
+                    refreshDisplay(tallies)
+                }
         }
     }
 
@@ -43,7 +46,6 @@ class ChoicesViewModel(
                     abstained = abstained
                 )
             )
-            refreshDisplay(tallyRepo.allTallies().first())
         }
     }
 
@@ -73,12 +75,15 @@ class ChoicesViewModel(
                 weeklyCount.toFloat() / maxWeeklyCount
             } else 0f
 
+            val streakStart = streakCalculator.currentStreakStart(tally.id)
+
             TallyDisplayItem(
                 tally = tally,
                 abstainCount = abstainCount,
                 totalCount = totalCount,
                 ratio = if (totalCount > 0) abstainCount.toFloat() / totalCount else 1f,
-                sortScore = priorityScore + recencyScore
+                sortScore = priorityScore + recencyScore,
+                streakStart = streakStart
             )
         }.sortedByDescending { it.sortScore }
 

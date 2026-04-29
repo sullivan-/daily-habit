@@ -11,6 +11,7 @@ import com.habit.data.HabitDatabase
 import com.habit.data.HabitRepository
 import com.habit.data.TallyRepository
 import com.habit.data.TrackRepository
+import com.habit.viewmodel.StreakCalculator
 
 class AppContainer(context: Context) {
     val config = ConfigLoader(context).load()
@@ -39,6 +40,7 @@ class AppContainer(context: Context) {
     val trackRepo = TrackRepository(database.trackDao(), database.milestoneDao())
     private val appConfigDao = database.appConfigDao()
     val dayBoundary = DayBoundary(config.dayBoundaryHour)
+    val streakCalculator = StreakCalculator(choiceRepo)
 
     suspend fun seedIfEmpty() {
         if (appConfigDao.get() != null) return

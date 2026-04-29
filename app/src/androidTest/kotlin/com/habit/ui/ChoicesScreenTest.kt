@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -16,6 +17,7 @@ import com.habit.data.Priority
 import com.habit.data.Tally
 import com.habit.data.TallyRepository
 import com.habit.viewmodel.ChoicesViewModel
+import com.habit.viewmodel.StreakCalculator
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -23,6 +25,7 @@ import io.mockk.mockk
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -41,31 +44,37 @@ class ChoicesScreenTest {
     private val sweets = Tally(id = "1", name = "Sweets", priority = Priority.HIGH)
     private val nicotine = Tally(id = "2", name = "Nicotine", priority = Priority.LOW)
 
-    private var editedTallyId: String? = null
+    private var detailsTallyId: String? = null
     private var newTallyRequested = false
     private var backRequested = false
 
     @Before
     fun setUp() {
         every { tallyRepo.allTallies() } returns talliesFlow
+        every { choiceRepo.choiceChanges() } returns flowOf(0)
         every { dayBoundary.today() } returns LocalDate.of(2026, 4, 3)
         coEvery { choiceRepo.choiceCountsSince(any()) } returns emptyList()
         coEvery { choiceRepo.recentChoices(any(), any()) } returns emptyList()
         coEvery { choiceRepo.choicesToday(any(), any(), any()) } returns emptyList()
+        coEvery { choiceRepo.mostRecentChoice(any()) } returns null
+        coEvery { choiceRepo.mostRecentIndulgence(any()) } returns null
+        coEvery { choiceRepo.firstAbstentionAfter(any(), any()) } returns null
+        coEvery { choiceRepo.firstAbstention(any()) } returns null
 
-        editedTallyId = null
+        detailsTallyId = null
         newTallyRequested = false
         backRequested = false
     }
 
     private fun setScreen(tallies: List<Tally> = emptyList()) {
         talliesFlow.value = tallies
-        val vm = ChoicesViewModel(tallyRepo, choiceRepo, dayBoundary)
+        val streakCalculator = StreakCalculator(choiceRepo)
+        val vm = ChoicesViewModel(tallyRepo, choiceRepo, dayBoundary, streakCalculator)
         composeTestRule.setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 ChoicesScreen(
                     viewModel = vm,
-                    onEditTally = { editedTallyId = it },
+                    onDetails = { detailsTallyId = it },
                     onNewTally = { newTallyRequested = true },
                     onBack = { backRequested = true }
                 )
@@ -123,24 +132,42 @@ class ChoicesScreenTest {
     }
 
     @Test
-    fun showsIndicatorWhenChoicesExist() {
-        val now = Instant.now()
-        coEvery { choiceRepo.recentChoices("1", 10) } returns listOf(
-            Choice(1, "1", now, abstained = true),
-            Choice(2, "1", now.minusSeconds(60), abstained = false),
-            Choice(3, "1", now.minusSeconds(120), abstained = true)
-        )
-
+    fun tapNameNavigatesToDetails() {
         setScreen(listOf(sweets))
-        composeTestRule.onNodeWithText("2/3").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Sweets").performClick()
+        composeTestRule.waitForIdle()
+        assert(detailsTallyId == "1")
     }
 
     @Test
-    fun tapEditNavigatesToEditor() {
+    fun noEditIconInTallyRow() {
         setScreen(listOf(sweets))
-        composeTestRule.onNodeWithContentDescription("edit").performClick()
-        composeTestRule.waitForIdle()
-        assert(editedTallyId == "1")
+        composeTestRule.onAllNodesWithContentDescription("edit")
+            .fetchSemanticsNodes().let {
+                assert(it.isEmpty())
+            }
+    }
+
+    @Test
+    fun showsStreakTextWhenStreakExists() {
+        val now = Instant.now()
+        val fiveDaysAgo = now.minusSeconds(5 * 24 * 3600)
+        coEvery { choiceRepo.mostRecentChoice("1") } returns
+            Choice(1, "1", now, abstained = true)
+        coEvery { choiceRepo.firstAbstention("1") } returns
+            Choice(1, "1", fiveDaysAgo, abstained = true)
+
+        setScreen(listOf(sweets))
+        composeTestRule.onNodeWithText("5 day streak").assertIsDisplayed()
+    }
+
+    @Test
+    fun noStreakTextWhenNoStreak() {
+        setScreen(listOf(sweets))
+        composeTestRule.onAllNodesWithText("streak")
+            .fetchSemanticsNodes().let {
+                assert(it.isEmpty())
+            }
     }
 
 }
