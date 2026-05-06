@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.habit.data.Activity
 import com.habit.data.ActivityRepository
 import com.habit.data.DayBoundary
+import com.habit.data.EasyDayLevel
+import com.habit.data.EasyDayRepository
 import com.habit.data.HabitRepository
 import com.habit.data.priorityToScore
 import com.habit.data.TrackRepository
@@ -21,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -29,6 +32,7 @@ class AgendaViewModel(
     private val activityRepo: ActivityRepository,
     private val dayBoundary: DayBoundary,
     private val trackRepo: TrackRepository? = null,
+    private val easyDayRepo: EasyDayRepository? = null,
     private val tickDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
 
@@ -46,14 +50,17 @@ class AgendaViewModel(
     init {
         viewModelScope.launch {
             val today = dayBoundary.today()
+            val easyDayFlow = easyDayRepo?.flowForDate(today) ?: flowOf(EasyDayLevel.OFF)
             combine(
                 habitRepo.allHabits(),
-                activityRepo.activitiesForDate(today)
-            ) { habits, activities ->
+                activityRepo.activitiesForDate(today),
+                easyDayFlow
+            ) { habits, activities, easyDayLevel ->
                 _uiState.value.copy(
                     habits = habits,
                     todayActivities = activities,
-                    today = today
+                    today = today,
+                    easyDayLevel = easyDayLevel
                 )
             }.collect { newState ->
                 _uiState.value = newState
@@ -756,6 +763,13 @@ class AgendaViewModel(
                 selectedActivityId = if (activity.completedAt != null) activity.id else null,
                 activeActivity = if (activity.completedAt == null) activity else state.activeActivity
             )
+        }
+    }
+
+    fun setEasyDayLevel(level: EasyDayLevel) {
+        val repo = easyDayRepo ?: return
+        viewModelScope.launch {
+            repo.setLevel(dayBoundary.today(), level)
         }
     }
 

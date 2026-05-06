@@ -9,9 +9,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 @Database(
     entities = [
         Habit::class, Activity::class, Tally::class, Choice::class,
-        Track::class, Milestone::class, AppConfigEntity::class
+        Track::class, Milestone::class, AppConfigEntity::class,
+        EasyDaySettingEntity::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -23,6 +24,7 @@ abstract class HabitDatabase : RoomDatabase() {
     abstract fun trackDao(): TrackDao
     abstract fun milestoneDao(): MilestoneDao
     abstract fun appConfigDao(): AppConfigDao
+    abstract fun easyDayDao(): EasyDayDao
 
     companion object {
         val MIGRATION_2_3 = object : Migration(2, 3) {
@@ -196,6 +198,17 @@ abstract class HabitDatabase : RoomDatabase() {
                 db.execSQL(
                     "ALTER TABLE activity ADD COLUMN skipped INTEGER NOT NULL DEFAULT 0"
                 )
+            }
+        }
+
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS easy_day_setting (
+                        date INTEGER NOT NULL PRIMARY KEY,
+                        level TEXT NOT NULL
+                    )
+                """)
             }
         }
     }

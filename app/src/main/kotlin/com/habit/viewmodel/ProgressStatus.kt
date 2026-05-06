@@ -1,6 +1,7 @@
 package com.habit.viewmodel
 
 import com.habit.data.Activity
+import com.habit.data.EasyDayLevel
 import com.habit.data.Habit
 import com.habit.data.Priority
 import java.time.LocalDateTime
@@ -21,10 +22,13 @@ data class ProgressRatios(
 fun progressRatios(
     habits: List<Habit>,
     activities: List<Activity>,
-    now: LocalDateTime
+    now: LocalDateTime,
+    easyDayLevel: EasyDayLevel = EasyDayLevel.OFF
 ): ProgressRatios {
     val dayOfWeek = now.dayOfWeek
-    val activeHabits = habits.filter { dayOfWeek in it.daysActive }
+    val activeHabits = habits
+        .filter { dayOfWeek in it.daysActive }
+        .filter { easyDayLevel.includes(it.priority) }
 
     var totalWeight = 0
     var expectedWeight = 0

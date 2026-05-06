@@ -7,6 +7,7 @@ import com.habit.data.AppConfigEntity
 import com.habit.data.ChoiceRepository
 import com.habit.data.ConfigLoader
 import com.habit.data.DayBoundary
+import com.habit.data.EasyDayRepository
 import com.habit.data.HabitDatabase
 import com.habit.data.HabitRepository
 import com.habit.data.TallyRepository
@@ -30,7 +31,8 @@ class AppContainer(context: Context) {
         HabitDatabase.MIGRATION_8_9,
         HabitDatabase.MIGRATION_9_10,
         HabitDatabase.MIGRATION_10_11,
-        HabitDatabase.MIGRATION_11_12
+        HabitDatabase.MIGRATION_11_12,
+        HabitDatabase.MIGRATION_12_13
     ).build()
 
     val habitRepo = HabitRepository(database.habitDao())
@@ -38,6 +40,7 @@ class AppContainer(context: Context) {
     val tallyRepo = TallyRepository(database.tallyDao())
     val choiceRepo = ChoiceRepository(database.choiceDao())
     val trackRepo = TrackRepository(database.trackDao(), database.milestoneDao())
+    val easyDayRepo = EasyDayRepository(database.easyDayDao())
     private val appConfigDao = database.appConfigDao()
     val dayBoundary = DayBoundary(config.dayBoundaryHour)
     val streakCalculator = StreakCalculator(choiceRepo)

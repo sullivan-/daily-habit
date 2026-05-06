@@ -53,4 +53,10 @@ class Converters {
 
     @TypeConverter
     fun toPriority(value: String): Priority = Priority.valueOf(value)
+
+    @TypeConverter
+    fun fromEasyDayLevel(level: EasyDayLevel): String = level.name
+
+    @TypeConverter
+    fun toEasyDayLevel(value: String): EasyDayLevel = EasyDayLevel.valueOf(value)
 }

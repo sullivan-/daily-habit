@@ -1,6 +1,7 @@
 package com.habit.viewmodel
 
 import com.habit.data.Activity
+import com.habit.data.EasyDayLevel
 import com.habit.data.Habit
 import com.habit.data.Priority
 import java.time.LocalDate
@@ -58,10 +59,13 @@ fun sortAgenda(
     habits: List<Habit>,
     activities: List<Activity>,
     today: LocalDate,
-    now: LocalDateTime = LocalDateTime.now()
+    now: LocalDateTime = LocalDateTime.now(),
+    easyDayLevel: EasyDayLevel = EasyDayLevel.OFF
 ): List<AgendaItem> {
     val dayOfWeek = today.dayOfWeek
-    val activeHabits = habits.filter { dayOfWeek in it.daysActive }
+    val activeHabits = habits
+        .filter { dayOfWeek in it.daysActive }
+        .filter { easyDayLevel.includes(it.priority) }
 
     val completedCounts = activities
         .filter { it.completedAt != null }

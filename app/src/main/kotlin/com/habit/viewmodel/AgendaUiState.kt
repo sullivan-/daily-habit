@@ -1,6 +1,7 @@
 package com.habit.viewmodel
 
 import com.habit.data.Activity
+import com.habit.data.EasyDayLevel
 import com.habit.data.Habit
 import com.habit.data.Milestone
 import com.habit.data.TargetMode
@@ -31,7 +32,8 @@ data class AgendaUiState(
     val intervalChimeMs: Long = 0,
     val intervalCountdownMs: Long = 0,
     val trackHistory: List<TrackHistoryItem> = emptyList(),
-    val trackHistoryVisible: Boolean = false
+    val trackHistoryVisible: Boolean = false,
+    val easyDayLevel: EasyDayLevel = EasyDayLevel.OFF
 ) {
     val browsingHistory: Boolean
         get() = historyIndex >= 0 && historyActivities.isNotEmpty()
@@ -49,7 +51,12 @@ data class AgendaUiState(
         get() = historyAnchorIndex >= 0 && historyIndex != historyAnchorIndex
 
     val agendaItems: List<AgendaItem>
-        get() = sortAgenda(habits, todayActivities, today)
+        get() = sortAgenda(
+            habits,
+            todayActivities,
+            today,
+            easyDayLevel = easyDayLevel
+        )
 
     val completedItems: List<CompletedItem>
         get() {
@@ -78,7 +85,11 @@ data class AgendaUiState(
                 .filter { it.completedAt != null && !it.skipped }
                 .groupBy { it.habitId }
                 .entries.sumOf { (habitId, activities) ->
-                    val target = habitsById[habitId]?.dailyTarget ?: activities.size
+                    val habit = habitsById[habitId]
+                    if (habit != null && !easyDayLevel.includes(habit.priority)) {
+                        return@sumOf 0
+                    }
+                    val target = habit?.dailyTarget ?: activities.size
                     minOf(activities.size, target)
                 }
         }
@@ -86,6 +97,7 @@ data class AgendaUiState(
     val totalTarget: Int
         get() = habits
             .filter { today.dayOfWeek in it.daysActive }
+            .filter { easyDayLevel.includes(it.priority) }
             .sumOf { it.dailyTarget }
 
     val selectedHabit: Habit?
@@ -100,6 +112,7 @@ data class AgendaUiState(
                 .mapValues { it.value.size }
             return habits.filter { habit ->
                 habit.id !in agendaHabitIds &&
+                    easyDayLevel.includes(habit.priority) &&
                     !(habit.dailyTargetMode == TargetMode.EXACTLY &&
                         (completedCounts[habit.id] ?: 0) >= habit.dailyTarget)
             }
