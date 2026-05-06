@@ -79,20 +79,7 @@ data class AgendaUiState(
         }
 
     val progressCount: Int
-        get() {
-            val habitsById = habits.associateBy { it.id }
-            return todayActivities
-                .filter { it.completedAt != null && !it.skipped }
-                .groupBy { it.habitId }
-                .entries.sumOf { (habitId, activities) ->
-                    val habit = habitsById[habitId]
-                    if (habit != null && !easyDayLevel.includes(habit.priority)) {
-                        return@sumOf 0
-                    }
-                    val target = habit?.dailyTarget ?: activities.size
-                    minOf(activities.size, target)
-                }
-        }
+        get() = todayActivities.count { it.completedAt != null && !it.skipped }
 
     val totalTarget: Int
         get() = habits
