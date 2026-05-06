@@ -6,7 +6,6 @@ import com.habit.data.ChoiceRepository
 import com.habit.data.DayBoundary
 import com.habit.data.Priority
 import com.habit.data.Tally
-import com.habit.data.TallyChoiceCount
 import com.habit.data.TallyRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -16,6 +15,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -146,12 +146,68 @@ class ChoicesViewModelTest {
     }
 
     @Test
-    fun `sort order reflects priority plus recency`() = runTest {
-        // nicotine (LOW=0.2) has max weekly activity → recency 1.0 → score 1.2
-        // sweets (HIGH=1.0) has no weekly activity → recency 0.0 → score 1.0
-        coEvery { choiceRepo.choiceCountsSince(any()) } returns listOf(
-            TallyChoiceCount(tallyId = "2", count = 10)
-        )
+    fun `sort order is shortest streak first longest streak last`() = runTest {
+        val now = Instant.now()
+        val sweetsStart = now.minus(2, ChronoUnit.DAYS)
+        val nicotineStart = now.minus(10, ChronoUnit.DAYS)
+
+        coEvery { choiceRepo.mostRecentChoice("1") } returns
+            Choice(1, "1", now, abstained = true)
+        coEvery { choiceRepo.firstAbstention("1") } returns
+            Choice(2, "1", sweetsStart, abstained = true)
+
+        coEvery { choiceRepo.mostRecentChoice("2") } returns
+            Choice(3, "2", now, abstained = true)
+        coEvery { choiceRepo.firstAbstention("2") } returns
+            Choice(4, "2", nicotineStart, abstained = true)
+
+        val vm = createViewModel()
+        val items = vm.uiState.value.tallies
+        assertThat(items[0].tally.name).isEqualTo("Sweets")
+        assertThat(items[1].tally.name).isEqualTo("Nicotine")
+    }
+
+    @Test
+    fun `clicking Yes on a tally with a streak moves it to the top`() = runTest {
+        val now = Instant.now()
+        val sweetsStart = now.minus(2, ChronoUnit.DAYS)
+        val nicotineStart = now.minus(10, ChronoUnit.DAYS)
+
+        coEvery { choiceRepo.mostRecentChoice("1") } returns
+            Choice(1, "1", now, abstained = true)
+        coEvery { choiceRepo.firstAbstention("1") } returns
+            Choice(2, "1", sweetsStart, abstained = true)
+        coEvery { choiceRepo.mostRecentChoice("2") } returns
+            Choice(3, "2", now, abstained = true)
+        coEvery { choiceRepo.firstAbstention("2") } returns
+            Choice(4, "2", nicotineStart, abstained = true)
+
+        val changes = MutableStateFlow(0)
+        every { choiceRepo.choiceChanges() } returns changes
+
+        val vm = createViewModel()
+        assertThat(vm.uiState.value.tallies[0].tally.name).isEqualTo("Sweets")
+        assertThat(vm.uiState.value.tallies[1].tally.name).isEqualTo("Nicotine")
+
+        coEvery { choiceRepo.mostRecentChoice("2") } returns
+            Choice(5, "2", now.plusSeconds(1), abstained = false)
+        vm.recordChoice("2", abstained = false)
+        changes.value = changes.value + 1
+
+        val after = vm.uiState.value.tallies
+        assertThat(after[0].tally.name).isEqualTo("Nicotine")
+        assertThat(after[0].streakStart).isNull()
+    }
+
+    @Test
+    fun `among broken streaks most recent Yes appears first`() = runTest {
+        val now = Instant.now()
+        val olderYes = now.minus(5, ChronoUnit.HOURS)
+
+        coEvery { choiceRepo.mostRecentChoice("1") } returns
+            Choice(1, "1", olderYes, abstained = false)
+        coEvery { choiceRepo.mostRecentChoice("2") } returns
+            Choice(2, "2", now, abstained = false)
 
         val vm = createViewModel()
         val items = vm.uiState.value.tallies
@@ -160,12 +216,53 @@ class ChoicesViewModelTest {
     }
 
     @Test
-    fun `no weekly activity sorts by priority alone`() = runTest {
+    fun `order is broken-streaks then no-choices then active-streaks`() = runTest {
+        val brokenA = Tally(id = "a", name = "A", priority = Priority.LOW)
+        val brokenB = Tally(id = "b", name = "B", priority = Priority.LOW)
+        val noChoices = Tally(id = "c", name = "C", priority = Priority.LOW)
+        val streakShort = Tally(id = "d", name = "D", priority = Priority.LOW)
+        val streakLong = Tally(id = "e", name = "E", priority = Priority.LOW)
+
+        val now = Instant.now()
+        coEvery { choiceRepo.mostRecentChoice("a") } returns
+            Choice(1, "a", now, abstained = false)
+        coEvery { choiceRepo.mostRecentChoice("b") } returns
+            Choice(2, "b", now.minus(1, ChronoUnit.HOURS), abstained = false)
+        coEvery { choiceRepo.mostRecentChoice("c") } returns null
+        coEvery { choiceRepo.mostRecentChoice("d") } returns
+            Choice(3, "d", now, abstained = true)
+        coEvery { choiceRepo.firstAbstention("d") } returns
+            Choice(4, "d", now.minus(2, ChronoUnit.DAYS), abstained = true)
+        coEvery { choiceRepo.mostRecentChoice("e") } returns
+            Choice(5, "e", now, abstained = true)
+        coEvery { choiceRepo.firstAbstention("e") } returns
+            Choice(6, "e", now.minus(20, ChronoUnit.DAYS), abstained = true)
+
+        val vm = createViewModel(
+            listOf(brokenA, brokenB, noChoices, streakShort, streakLong)
+        )
+        val names = vm.uiState.value.tallies.map { it.tally.name }
+        assertThat(names).containsExactly("A", "B", "C", "D", "E").inOrder()
+    }
+
+    @Test
+    fun `tallies with no streak appear above tallies with a streak`() = runTest {
+        val now = Instant.now()
+        val sweetsStart = now.minus(3, ChronoUnit.DAYS)
+
+        coEvery { choiceRepo.mostRecentChoice("1") } returns
+            Choice(1, "1", now, abstained = true)
+        coEvery { choiceRepo.firstAbstention("1") } returns
+            Choice(2, "1", sweetsStart, abstained = true)
+
+        coEvery { choiceRepo.mostRecentChoice("2") } returns
+            Choice(3, "2", now, abstained = false)
+
         val vm = createViewModel()
         val items = vm.uiState.value.tallies
-        // HIGH (1.0) before LOW (0.2)
-        assertThat(items[0].tally.name).isEqualTo("Sweets")
-        assertThat(items[1].tally.name).isEqualTo("Nicotine")
+        assertThat(items[0].tally.name).isEqualTo("Nicotine")
+        assertThat(items[0].streakStart).isNull()
+        assertThat(items[1].tally.name).isEqualTo("Sweets")
     }
 
     @Test

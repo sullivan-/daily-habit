@@ -7,7 +7,6 @@ import com.habit.data.ChoiceRepository
 import com.habit.data.DayBoundary
 import com.habit.data.Tally
 import com.habit.data.TallyRepository
-import com.habit.data.priorityToScore
 import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
@@ -49,11 +48,20 @@ class ChoicesViewModel(
         }
     }
 
+    private fun tallySortBucket(item: TallyDisplayItem): Int = when {
+        item.lastYesAt != null -> 0  // broken streak (most recent choice was Yes)
+        item.streakStart == null -> 1  // no choices ever
+        else -> 2  // active streak
+    }
+
+    private fun tallySortTimestamp(item: TallyDisplayItem): Long {
+        val timestamp = item.lastYesAt ?: item.streakStart
+        // negate so larger timestamps sort earlier within bucket
+        return -(timestamp?.toEpochMilli() ?: 0L)
+    }
+
     private suspend fun refreshDisplay(tallies: List<Tally>) {
         val sevenDaysAgo = Instant.now().minus(7, ChronoUnit.DAYS)
-        val weeklyCounts = choiceRepo.choiceCountsSince(sevenDaysAgo)
-            .associateBy { it.tallyId }
-        val maxWeeklyCount = weeklyCounts.values.maxOfOrNull { it.count } ?: 0
 
         val today = dayBoundary.today()
         val zone = ZoneId.systemDefault()
@@ -69,23 +77,19 @@ class ChoicesViewModel(
             val abstainCount = displayChoices.count { it.abstained }
             val totalCount = displayChoices.size
 
-            val priorityScore = priorityToScore(tally.priority)
-            val weeklyCount = weeklyCounts[tally.id]?.count ?: 0
-            val recencyScore = if (maxWeeklyCount > 0) {
-                weeklyCount.toFloat() / maxWeeklyCount
-            } else 0f
-
+            val mostRecent = choiceRepo.mostRecentChoice(tally.id)
             val streakStart = streakCalculator.currentStreakStart(tally.id)
+            val lastYesAt = if (mostRecent?.abstained == false) mostRecent.timestamp else null
 
             TallyDisplayItem(
                 tally = tally,
                 abstainCount = abstainCount,
                 totalCount = totalCount,
                 ratio = if (totalCount > 0) abstainCount.toFloat() / totalCount else 1f,
-                sortScore = priorityScore + recencyScore,
-                streakStart = streakStart
+                streakStart = streakStart,
+                lastYesAt = lastYesAt
             )
-        }.sortedByDescending { it.sortScore }
+        }.sortedWith(compareBy(::tallySortBucket, ::tallySortTimestamp))
 
         val weeklyTotal = choiceRepo.totalCountSince(sevenDaysAgo)
         val weeklyAbstain = choiceRepo.abstainCountSince(sevenDaysAgo)

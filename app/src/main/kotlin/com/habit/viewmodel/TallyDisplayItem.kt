@@ -8,6 +8,6 @@ data class TallyDisplayItem(
     val abstainCount: Int,
     val totalCount: Int,
     val ratio: Float,
-    val sortScore: Float,
-    val streakStart: Instant? = null
+    val streakStart: Instant? = null,
+    val lastYesAt: Instant? = null
 )
