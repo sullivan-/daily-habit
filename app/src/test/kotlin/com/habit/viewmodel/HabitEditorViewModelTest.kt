@@ -6,12 +6,14 @@ import com.habit.data.HabitRepository
 import com.habit.data.Milestone
 import com.habit.data.Priority
 import com.habit.data.TargetMode
+import com.habit.data.Track
 import com.habit.data.TrackRepository
 
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import java.time.DayOfWeek
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -360,6 +362,45 @@ class HabitEditorViewModelTest {
         vm.deleteTrack(0)
         assertThat(vm.state.value.tracks).hasSize(1)
         assertThat(vm.state.value.dirty).isTrue()
+    }
+
+    @Test
+    fun `deleteTrack on persisted track deletes from repo on save`() = runTest {
+        val persistedTrack = Track(
+            id = "morning-stretch",
+            habitId = "qigong",
+            name = "Morning stretch",
+            priority = Priority.MEDIUM,
+            dayOfWeek = null,
+            archived = false
+        )
+        coEvery { trackRepo.tracksForHabit("qigong") } returns flowOf(listOf(persistedTrack))
+        coEvery { trackRepo.milestonesForTrack("morning-stretch") } returns emptyList()
+        coEvery { trackRepo.canDelete("morning-stretch") } returns true
+
+        val vm = createViewModelWithTracks()
+        vm.loadHabit("qigong")
+        assertThat(vm.state.value.tracks).hasSize(1)
+
+        vm.deleteTrack(0)
+        assertThat(vm.state.value.tracks).isEmpty()
+        assertThat(vm.state.value.pendingTrackDeletions).containsExactly("morning-stretch")
+
+        vm.save()
+        coVerify { trackRepo.deleteById("morning-stretch") }
+    }
+
+    @Test
+    fun `deleteTrack on unsaved new track does not call repo deleteById`() = runTest {
+        coEvery { trackRepo.tracksForHabit(any()) } returns flowOf(emptyList())
+        val vm = createViewModelWithTracks()
+        vm.loadHabit("qigong")
+        vm.addTrack()
+        vm.deleteTrack(0)
+
+        assertThat(vm.state.value.pendingTrackDeletions).isEmpty()
+        vm.save()
+        coVerify(exactly = 0) { trackRepo.deleteById(any()) }
     }
 
     @Test

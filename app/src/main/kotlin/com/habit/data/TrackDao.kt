@@ -33,6 +33,10 @@ interface TrackDao {
     @Query("DELETE FROM track WHERE id = :id")
     suspend fun deleteById(id: String)
 
-    @Query("SELECT COUNT(*) FROM activity WHERE trackId = :trackId")
+    @Query(
+        "SELECT COUNT(*) FROM activity " +
+        "WHERE trackId = :trackId " +
+        "AND completedAt IS NOT NULL AND skipped = 0"
+    )
     suspend fun activityCount(trackId: String): Int
 }

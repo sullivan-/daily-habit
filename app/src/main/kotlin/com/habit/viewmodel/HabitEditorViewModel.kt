@@ -30,6 +30,7 @@ data class HabitEditorState(
     val stopMinutes: Int? = null,
     val priority: Priority = Priority.MEDIUM,
     val tracks: List<TrackEditorItem> = emptyList(),
+    val pendingTrackDeletions: List<String> = emptyList(),
     val isNew: Boolean = true,
     val dirty: Boolean = false,
     val saved: Boolean = false,
@@ -217,8 +218,17 @@ class HabitEditorViewModel(
 
     fun deleteTrack(index: Int) {
         val items = _state.value.tracks.toMutableList()
-        items.removeAt(index)
-        _state.value = _state.value.copy(tracks = items, dirty = true)
+        val removed = items.removeAt(index)
+        val pending = if (removed.isNew || removed.id.isEmpty()) {
+            _state.value.pendingTrackDeletions
+        } else {
+            _state.value.pendingTrackDeletions + removed.id
+        }
+        _state.value = _state.value.copy(
+            tracks = items,
+            pendingTrackDeletions = pending,
+            dirty = true
+        )
     }
 
     fun addMilestone(trackIndex: Int, name: String) {
@@ -280,6 +290,9 @@ class HabitEditorViewModel(
             }
 
             trackRepo?.let { repo ->
+                for (trackId in s.pendingTrackDeletions) {
+                    repo.deleteById(trackId)
+                }
                 for (trackItem in s.tracks) {
                     val trackId = if (trackItem.isNew) {
                         val base = trackItem.name.lowercase()

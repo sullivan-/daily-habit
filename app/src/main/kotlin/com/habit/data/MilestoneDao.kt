@@ -35,7 +35,11 @@ interface MilestoneDao {
     @Query("DELETE FROM milestone WHERE id = :id")
     suspend fun deleteById(id: Long)
 
-    @Query("SELECT COUNT(*) FROM activity WHERE milestoneId = :milestoneId")
+    @Query(
+        "SELECT COUNT(*) FROM activity " +
+        "WHERE milestoneId = :milestoneId " +
+        "AND completedAt IS NOT NULL AND skipped = 0"
+    )
     suspend fun activityCount(milestoneId: Long): Int
 
     @Query("SELECT MAX(sortOrder) FROM milestone WHERE trackId = :trackId")
