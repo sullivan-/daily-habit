@@ -12,6 +12,7 @@ import com.habit.data.priorityToScore
 import com.habit.data.TrackRepository
 import com.habit.data.TargetMode
 import java.time.Instant
+import java.time.LocalDate
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -20,13 +21,16 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AgendaViewModel(
     private val habitRepo: HabitRepository,
     private val activityRepo: ActivityRepository,
@@ -42,26 +46,36 @@ class AgendaViewModel(
     private val _chimeEvents = MutableSharedFlow<ChimeEvent>(extraBufferCapacity = 5)
     val chimeEvents: SharedFlow<ChimeEvent> = _chimeEvents.asSharedFlow()
 
+    private val today = MutableStateFlow(dayBoundary.today())
+
     private var timerJob: Job? = null
     private var nextIntervalChimeAtMs: Long = 0
 
     init {
         viewModelScope.launch {
-            val today = dayBoundary.today()
-            val easyDayFlow = easyDayRepo?.flowForDate(today) ?: flowOf(EasyDayLevel.OFF)
-            combine(
-                habitRepo.allHabits(),
-                activityRepo.activitiesForDate(today),
-                easyDayFlow
-            ) { habits, activities, easyDayLevel ->
-                _uiState.value.copy(
-                    habits = habits,
-                    todayActivities = activities,
-                    today = today,
-                    easyDayLevel = easyDayLevel
-                )
+            today.flatMapLatest { date ->
+                val easyDayFlow = easyDayRepo?.flowForDate(date)
+                    ?: flowOf(EasyDayLevel.OFF)
+                combine(
+                    habitRepo.allHabits(),
+                    activityRepo.activitiesForDate(date),
+                    easyDayFlow
+                ) { habits, activities, easyDayLevel ->
+                    _uiState.value.copy(
+                        habits = habits,
+                        todayActivities = activities,
+                        today = date,
+                        easyDayLevel = easyDayLevel
+                    )
+                }
             }.collect { newState ->
                 _uiState.value = newState
+            }
+        }
+        viewModelScope.launch(tickDispatcher) {
+            while (isActive) {
+                delay(30_000L)
+                refreshToday()
             }
         }
         viewModelScope.launch {
@@ -742,6 +756,13 @@ class AgendaViewModel(
                 selectedActivityId = if (activity.completedAt != null) activity.id else null,
                 activeActivity = if (activity.completedAt == null) activity else state.activeActivity
             )
+        }
+    }
+
+    fun refreshToday() {
+        val current = dayBoundary.today()
+        if (current != today.value) {
+            today.value = current
         }
     }
 

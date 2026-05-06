@@ -58,6 +58,7 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.refreshToday()
                 viewModel.chimeEvents.collect { event ->
                     when (event) {
                         is ChimeEvent.Goal -> chimePlayer.playGoalChime()
