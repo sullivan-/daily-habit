@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.habit.data.EasyDayLevel
 import com.habit.viewmodel.AgendaViewModel
 import com.habit.viewmodel.Layout
 import com.habit.viewmodel.progressRatios
@@ -39,6 +40,17 @@ fun PrimaryScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     var showOtherDialog by remember { mutableStateOf(false) }
+    var showEasyDayDialog by remember { mutableStateOf(false) }
+
+    if (showEasyDayDialog) {
+        EasyDayDialog(
+            current = uiState.easyDayLevel,
+            onSelect = viewModel::setEasyDayLevel,
+            onDismiss = { showEasyDayDialog = false }
+        )
+    }
+    val easyDaySubLabel = if (uiState.easyDayLevel == EasyDayLevel.OFF) null
+        else easyDayLabel(uiState.easyDayLevel)
 
     if (showOtherDialog) {
         val otherHabits = uiState.otherHabits
@@ -136,7 +148,8 @@ fun PrimaryScreen(
                 val ratios = progressRatios(
                     uiState.habits,
                     uiState.todayActivities,
-                    LocalDateTime.now()
+                    LocalDateTime.now(),
+                    uiState.easyDayLevel
                 )
                 ProgressBar(
                     completed = uiState.progressCount,
@@ -147,6 +160,10 @@ fun PrimaryScreen(
                     onNewHabit = onNewHabit,
                     onHabitList = onHabitList,
                     onChoices = onChoices,
+                    onEasyDay = { showEasyDayDialog = true },
+                    easyDaySubLabel = easyDaySubLabel,
+                    onDayPlan = viewModel::switchToMain,
+                    onDoneToday = viewModel::switchToReview,
                     onSwipeLeft = viewModel::switchToReview,
                     onSwipeRight = onChoices
                 )
@@ -164,6 +181,10 @@ fun PrimaryScreen(
                     onNewHabit = onNewHabit,
                     onHabitList = onHabitList,
                     onChoices = onChoices,
+                    onEasyDay = { showEasyDayDialog = true },
+                    easyDaySubLabel = easyDaySubLabel,
+                    onDayPlan = viewModel::switchToMain,
+                    onDoneToday = viewModel::switchToReview,
                     onSwipeRight = viewModel::switchToMain
                 )
             }
@@ -175,6 +196,10 @@ fun PrimaryScreen(
                     onNewHabit = onNewHabit,
                     onHabitList = onHabitList,
                     onChoices = onChoices,
+                    onEasyDay = { showEasyDayDialog = true },
+                    easyDaySubLabel = easyDaySubLabel,
+                    onDayPlan = viewModel::switchToMain,
+                    onDoneToday = viewModel::switchToReview,
                     onSwipeRight = viewModel::switchToMain
                 )
             }

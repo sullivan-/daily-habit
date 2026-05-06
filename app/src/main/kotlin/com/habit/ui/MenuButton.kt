@@ -26,9 +26,27 @@ fun MenuButton(
     onNewHabit: () -> Unit,
     onHabitList: () -> Unit,
     onChoices: () -> Unit = {},
+    onEasyDay: (() -> Unit)? = null,
+    easyDaySubLabel: String? = null,
+    onDayPlan: (() -> Unit)? = null,
+    onDoneToday: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
+
+    val easyDayLabel = if (easyDaySubLabel != null)
+        "Easy Day · $easyDaySubLabel"
+    else
+        "Easy Day"
+
+    val entries = buildList {
+        if (onDayPlan != null) add("Day Plan" to onDayPlan)
+        if (onDoneToday != null) add("Done Today" to onDoneToday)
+        add("Choices" to onChoices)
+        if (onEasyDay != null) add(easyDayLabel to onEasyDay)
+        add("Edit Habits" to onHabitList)
+        add("New Habit" to onNewHabit)
+    }
 
     Box(modifier = modifier) {
         IconButton(onClick = { expanded = true }) {
@@ -40,51 +58,27 @@ fun MenuButton(
             offset = androidx.compose.ui.unit.DpOffset(0.dp, (-4).dp),
             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
         ) {
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        "Habits",
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(vertical = 8.dp)
+            entries.forEachIndexed { index, (label, onClick) ->
+                if (index > 0) {
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant
+                            .copy(alpha = 0.3f)
                     )
-                },
-                onClick = {
-                    expanded = false
-                    onHabitList()
                 }
-            )
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-            )
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        "New Habit",
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                },
-                onClick = {
-                    expanded = false
-                    onNewHabit()
-                }
-            )
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-            )
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        "Choices",
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                },
-                onClick = {
-                    expanded = false
-                    onChoices()
-                }
-            )
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            label,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onClick()
+                    }
+                )
+            }
         }
     }
 }

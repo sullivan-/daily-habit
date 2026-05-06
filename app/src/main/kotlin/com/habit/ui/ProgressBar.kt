@@ -95,6 +95,10 @@ fun ProgressBar(
     onNewHabit: () -> Unit,
     onHabitList: () -> Unit,
     onChoices: () -> Unit = {},
+    onEasyDay: (() -> Unit)? = null,
+    easyDaySubLabel: String? = null,
+    onDayPlan: (() -> Unit)? = null,
+    onDoneToday: (() -> Unit)? = null,
     onSwipeLeft: (() -> Unit)? = null,
     onSwipeRight: (() -> Unit)? = null,
     modifier: Modifier = Modifier
@@ -113,7 +117,16 @@ fun ProgressBar(
             .background(gradient)
             .swipeBar(onSwipeLeft = onSwipeLeft, onSwipeRight = onSwipeRight)
     ) {
-        MenuButton(onNewHabit = onNewHabit, onHabitList = onHabitList, onChoices = onChoices, modifier = Modifier.align(Alignment.CenterStart))
+        MenuButton(
+            onNewHabit = onNewHabit,
+            onHabitList = onHabitList,
+            onChoices = onChoices,
+            onEasyDay = onEasyDay,
+            easyDaySubLabel = easyDaySubLabel,
+            onDayPlan = onDayPlan,
+            onDoneToday = onDoneToday,
+            modifier = Modifier.align(Alignment.CenterStart)
+        )
         Text(
             text = "$completed/$total",
             color = Color.White,
