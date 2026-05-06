@@ -43,8 +43,6 @@ class AgendaViewModel(
     val chimeEvents: SharedFlow<ChimeEvent> = _chimeEvents.asSharedFlow()
 
     private var timerJob: Job? = null
-    private var goalChimeFired: Boolean = false
-    private var stopChimeFired: Boolean = false
     private var nextIntervalChimeAtMs: Long = 0
 
     init {
@@ -291,8 +289,6 @@ class AgendaViewModel(
 
         viewModelScope.launch { activityRepo.update(started) }
 
-        goalChimeFired = false
-        stopChimeFired = false
         startTimerTick()
     }
 
@@ -300,12 +296,6 @@ class AgendaViewModel(
         timerJob?.cancel()
         val state = _uiState.value
         val timedHabitId = state.timedHabitId ?: state.selectedHabitId
-        val habit = state.habits.find { it.id == timedHabitId }
-        val goalMs = habit?.goalMinutes?.let { it * 60 * 1000L } ?: 0
-        val stopMs = habit?.stopMinutes?.let { it * 60 * 1000L } ?: 0
-        val currentElapsed = state.activeActivity?.elapsedMs ?: 0
-        if (goalMs > 0 && currentElapsed >= goalMs) goalChimeFired = true
-        if (stopMs > 0 && currentElapsed >= stopMs) stopChimeFired = true
 
         _uiState.value = state.copy(timerRunning = true, timedHabitId = timedHabitId)
 
@@ -325,19 +315,8 @@ class AgendaViewModel(
 
                 _uiState.value = _uiState.value.copy(timerTickMs = elapsed)
 
-                if (goalMs > 0 && !goalChimeFired && elapsed >= goalMs) {
-                    _chimeEvents.tryEmit(ChimeEvent.Goal)
-                    goalChimeFired = true
-                }
-                if (stopMs > 0 && !stopChimeFired && elapsed >= stopMs) {
-                    _chimeEvents.tryEmit(ChimeEvent.Stop)
-                    stopChimeFired = true
-                }
-
                 val chimeMs = _uiState.value.intervalChimeMs
                 if (chimeMs > 0 && elapsed >= nextIntervalChimeAtMs) {
-                    val isSeconds = IntervalOptions.isSecondsInterval(chimeMs)
-                    _chimeEvents.tryEmit(ChimeEvent.Interval(isSeconds))
                     nextIntervalChimeAtMs += chimeMs
                 }
                 if (chimeMs > 0) {
