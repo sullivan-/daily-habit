@@ -75,6 +75,25 @@ interface ChoiceDao {
 
     @Query(
         "SELECT * FROM choice WHERE tallyId = :tallyId " +
+        "AND abstained = 1 ORDER BY timestamp DESC LIMIT 1"
+    )
+    suspend fun mostRecentAbstention(tallyId: String): Choice?
+
+    @Query(
+        "SELECT * FROM choice WHERE tallyId = :tallyId " +
+        "AND abstained = 0 AND timestamp > :after " +
+        "ORDER BY timestamp ASC LIMIT 1"
+    )
+    suspend fun firstIndulgenceAfter(tallyId: String, after: Long): Choice?
+
+    @Query(
+        "SELECT * FROM choice WHERE tallyId = :tallyId " +
+        "AND abstained = 0 ORDER BY timestamp ASC LIMIT 1"
+    )
+    suspend fun firstIndulgence(tallyId: String): Choice?
+
+    @Query(
+        "SELECT * FROM choice WHERE tallyId = :tallyId " +
         "ORDER BY timestamp ASC LIMIT 1"
     )
     suspend fun earliestChoice(tallyId: String): Choice?

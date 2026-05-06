@@ -18,4 +18,18 @@ class StreakCalculator(private val choiceRepo: ChoiceRepository) {
         }
         return streakChoice?.timestamp
     }
+
+    suspend fun currentLapseStart(tallyId: String): Instant? {
+        val mostRecent = choiceRepo.mostRecentChoice(tallyId)
+            ?: return null
+        if (mostRecent.abstained) return null
+
+        val lastNo = choiceRepo.mostRecentAbstention(tallyId)
+        val lapseChoice = if (lastNo != null) {
+            choiceRepo.firstIndulgenceAfter(tallyId, lastNo.timestamp)
+        } else {
+            choiceRepo.firstIndulgence(tallyId)
+        }
+        return lapseChoice?.timestamp
+    }
 }

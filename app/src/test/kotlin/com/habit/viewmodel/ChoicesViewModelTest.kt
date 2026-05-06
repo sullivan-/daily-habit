@@ -49,6 +49,9 @@ class ChoicesViewModelTest {
         coEvery { choiceRepo.mostRecentIndulgence(any()) } returns null
         coEvery { choiceRepo.firstAbstentionAfter(any(), any()) } returns null
         coEvery { choiceRepo.firstAbstention(any()) } returns null
+        coEvery { choiceRepo.mostRecentAbstention(any()) } returns null
+        coEvery { choiceRepo.firstIndulgenceAfter(any(), any()) } returns null
+        coEvery { choiceRepo.firstIndulgence(any()) } returns null
     }
 
     @After
@@ -243,6 +246,53 @@ class ChoicesViewModelTest {
         )
         val names = vm.uiState.value.tallies.map { it.tally.name }
         assertThat(names).containsExactly("A", "B", "C", "D", "E").inOrder()
+    }
+
+    @Test
+    fun `lapseStart is populated from first Yes after most recent No`() = runTest {
+        val now = Instant.now()
+        val lastNo = now.minus(5, ChronoUnit.HOURS)
+        val firstYesAfterNo = now.minus(3, ChronoUnit.HOURS)
+
+        coEvery { choiceRepo.mostRecentChoice("1") } returns
+            Choice(1, "1", now, abstained = false)
+        coEvery { choiceRepo.mostRecentAbstention("1") } returns
+            Choice(2, "1", lastNo, abstained = true)
+        coEvery { choiceRepo.firstIndulgenceAfter("1", lastNo) } returns
+            Choice(3, "1", firstYesAfterNo, abstained = false)
+
+        val vm = createViewModel(listOf(sweets))
+        val item = vm.uiState.value.tallies.first()
+        assertThat(item.lapseStart).isEqualTo(firstYesAfterNo)
+        assertThat(item.streakStart).isNull()
+    }
+
+    @Test
+    fun `lapseStart falls back to first Yes when no abstentions exist`() = runTest {
+        val now = Instant.now()
+        val firstYes = now.minus(2, ChronoUnit.DAYS)
+
+        coEvery { choiceRepo.mostRecentChoice("1") } returns
+            Choice(1, "1", now, abstained = false)
+        coEvery { choiceRepo.firstIndulgence("1") } returns
+            Choice(2, "1", firstYes, abstained = false)
+
+        val vm = createViewModel(listOf(sweets))
+        val item = vm.uiState.value.tallies.first()
+        assertThat(item.lapseStart).isEqualTo(firstYes)
+    }
+
+    @Test
+    fun `lapseStart is null when most recent choice is No`() = runTest {
+        val now = Instant.now()
+        coEvery { choiceRepo.mostRecentChoice("1") } returns
+            Choice(1, "1", now, abstained = true)
+        coEvery { choiceRepo.firstAbstention("1") } returns
+            Choice(2, "1", now.minus(1, ChronoUnit.DAYS), abstained = true)
+
+        val vm = createViewModel(listOf(sweets))
+        val item = vm.uiState.value.tallies.first()
+        assertThat(item.lapseStart).isNull()
     }
 
     @Test

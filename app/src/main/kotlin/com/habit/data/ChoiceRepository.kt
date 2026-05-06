@@ -43,6 +43,15 @@ class ChoiceRepository(private val choiceDao: ChoiceDao) {
     suspend fun firstAbstention(tallyId: String): Choice? =
         choiceDao.firstAbstention(tallyId)
 
+    suspend fun mostRecentAbstention(tallyId: String): Choice? =
+        choiceDao.mostRecentAbstention(tallyId)
+
+    suspend fun firstIndulgenceAfter(tallyId: String, after: Instant): Choice? =
+        choiceDao.firstIndulgenceAfter(tallyId, after.toEpochMilli())
+
+    suspend fun firstIndulgence(tallyId: String): Choice? =
+        choiceDao.firstIndulgence(tallyId)
+
     suspend fun earliestChoice(tallyId: String): Choice? =
         choiceDao.earliestChoice(tallyId)
 }

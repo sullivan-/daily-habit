@@ -11,10 +11,24 @@ class StreakFormatterTest {
         date.atStartOfDay(ZoneId.systemDefault()).toInstant()
 
     @Test
-    fun `23 hours 59 minutes returns null`() {
+    fun `under 1 hour returns null`() {
+        val start = instantAtStartOfDay(LocalDate.of(2026, 1, 1))
+        val now = start.plusSeconds(59 * 60 + 59)
+        assertThat(formatStreakDuration(start, now)).isNull()
+    }
+
+    @Test
+    fun `exactly 1 hour returns 1 hour streak`() {
+        val start = instantAtStartOfDay(LocalDate.of(2026, 1, 1))
+        val now = start.plusSeconds(3600)
+        assertThat(formatStreakDuration(start, now)).isEqualTo("1 hour streak")
+    }
+
+    @Test
+    fun `23 hours 59 minutes returns 23 hour streak`() {
         val start = instantAtStartOfDay(LocalDate.of(2026, 1, 1))
         val now = start.plusSeconds(23 * 3600 + 59 * 60)
-        assertThat(formatStreakDuration(start, now)).isNull()
+        assertThat(formatStreakDuration(start, now)).isEqualTo("23 hour streak")
     }
 
     @Test
@@ -66,5 +80,17 @@ class StreakFormatterTest {
         val start = instantAtStartOfDay(LocalDate.of(2022, 1, 1))
         val end = instantAtStartOfDay(LocalDate.of(2026, 4, 1))
         assertThat(formatStreakDuration(start, end)).isEqualTo("4 year streak")
+    }
+
+    @Test
+    fun `lapse formatter uses lapse noun and same thresholds`() {
+        val start = instantAtStartOfDay(LocalDate.of(2026, 1, 1))
+        assertThat(formatLapseDuration(start, start.plusSeconds(59 * 60))).isNull()
+        assertThat(formatLapseDuration(start, start.plusSeconds(3600)))
+            .isEqualTo("1 hour lapse")
+        assertThat(formatLapseDuration(start, start.plusSeconds(3 * 3600)))
+            .isEqualTo("3 hour lapse")
+        assertThat(formatLapseDuration(start, start.plusSeconds(3 * 86400)))
+            .isEqualTo("3 day lapse")
     }
 }

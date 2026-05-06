@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.habit.viewmodel.ChoicesViewModel
 import com.habit.viewmodel.TallyDisplayItem
+import com.habit.viewmodel.formatLapseDuration
 import com.habit.viewmodel.formatStreakDuration
 import java.time.Instant
 
@@ -147,11 +148,20 @@ fun TallyRow(
         val streakText = item.streakStart?.let {
             formatStreakDuration(it, Instant.now())
         }
+        val lapseText = item.lapseStart?.let {
+            formatLapseDuration(it, Instant.now())
+        }
         if (streakText != null) {
             Text(
                 text = streakText,
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.Green
+            )
+        } else if (lapseText != null) {
+            Text(
+                text = lapseText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Red
             )
         }
         OutlinedButton(onClick = onNo, elevation = buttonElevation()) {
