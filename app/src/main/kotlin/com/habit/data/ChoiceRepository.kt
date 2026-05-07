@@ -54,4 +54,7 @@ class ChoiceRepository(private val choiceDao: ChoiceDao) {
 
     suspend fun earliestChoice(tallyId: String): Choice? =
         choiceDao.earliestChoice(tallyId)
+
+    suspend fun countSince(tallyId: String, since: Instant): Int =
+        choiceDao.countSince(tallyId, since.toEpochMilli())
 }

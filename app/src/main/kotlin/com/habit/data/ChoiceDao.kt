@@ -97,4 +97,10 @@ interface ChoiceDao {
         "ORDER BY timestamp ASC LIMIT 1"
     )
     suspend fun earliestChoice(tallyId: String): Choice?
+
+    @Query(
+        "SELECT COUNT(*) FROM choice " +
+        "WHERE tallyId = :tallyId AND timestamp >= :since"
+    )
+    suspend fun countSince(tallyId: String, since: Long): Int
 }

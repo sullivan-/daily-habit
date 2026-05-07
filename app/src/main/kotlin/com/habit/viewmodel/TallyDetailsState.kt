@@ -13,6 +13,7 @@ data class TallyDetailsState(
     val saved: Boolean = false,
     val deleted: Boolean = false,
     val streakStart: Instant? = null,
+    val streakCount: Int = 0,
     val abstainCountLast10: Int = 0,
     val totalCountLast10: Int = 0,
     val abstainCountToday: Int = 0,

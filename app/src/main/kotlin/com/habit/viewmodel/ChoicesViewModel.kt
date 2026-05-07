@@ -81,6 +81,8 @@ class ChoicesViewModel(
             val streakStart = streakCalculator.currentStreakStart(tally.id)
             val lastYesAt = if (mostRecent?.abstained == false) mostRecent.timestamp else null
             val lapseStart = streakCalculator.currentLapseStart(tally.id)
+            val runStart = streakStart ?: lapseStart
+            val runCount = runStart?.let { choiceRepo.countSince(tally.id, it) } ?: 0
 
             TallyDisplayItem(
                 tally = tally,
@@ -89,7 +91,8 @@ class ChoicesViewModel(
                 ratio = if (totalCount > 0) abstainCount.toFloat() / totalCount else 1f,
                 streakStart = streakStart,
                 lastYesAt = lastYesAt,
-                lapseStart = lapseStart
+                lapseStart = lapseStart,
+                runCount = runCount
             )
         }.sortedWith(compareBy(::tallySortBucket, ::tallySortTimestamp))
 

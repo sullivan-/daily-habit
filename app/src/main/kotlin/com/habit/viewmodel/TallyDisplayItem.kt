@@ -10,5 +10,6 @@ data class TallyDisplayItem(
     val ratio: Float,
     val streakStart: Instant? = null,
     val lastYesAt: Instant? = null,
-    val lapseStart: Instant? = null
+    val lapseStart: Instant? = null,
+    val runCount: Int = 0
 )

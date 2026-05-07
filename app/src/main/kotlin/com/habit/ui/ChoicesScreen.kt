@@ -26,6 +26,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.habit.viewmodel.ChoicesViewModel
@@ -131,6 +133,7 @@ fun TallyRow(
     onYes: () -> Unit,
     onDetails: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -146,10 +149,10 @@ fun TallyRow(
                 .clickable { onDetails() }
         )
         val streakText = item.streakStart?.let {
-            formatStreakDuration(it, Instant.now())
+            formatStreakDuration(it, Instant.now(), item.runCount)
         }
         val lapseText = item.lapseStart?.let {
-            formatLapseDuration(it, Instant.now())
+            formatLapseDuration(it, Instant.now(), item.runCount)
         }
         if (streakText != null) {
             Text(
@@ -164,10 +167,22 @@ fun TallyRow(
                 color = Color.Red
             )
         }
-        OutlinedButton(onClick = onNo, elevation = buttonElevation()) {
+        OutlinedButton(
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onNo()
+            },
+            elevation = buttonElevation()
+        ) {
             Text("No")
         }
-        OutlinedButton(onClick = onYes, elevation = buttonElevation()) {
+        OutlinedButton(
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onYes()
+            },
+            elevation = buttonElevation()
+        ) {
             Text("Yes")
         }
     }

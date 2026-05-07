@@ -43,6 +43,7 @@ class TallyDetailsViewModel(
 
     private suspend fun refreshStats(tallyId: String) {
         val streakStart = streakCalculator.currentStreakStart(tallyId)
+        val streakCount = streakStart?.let { choiceRepo.countSince(tallyId, it) } ?: 0
         val recent = choiceRepo.recentChoices(tallyId, 10)
         val today = dayBoundary.today()
         val dayStart = today.atStartOfDay(ZoneId.systemDefault()).toInstant()
@@ -52,6 +53,7 @@ class TallyDetailsViewModel(
 
         _state.value = _state.value.copy(
             streakStart = streakStart,
+            streakCount = streakCount,
             abstainCountLast10 = recent.count { it.abstained },
             totalCountLast10 = recent.size,
             abstainCountToday = todayChoices.count { it.abstained },

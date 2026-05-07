@@ -193,7 +193,8 @@ fun TallyDetailsScreen(
             if (state.hasChoices) {
                 SectionDivider("Streak")
                 StreakSection(
-                    streakStart = state.streakStart
+                    streakStart = state.streakStart,
+                    streakCount = state.streakCount
                 )
 
                 SectionDivider("Choices")
@@ -249,7 +250,7 @@ private fun SectionDivider(title: String) {
 }
 
 @Composable
-private fun StreakSection(streakStart: Instant?) {
+private fun StreakSection(streakStart: Instant?, streakCount: Int) {
     if (streakStart == null) {
         Text(
             text = "no current streak",
@@ -260,28 +261,21 @@ private fun StreakSection(streakStart: Instant?) {
     }
 
     val now = Instant.now()
-    val streakText = formatStreakDuration(streakStart, now)
-
-    if (streakText != null) {
-        Text(
-            text = streakText,
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.Green
-        )
-    }
+    Text(
+        text = formatStreakDuration(streakStart, now, streakCount),
+        style = MaterialTheme.typography.bodyLarge,
+        color = Color.Green
+    )
 
     val startZoned = streakStart.atZone(ZoneId.systemDefault())
     val startDate = startZoned.toLocalDate()
     val today = LocalDate.now()
     val yesterday = today.minusDays(1)
 
-    val sinceText = when {
-        streakText == null && startDate == today ->
-            "since ${timeFormatter.format(startZoned)} today"
-        streakText == null && startDate == yesterday ->
-            "since ${timeFormatter.format(startZoned)} yesterday"
-        else ->
-            "since ${dateFormatter.format(startDate)}"
+    val sinceText = when (startDate) {
+        today -> "since ${timeFormatter.format(startZoned)} today"
+        yesterday -> "since ${timeFormatter.format(startZoned)} yesterday"
+        else -> "since ${dateFormatter.format(startDate)}"
     }
 
     Text(
