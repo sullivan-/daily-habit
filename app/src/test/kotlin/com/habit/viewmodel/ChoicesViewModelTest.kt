@@ -203,25 +203,30 @@ class ChoicesViewModelTest {
     }
 
     @Test
-    fun `among broken streaks most recent Yes appears first`() = runTest {
+    fun `among lapses the longest lapse appears first`() = runTest {
         val now = Instant.now()
-        val olderYes = now.minus(5, ChronoUnit.HOURS)
+        val sweetsLapseStart = now.minus(5, ChronoUnit.HOURS)
+        val nicotineLapseStart = now.minus(1, ChronoUnit.HOURS)
 
         coEvery { choiceRepo.mostRecentChoice("1") } returns
-            Choice(1, "1", olderYes, abstained = false)
+            Choice(1, "1", now, abstained = false)
+        coEvery { choiceRepo.firstIndulgence("1") } returns
+            Choice(2, "1", sweetsLapseStart, abstained = false)
         coEvery { choiceRepo.mostRecentChoice("2") } returns
-            Choice(2, "2", now, abstained = false)
+            Choice(3, "2", now, abstained = false)
+        coEvery { choiceRepo.firstIndulgence("2") } returns
+            Choice(4, "2", nicotineLapseStart, abstained = false)
 
         val vm = createViewModel()
         val items = vm.uiState.value.tallies
-        assertThat(items[0].tally.name).isEqualTo("Nicotine")
-        assertThat(items[1].tally.name).isEqualTo("Sweets")
+        assertThat(items[0].tally.name).isEqualTo("Sweets")
+        assertThat(items[1].tally.name).isEqualTo("Nicotine")
     }
 
     @Test
-    fun `order is broken-streaks then no-choices then active-streaks`() = runTest {
-        val brokenA = Tally(id = "a", name = "A", priority = Priority.LOW)
-        val brokenB = Tally(id = "b", name = "B", priority = Priority.LOW)
+    fun `order is lapses then no-choices then active-streaks`() = runTest {
+        val longLapse = Tally(id = "a", name = "A", priority = Priority.LOW)
+        val shortLapse = Tally(id = "b", name = "B", priority = Priority.LOW)
         val noChoices = Tally(id = "c", name = "C", priority = Priority.LOW)
         val streakShort = Tally(id = "d", name = "D", priority = Priority.LOW)
         val streakLong = Tally(id = "e", name = "E", priority = Priority.LOW)
@@ -229,20 +234,24 @@ class ChoicesViewModelTest {
         val now = Instant.now()
         coEvery { choiceRepo.mostRecentChoice("a") } returns
             Choice(1, "a", now, abstained = false)
+        coEvery { choiceRepo.firstIndulgence("a") } returns
+            Choice(2, "a", now.minus(5, ChronoUnit.DAYS), abstained = false)
         coEvery { choiceRepo.mostRecentChoice("b") } returns
-            Choice(2, "b", now.minus(1, ChronoUnit.HOURS), abstained = false)
+            Choice(3, "b", now, abstained = false)
+        coEvery { choiceRepo.firstIndulgence("b") } returns
+            Choice(4, "b", now.minus(1, ChronoUnit.HOURS), abstained = false)
         coEvery { choiceRepo.mostRecentChoice("c") } returns null
         coEvery { choiceRepo.mostRecentChoice("d") } returns
-            Choice(3, "d", now, abstained = true)
+            Choice(5, "d", now, abstained = true)
         coEvery { choiceRepo.firstAbstention("d") } returns
-            Choice(4, "d", now.minus(2, ChronoUnit.DAYS), abstained = true)
+            Choice(6, "d", now.minus(2, ChronoUnit.DAYS), abstained = true)
         coEvery { choiceRepo.mostRecentChoice("e") } returns
-            Choice(5, "e", now, abstained = true)
+            Choice(7, "e", now, abstained = true)
         coEvery { choiceRepo.firstAbstention("e") } returns
-            Choice(6, "e", now.minus(20, ChronoUnit.DAYS), abstained = true)
+            Choice(8, "e", now.minus(20, ChronoUnit.DAYS), abstained = true)
 
         val vm = createViewModel(
-            listOf(brokenA, brokenB, noChoices, streakShort, streakLong)
+            listOf(longLapse, shortLapse, noChoices, streakShort, streakLong)
         )
         val names = vm.uiState.value.tallies.map { it.tally.name }
         assertThat(names).containsExactly("A", "B", "C", "D", "E").inOrder()

@@ -49,15 +49,15 @@ class ChoicesViewModel(
     }
 
     private fun tallySortBucket(item: TallyDisplayItem): Int = when {
-        item.lastYesAt != null -> 0  // broken streak (most recent choice was Yes)
+        item.lapseStart != null -> 0  // active lapse (most recent choice was Yes)
         item.streakStart == null -> 1  // no choices ever
         else -> 2  // active streak
     }
 
-    private fun tallySortTimestamp(item: TallyDisplayItem): Long {
-        val timestamp = item.lastYesAt ?: item.streakStart
-        // negate so larger timestamps sort earlier within bucket
-        return -(timestamp?.toEpochMilli() ?: 0L)
+    private fun tallySortTimestamp(item: TallyDisplayItem): Long = when {
+        item.lapseStart != null -> item.lapseStart.toEpochMilli()  // longest lapse first
+        item.streakStart != null -> -item.streakStart.toEpochMilli()  // shortest streak first
+        else -> 0L
     }
 
     private suspend fun refreshDisplay(tallies: List<Tally>) {
