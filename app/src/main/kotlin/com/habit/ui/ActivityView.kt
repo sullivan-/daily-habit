@@ -98,7 +98,9 @@ fun ActivityView(
                 onEditHabit = onEditHabit,
                 onShowTrackHistory = onShowTrackHistory,
                 onHideTrackHistory = onHideTrackHistory,
-                onDoAgain = onDoAgain
+                onDoAgain = onDoAgain,
+                onUpdateStartTime = onUpdateStartTime,
+                onUpdateCompletedAt = onUpdateCompletedAt
             )
         } else {
             HabitView(
@@ -556,7 +558,9 @@ private fun CompletedActivityDetail(
     onEditHabit: (String) -> Unit,
     onShowTrackHistory: () -> Unit,
     onHideTrackHistory: () -> Unit,
-    onDoAgain: (String) -> Unit
+    onDoAgain: (String) -> Unit,
+    onUpdateStartTime: (Long, Instant?) -> Unit,
+    onUpdateCompletedAt: (Long, Instant?) -> Unit
 ) {
     val activity = state.todayActivities.find { it.id == state.selectedActivityId }
         ?: return
@@ -572,8 +576,6 @@ private fun CompletedActivityDetail(
     }
 
     var note by remember(activity.id) { mutableStateOf(activity.note) }
-    val timeFormatter = remember { DateTimeFormatter.ofPattern("h:mm a") }
-    val zone = ZoneId.systemDefault()
 
     val swipeModifier = if (state.browsingHistory) {
         Modifier.swipeHistoryGesture(
@@ -598,18 +600,12 @@ private fun CompletedActivityDetail(
                 Icon(Icons.Filled.UnfoldMore, "expand")
             }
         }
-        activity.completedAt?.let {
-            Text(
-                text = "completed ${it.atZone(zone).format(timeFormatter)}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-        if (habit.timed && activity.elapsedMs > 0) {
-            Text(
-                text = "duration: ${formatElapsed(activity.elapsedMs)}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
+        EditableActivityTimes(
+            activity = activity,
+            habit = habit,
+            onUpdateStartTime = onUpdateStartTime,
+            onUpdateCompletedAt = onUpdateCompletedAt
+        )
         NoteField(
             value = note,
             onValueChange = { newNote ->
