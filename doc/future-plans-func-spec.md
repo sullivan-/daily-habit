@@ -120,13 +120,6 @@ notifications or visual celebrations when a streak reaches a milestone
 
 *capture interesting ideas here as they come up during development*
 
-### day type / busy day mode
-
-- let the user set a day type (e.g., "busy", "normal", "light") that filters
-  the agenda by priority — on a busy day, only show high-priority habits
-- could be manual (set in the morning) or automatic (based on day of week)
-- the progress bar and daily status would adjust expectations to match
-
 ### "good enough" days
 
 - avoid the "ruined day" effect where missing one thing makes you give up on the rest
