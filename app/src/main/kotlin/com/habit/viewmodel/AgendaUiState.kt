@@ -99,7 +99,6 @@ data class AgendaUiState(
                 .mapValues { it.value.size }
             return habits.filter { habit ->
                 habit.id !in agendaHabitIds &&
-                    easyDayLevel.includes(habit.priority) &&
                     !(habit.dailyTargetMode == TargetMode.EXACTLY &&
                         (completedCounts[habit.id] ?: 0) >= habit.dailyTarget)
             }

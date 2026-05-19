@@ -19,20 +19,19 @@ import com.habit.data.EasyDayLevel
 
 private val easyDayOptions = listOf(
     EasyDayLevel.OFF to "Regular day",
-    EasyDayLevel.LOW to "Skip Lo",
-    EasyDayLevel.MEDIUM_LOW to "Skip Med Lo and below",
-    EasyDayLevel.MEDIUM to "Skip Med and below",
-    EasyDayLevel.MEDIUM_HIGH to "Skip everything but Hi",
-    EasyDayLevel.HIGH to "Skip everything"
+    EasyDayLevel.LOW to "Med Hi Effort",
+    EasyDayLevel.MEDIUM_LOW to "Med Effort",
+    EasyDayLevel.MEDIUM to "Med Lo Effort",
+    EasyDayLevel.MEDIUM_HIGH to "Lo Effort"
 )
 
 fun easyDayLabel(level: EasyDayLevel): String = when (level) {
     EasyDayLevel.OFF -> "Off"
-    EasyDayLevel.LOW -> "Lo"
-    EasyDayLevel.MEDIUM_LOW -> "Med Lo"
-    EasyDayLevel.MEDIUM -> "Med"
-    EasyDayLevel.MEDIUM_HIGH -> "Med Hi"
-    EasyDayLevel.HIGH -> "Hi"
+    EasyDayLevel.LOW -> "Med Hi Effort"
+    EasyDayLevel.MEDIUM_LOW -> "Med Effort"
+    EasyDayLevel.MEDIUM -> "Med Lo Effort"
+    EasyDayLevel.MEDIUM_HIGH -> "Lo Effort"
+    EasyDayLevel.HIGH -> "Lo Effort"
 }
 
 @Composable
