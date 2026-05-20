@@ -82,6 +82,7 @@ fun sortAgenda(
     val extraHabits = inProgressHabitIds
         .filter { id -> activeHabits.none { it.id == id } }
         .mapNotNull { habitsById[it] }
+        .filter { easyDayLevel.includes(it.priority) }
 
     val items = mutableListOf<AgendaItem>()
     for (habit in activeHabits) {
