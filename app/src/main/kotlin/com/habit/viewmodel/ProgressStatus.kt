@@ -45,11 +45,11 @@ fun progressRatios(
         .groupBy { it.habitId }
         .mapValues { it.value.size }
 
+    val habitsById = habits.associateBy { it.id }
     var completedWeight = 0
-    for (habit in activeHabits) {
-        val w = priorityWeight(habit.priority)
-        val done = completedByHabit[habit.id] ?: 0
-        completedWeight += minOf(done, habit.dailyTarget) * w
+    for ((habitId, count) in completedByHabit) {
+        val habit = habitsById[habitId] ?: continue
+        completedWeight += count * priorityWeight(habit.priority)
     }
 
     return ProgressRatios(
