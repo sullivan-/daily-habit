@@ -28,14 +28,16 @@ fun progressRatios(
     val dayOfWeek = now.dayOfWeek
     val activeHabits = habits
         .filter { dayOfWeek in it.daysActive }
-        .filter { easyDayLevel.includes(it.priority) }
 
     var totalWeight = 0
     var expectedWeight = 0
     for (habit in activeHabits) {
+        val target = easyDayLevel.effectiveTarget(habit.priority, habit.dailyTarget)
+        if (target == 0) continue
         val w = priorityWeight(habit.priority)
-        totalWeight += habit.dailyTarget * w
-        expectedWeight += habit.timesOfDay.count { it <= now.hour } * w
+        totalWeight += target * w
+        val dueByNow = habit.timesOfDay.count { it <= now.hour }
+        expectedWeight += minOf(dueByNow, target) * w
     }
 
     if (totalWeight == 0) return ProgressRatios(0f, 1f)

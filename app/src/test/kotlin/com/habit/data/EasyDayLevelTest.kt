@@ -54,4 +54,24 @@ class EasyDayLevelTest {
             assertThat(EasyDayLevel.HIGH.includes(p)).isFalse()
         }
     }
+
+    @Test
+    fun `OFF keeps the full target`() {
+        assertThat(EasyDayLevel.OFF.effectiveTarget(Priority.MEDIUM, 3)).isEqualTo(3)
+    }
+
+    @Test
+    fun `medium 3x degrades by one occurrence per effort step`() {
+        // Med Effort still shows all three; each stronger level sheds one
+        assertThat(EasyDayLevel.MEDIUM_LOW.effectiveTarget(Priority.MEDIUM, 3)).isEqualTo(3)
+        assertThat(EasyDayLevel.MEDIUM.effectiveTarget(Priority.MEDIUM, 3)).isEqualTo(2)
+        assertThat(EasyDayLevel.MEDIUM_HIGH.effectiveTarget(Priority.MEDIUM, 3)).isEqualTo(1)
+        assertThat(EasyDayLevel.HIGH.effectiveTarget(Priority.MEDIUM, 3)).isEqualTo(0)
+    }
+
+    @Test
+    fun `single-occurrence habit is all-or-nothing like includes`() {
+        assertThat(EasyDayLevel.MEDIUM_LOW.effectiveTarget(Priority.MEDIUM, 1)).isEqualTo(1)
+        assertThat(EasyDayLevel.MEDIUM.effectiveTarget(Priority.MEDIUM, 1)).isEqualTo(0)
+    }
 }

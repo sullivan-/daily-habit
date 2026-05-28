@@ -85,8 +85,7 @@ data class AgendaUiState(
     val totalTarget: Int
         get() = habits
             .filter { today.dayOfWeek in it.daysActive }
-            .filter { easyDayLevel.includes(it.priority) }
-            .sumOf { it.dailyTarget }
+            .sumOf { easyDayLevel.effectiveTarget(it.priority, it.dailyTarget) }
 
     val selectedHabit: Habit?
         get() = selectedHabitId?.let { id -> habits.find { it.id == id } }
