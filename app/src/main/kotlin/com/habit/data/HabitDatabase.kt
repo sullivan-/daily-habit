@@ -10,9 +10,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     entities = [
         Habit::class, Activity::class, Tally::class, Choice::class,
         Track::class, Milestone::class, AppConfigEntity::class,
-        EasyDaySettingEntity::class
+        EasyDaySettingEntity::class, EasyDayCarryOverEntity::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -206,6 +206,18 @@ abstract class HabitDatabase : RoomDatabase() {
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS easy_day_setting (
                         date INTEGER NOT NULL PRIMARY KEY,
+                        level TEXT NOT NULL
+                    )
+                """)
+            }
+        }
+
+        val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS easy_day_carry_over (
+                        id INTEGER NOT NULL PRIMARY KEY,
+                        enabled INTEGER NOT NULL,
                         level TEXT NOT NULL
                     )
                 """)

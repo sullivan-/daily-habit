@@ -45,7 +45,9 @@ fun PrimaryScreen(
     if (showEasyDayDialog) {
         EasyDayDialog(
             current = uiState.easyDayLevel,
+            carryOver = uiState.easyDayCarryOver,
             onSelect = viewModel::setEasyDayLevel,
+            onToggleCarryOver = viewModel::setEasyDayCarryOver,
             onDismiss = { showEasyDayDialog = false }
         )
     }

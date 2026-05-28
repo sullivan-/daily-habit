@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -37,7 +39,9 @@ fun easyDayLabel(level: EasyDayLevel): String = when (level) {
 @Composable
 fun EasyDayDialog(
     current: EasyDayLevel,
+    carryOver: Boolean,
     onSelect: (EasyDayLevel) -> Unit,
+    onToggleCarryOver: (Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -69,6 +73,24 @@ fun EasyDayDialog(
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }
+                }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onToggleCarryOver(!carryOver) }
+                        .padding(vertical = 4.dp)
+                ) {
+                    Checkbox(
+                        checked = carryOver,
+                        onCheckedChange = { onToggleCarryOver(it) }
+                    )
+                    Text(
+                        text = "Carry over to following days",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                 }
             }
         },

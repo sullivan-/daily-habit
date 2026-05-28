@@ -33,7 +33,8 @@ data class AgendaUiState(
     val intervalCountdownMs: Long = 0,
     val trackHistory: List<TrackHistoryItem> = emptyList(),
     val trackHistoryVisible: Boolean = false,
-    val easyDayLevel: EasyDayLevel = EasyDayLevel.OFF
+    val easyDayLevel: EasyDayLevel = EasyDayLevel.OFF,
+    val easyDayCarryOver: Boolean = false
 ) {
     val browsingHistory: Boolean
         get() = historyIndex >= 0 && historyActivities.isNotEmpty()

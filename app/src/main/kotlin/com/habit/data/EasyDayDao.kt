@@ -23,4 +23,13 @@ interface EasyDayDao {
 
     @Query("DELETE FROM easy_day_setting WHERE date = :date")
     suspend fun deleteForDate(date: LocalDate)
+
+    @Query("SELECT * FROM easy_day_carry_over WHERE id = 1")
+    fun flowCarryOver(): Flow<EasyDayCarryOverEntity?>
+
+    @Query("SELECT * FROM easy_day_carry_over WHERE id = 1")
+    suspend fun getCarryOver(): EasyDayCarryOverEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertCarryOver(setting: EasyDayCarryOverEntity)
 }

@@ -56,16 +56,19 @@ class AgendaViewModel(
             today.flatMapLatest { date ->
                 val easyDayFlow = easyDayRepo?.flowForDate(date)
                     ?: flowOf(EasyDayLevel.OFF)
+                val carryOverFlow = easyDayRepo?.carryOverFlow() ?: flowOf(false)
                 combine(
                     habitRepo.allHabits(),
                     activityRepo.activitiesForDate(date),
-                    easyDayFlow
-                ) { habits, activities, easyDayLevel ->
+                    easyDayFlow,
+                    carryOverFlow
+                ) { habits, activities, easyDayLevel, carryOver ->
                     _uiState.value.copy(
                         habits = habits,
                         todayActivities = activities,
                         today = date,
-                        easyDayLevel = easyDayLevel
+                        easyDayLevel = easyDayLevel,
+                        easyDayCarryOver = carryOver
                     )
                 }
             }.collect { newState ->
@@ -769,7 +772,24 @@ class AgendaViewModel(
     fun setEasyDayLevel(level: EasyDayLevel) {
         val repo = easyDayRepo ?: return
         viewModelScope.launch {
-            repo.setLevel(dayBoundary.today(), level)
+            if (_uiState.value.easyDayCarryOver) {
+                repo.setCarryOver(enabled = true, level = level)
+            } else {
+                repo.setLevel(dayBoundary.today(), level)
+            }
+        }
+    }
+
+    fun setEasyDayCarryOver(enabled: Boolean) {
+        val repo = easyDayRepo ?: return
+        viewModelScope.launch {
+            val level = _uiState.value.easyDayLevel
+            if (enabled) {
+                repo.setCarryOver(enabled = true, level = level)
+            } else {
+                repo.setCarryOver(enabled = false, level = level)
+                repo.setLevel(dayBoundary.today(), level)
+            }
         }
     }
 
