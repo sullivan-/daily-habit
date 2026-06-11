@@ -764,6 +764,109 @@ class AgendaViewModelTest {
         assertThat(vm.uiState.value.milestoneChecked).isFalse()
     }
 
+    @Test
+    fun `app resumption hydrates incompleteMilestones for active track`() = runTest {
+        val track = Track(
+            id = "standing", habitId = "qigong", name = "Standing",
+            priority = Priority.HIGH
+        )
+        val milestone1 = Milestone(
+            id = 1, trackId = "standing", name = "Lesson 1",
+            sortOrder = 1, completed = false
+        )
+        val milestone2 = Milestone(
+            id = 2, trackId = "standing", name = "Lesson 2",
+            sortOrder = 2, completed = false
+        )
+        val active = Activity(
+            id = 7, habitId = "qigong", attributedDate = today,
+            startTime = null, note = "", completedAt = null,
+            trackId = "standing", milestoneId = null
+        )
+        coEvery { activityRepo.activeActivity() } returns active
+        coEvery { trackRepo.activeTracksForHabit("qigong") } returns listOf(track)
+        coEvery { trackRepo.getById("standing") } returns track
+        coEvery { trackRepo.incompleteMilestones("standing") } returns
+            listOf(milestone1, milestone2)
+
+        val vm = createViewModelWithTracks()
+
+        val state = vm.uiState.value
+        assertThat(state.selectedTrack).isEqualTo(track)
+        assertThat(state.selectedMilestone).isNull()
+        assertThat(state.incompleteMilestones).hasSize(2)
+    }
+
+    @Test
+    fun `selectCompletedActivity hydrates track state from the completed activity`() = runTest {
+        val track = Track(
+            id = "standing", habitId = "qigong", name = "Standing",
+            priority = Priority.HIGH
+        )
+        val milestone = Milestone(
+            id = 3, trackId = "standing", name = "Lesson 3",
+            sortOrder = 3, completed = false
+        )
+        val completed = Activity(
+            id = 42, habitId = "qigong", attributedDate = today,
+            startTime = null, note = "", completedAt = java.time.Instant.now(),
+            trackId = "standing", milestoneId = 3
+        )
+        activitiesFlow.value = listOf(completed)
+        coEvery { trackRepo.activeTracksForHabit("qigong") } returns listOf(track)
+        coEvery { trackRepo.getById("standing") } returns track
+        coEvery { trackRepo.getMilestoneById(3) } returns milestone
+        coEvery { trackRepo.incompleteMilestones("standing") } returns listOf(milestone)
+        coEvery { activityRepo.completedHistoryForHabit("qigong") } returns emptyList()
+
+        val vm = createViewModelWithTracks()
+        vm.selectCompletedActivity(42)
+
+        val state = vm.uiState.value
+        assertThat(state.selectedTrack).isEqualTo(track)
+        assertThat(state.selectedMilestone).isEqualTo(milestone)
+        assertThat(state.incompleteMilestones).hasSize(1)
+    }
+
+    @Test
+    fun `selectCompletedActivity clears stale track state when activity has no track`() = runTest {
+        val track = Track(
+            id = "standing", habitId = "qigong", name = "Standing",
+            priority = Priority.HIGH
+        )
+        val milestone = Milestone(
+            id = 1, trackId = "standing", name = "Lesson 1",
+            sortOrder = 1, completed = false
+        )
+        val completed = Activity(
+            id = 88, habitId = "vitamins", attributedDate = today,
+            startTime = null, note = "", completedAt = java.time.Instant.now(),
+            trackId = null, milestoneId = null
+        )
+        activitiesFlow.value = listOf(completed)
+        coEvery { trackRepo.activeTracksForHabit("qigong") } returns listOf(track)
+        coEvery { trackRepo.activeTracksForHabit("vitamins") } returns emptyList()
+        coEvery { trackRepo.getById("standing") } returns track
+        coEvery { trackRepo.defaultMilestone("standing") } returns milestone
+        coEvery { trackRepo.incompleteMilestones("standing") } returns listOf(milestone)
+        coEvery { activityRepo.completedHistoryForHabit("qigong") } returns emptyList()
+        coEvery { activityRepo.completedHistoryForHabit("vitamins") } returns emptyList()
+
+        val vm = createViewModelWithTracks()
+        // first select a habit with a track so track state gets populated
+        vm.selectHabit("qigong")
+        vm.selectTrack("standing")
+        assertThat(vm.uiState.value.selectedTrack).isNotNull()
+
+        // then tap a completed activity for a different habit with no track
+        vm.selectCompletedActivity(88)
+
+        val state = vm.uiState.value
+        assertThat(state.selectedTrack).isNull()
+        assertThat(state.selectedMilestone).isNull()
+        assertThat(state.incompleteMilestones).isEmpty()
+    }
+
     // --- interval chime tests ---
 
     @Test

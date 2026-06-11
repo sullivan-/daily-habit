@@ -93,15 +93,7 @@ class AgendaViewModel(
                 startTimerTick()
             }
             loadAndSetTracks(active.habitId)
-            if (active.trackId != null) {
-                val repo = trackRepo ?: return@launch
-                val track = repo.getById(active.trackId)
-                val milestone = active.milestoneId?.let { repo.getMilestoneById(it) }
-                _uiState.value = _uiState.value.copy(
-                    selectedTrack = track,
-                    selectedMilestone = milestone
-                )
-            }
+            hydrateTrackStateForActivity(active)
         }
     }
 
@@ -207,17 +199,15 @@ class AgendaViewModel(
     }
 
     fun selectCompletedActivity(activityId: Long) {
-        val habitId = _uiState.value.todayActivities
-            .find { it.id == activityId }?.habitId
+        val activity = _uiState.value.todayActivities.find { it.id == activityId } ?: return
         _uiState.value = _uiState.value.copy(
             selectedActivityId = activityId,
-            selectedHabitId = habitId
+            selectedHabitId = activity.habitId
         )
-        if (habitId != null) {
-            viewModelScope.launch {
-                loadHistory(habitId, activityId)
-                loadAndSetTracks(habitId)
-            }
+        viewModelScope.launch {
+            loadHistory(activity.habitId, activityId)
+            loadAndSetTracks(activity.habitId)
+            hydrateTrackStateForActivity(activity)
         }
     }
 
@@ -547,6 +537,29 @@ class AgendaViewModel(
         viewModelScope.launch { loadAndSetTracks(habitId) }
     }
 
+    private suspend fun hydrateTrackStateForActivity(activity: Activity?) {
+        val repo = trackRepo
+        val trackId = activity?.trackId
+        if (repo == null || trackId == null) {
+            _uiState.value = _uiState.value.copy(
+                selectedTrack = null,
+                selectedMilestone = null,
+                incompleteMilestones = emptyList(),
+                milestoneChecked = false
+            )
+            return
+        }
+        val track = repo.getById(trackId)
+        val milestone = activity.milestoneId?.let { repo.getMilestoneById(it) }
+        val incomplete = repo.incompleteMilestones(trackId)
+        _uiState.value = _uiState.value.copy(
+            selectedTrack = track,
+            selectedMilestone = milestone,
+            incompleteMilestones = incomplete,
+            milestoneChecked = false
+        )
+    }
+
     private suspend fun loadAndSetTracks(habitId: String) {
         val repo = trackRepo ?: return
         val tracks = repo.activeTracksForHabit(habitId)
@@ -673,6 +686,7 @@ class AgendaViewModel(
             selectedActivityId = null,
             activeActivity = null
         )
+        viewModelScope.launch { hydrateTrackStateForActivity(null) }
     }
 
     fun forceSelectHabit(habitId: String) {
