@@ -20,14 +20,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.habit.data.TargetMode
 import com.habit.viewmodel.CompletedItem
+import com.habit.viewmodel.MissedItem
 import java.time.LocalTime
 import java.time.ZoneId
 
 @Composable
 fun CompletedList(
     items: List<CompletedItem>,
+    missed: List<MissedItem>,
+    showOther: Boolean,
     onSelect: (Long) -> Unit,
     onDoAgain: (String) -> Unit,
+    onBackfillMissed: (String) -> Unit,
+    onOther: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
@@ -84,6 +89,33 @@ fun CompletedList(
             HorizontalDivider(
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
             )
+        }
+
+        if (missed.isNotEmpty()) {
+            if (items.isNotEmpty()) {
+                item {
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                    )
+                }
+            }
+            items(missed, key = { "missed-${it.habit.id}" }) { m ->
+                MissedRow(item = m, onClick = { onBackfillMissed(m.habit.id) })
+            }
+        }
+
+        if (showOther) {
+            item {
+                Text(
+                    text = "Other…",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onOther)
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                )
+            }
         }
     }
 }

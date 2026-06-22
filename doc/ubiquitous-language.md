@@ -47,6 +47,14 @@ A derived value: the number of activities logged for a habit on a given date,
 compared to its daily target. E.g., "2/3" means two activities completed out of
 a target of three. This is not a stored entity — it is computed from activities.
 
+### Skip
+
+Dismissing a pending activity for the day without completing it — recording
+that the user consciously chose not to do it. A skipped activity is stamped
+with a completedAt timestamp (so it leaves the agenda) but carries a skipped
+flag, so it counts as neither pending nor done: it is excluded from daily
+progress and from the completed list.
+
 ### Day Boundary
 
 The hour at which one day ends and the next begins (default: 2:00 AM). Activities
@@ -54,6 +62,34 @@ completed before the day boundary are attributed to the previous calendar date.
 The app's concept of "today" is defined by this boundary, not midnight. An
 activity records both its actual timestamp and its attributed date, which may
 differ.
+
+## Easy Day
+
+### Easy Day
+
+A per-day planning setting that lightens the day's expected workload by
+dropping or reducing lower-priority habits. It is forward-looking: it
+shapes what the user plans to do today (and future days, via carry-over),
+and never applies to past days — past-day views always use raw daily
+targets.
+
+### Easy Day Level
+
+The chosen tier. `OFF` means no lightening. The other tiers each name a
+priority threshold (from low up to high). Habits with priority above the
+threshold keep their full daily target. Habits at or below the threshold
+lose occurrences — one at the threshold, and one more for each priority
+step further below it — floored at zero. So a single-occurrence
+low-priority habit drops off the agenda entirely, while a multi-occurrence
+habit is reduced by count. The reduced value is the habit's **effective
+target** for the day. A higher level lightens the day more.
+
+### Carry-over
+
+When enabled, the chosen Easy Day level persists across day rollovers
+until the user turns it off, instead of resetting to `OFF` each new day.
+Carry-over keeps no per-day history — there is no record of what the level
+was on any particular past day.
 
 ## Habit Configuration
 
@@ -109,6 +145,23 @@ day-specific default text for a habit that pre-populated the notes field.
 Now, day-of-week behavior is handled by assigning a default day to a track,
 which appears at the top of the track selector on that day.
 
+## Chimes
+
+### Threshold Chime
+
+A one-shot chime that fires when a timed activity's elapsed time crosses a
+configured boundary — the habit's goal time or stop time. Each fires once
+per activity.
+
+### Interval Chime
+
+A repeating chime that fires at a fixed cadence throughout a timed
+activity: the first fires immediately, then one every interval until
+stopped. The interval is ephemeral session state chosen when chimes are
+started, not part of the habit definition. Independent of threshold chimes
+— both can fire in the same activity. Short "seconds" intervals suit
+rhythmic exercises; longer "minutes" intervals pace work blocks.
+
 ## Choices Domain
 
 ### Tally
@@ -127,11 +180,20 @@ A single recorded event on a tally. The user was tempted and chose to abstain
 and the decision — no notes or additional data. A tally accumulates many
 choices over time.
 
+### Streak
+
+A continuous run of abstention on a tally, measured as elapsed wall-clock time rather than a count
+of choices. The streak starts at the first No after the most recent Yes — or, if the tally has never
+had a Yes, at the very first No ever recorded — and runs to the present. There is no current streak
+if the most recent choice was a Yes or the tally has no choices. Displayed rounded down (days, then
+months, then years) and only once it reaches a full day.
+
 ### Choices Screen
 
-A separate screen accessed from the menu. Displays the user's tallies as a list, each with an
-edit button, the tally name, an abstain ratio indicator, and Yes/No buttons for recording choices.
-Tallies are sorted by a blend of priority and recency of activity.
+A separate screen accessed from the menu. Displays the user's tallies as a list. Each row shows the
+tally name (tappable, opening the tally's Details screen), the current streak if any (where the
+abstain-ratio indicator used to sit), and Yes/No buttons for recording choices. Tallies are sorted
+by a blend of priority and recency of activity.
 
 ### Choices Bar
 
@@ -139,6 +201,20 @@ A status bar at the bottom of the choices screen, following the same pattern as 
 and agenda bar. Contains the menu button, the "Choices" label, a weekly running total showing the
 abstain-to-total ratio across all tallies for the past seven days, and a + button for creating
 new tallies.
+
+### Tally Details Screen
+
+A full screen reached by tapping a tally name, replacing the former edit button. Combines the tally
+editing fields (name, priority, delete) with the current streak and its start date, choice stats
+(abstain count out of the last ten, plus today's count when there are three or more today), and the
+Record First No action.
+
+### Record First No
+
+An action on the Tally Details screen that inserts an ordinary No choice at a date predating all of
+the tally's existing choices. It seeds a streak that began before the user started logging — for
+example, recording the date someone quit drinking years ago. Repeatable; each use adds another,
+earlier No.
 
 ## Tracks Domain
 
@@ -228,3 +304,35 @@ configured.
 
 A checkbox and dropdown below the track selector for series tracks. Defaults
 to the first incomplete milestone; the user can pick any incomplete one.
+
+## Past-day Recording
+
+*Specced, not yet implemented — see `past-day-recording-func-spec.md`,
+`-ux-design.md`, and `-tech-spec.md`.*
+
+### Selected Date
+
+The attributed date the Review view is currently showing. Defaults to today
+and can be stepped back within a seven-day window. Distinct from the real
+today, which still governs the day boundary, the navigable window, and
+whether Easy Day applies.
+
+### Date Strip
+
+The control at the top of the Review layout for choosing the selected date:
+a back chevron, a centered date label (which doubles as a one-tap return to
+today), and a forward chevron. Present on today as well as on past days.
+
+### Missed Row
+
+On a past day's Review list, a greyed row for a habit that was active that
+weekday but finished below its daily target on that date. Shows the habit
+name and, when the target exceeds one, the running count out of target.
+Tapping it back-fills an activity for that habit on that date.
+
+### Back-fill
+
+Recording an activity for a past day that the user forgot to log at the
+time. The activity is created with that day's attributed date and a default
+timestamp at the end of that day, ready for the user to adjust. Reached by
+tapping a missed row or picking a habit through the past-day Other... picker.

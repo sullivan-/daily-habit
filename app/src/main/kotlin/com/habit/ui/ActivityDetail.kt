@@ -16,7 +16,7 @@ fun ActivityDetail(
     modifier: Modifier = Modifier
 ) {
     val habit = state.selectedHabit ?: return
-    val previousActivities = state.todayActivities.filter {
+    val previousActivities = state.selectedDateActivities.filter {
         it.habitId == habit.id && it.completedAt != null
     }
 

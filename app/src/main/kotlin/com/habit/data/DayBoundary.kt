@@ -23,4 +23,12 @@ class DayBoundary(private val boundaryHour: Int) {
             local.toLocalDate()
         }
     }
+
+    fun lastInstantOf(date: LocalDate): Instant {
+        val nextBoundary = date.plusDays(1)
+            .atTime(boundaryHour, 0)
+            .atZone(ZoneId.systemDefault())
+            .toInstant()
+        return nextBoundary.minusMillis(1)
+    }
 }

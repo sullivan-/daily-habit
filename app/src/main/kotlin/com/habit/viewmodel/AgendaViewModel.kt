@@ -46,34 +46,37 @@ class AgendaViewModel(
     private val _chimeEvents = MutableSharedFlow<ChimeEvent>(extraBufferCapacity = 5)
     val chimeEvents: SharedFlow<ChimeEvent> = _chimeEvents.asSharedFlow()
 
-    private val today = MutableStateFlow(dayBoundary.today())
+    private val selectedDate = MutableStateFlow(dayBoundary.today())
+    private val realToday = MutableStateFlow(dayBoundary.today())
 
     private var timerJob: Job? = null
     private var nextIntervalChimeAtMs: Long = 0
 
     init {
         viewModelScope.launch {
-            today.flatMapLatest { date ->
-                val easyDayFlow = easyDayRepo?.flowForDate(date)
-                    ?: flowOf(EasyDayLevel.OFF)
-                val carryOverFlow = easyDayRepo?.carryOverFlow() ?: flowOf(false)
-                combine(
-                    habitRepo.allHabits(),
-                    activityRepo.activitiesForDate(date),
-                    easyDayFlow,
-                    carryOverFlow
-                ) { habits, activities, easyDayLevel, carryOver ->
-                    _uiState.value.copy(
-                        habits = habits,
-                        todayActivities = activities,
-                        today = date,
-                        easyDayLevel = easyDayLevel,
-                        easyDayCarryOver = carryOver
-                    )
+            combine(selectedDate, realToday) { sel, today -> sel to today }
+                .flatMapLatest { (sel, today) ->
+                    val easyDayFlow = easyDayRepo?.flowForDate(today)
+                        ?: flowOf(EasyDayLevel.OFF)
+                    val carryOverFlow = easyDayRepo?.carryOverFlow() ?: flowOf(false)
+                    combine(
+                        habitRepo.allHabits(),
+                        activityRepo.activitiesForDate(sel),
+                        easyDayFlow,
+                        carryOverFlow
+                    ) { habits, activities, easyDayLevel, carryOver ->
+                        _uiState.value.copy(
+                            habits = habits,
+                            selectedDateActivities = activities,
+                            selectedDate = sel,
+                            today = today,
+                            easyDayLevel = easyDayLevel,
+                            easyDayCarryOver = carryOver
+                        )
+                    }
+                }.collect { newState ->
+                    _uiState.value = newState
                 }
-            }.collect { newState ->
-                _uiState.value = newState
-            }
         }
         viewModelScope.launch(tickDispatcher) {
             while (isActive) {
@@ -105,6 +108,7 @@ class AgendaViewModel(
     }
 
     fun switchToMain() {
+        selectedDate.value = realToday.value
         val state = _uiState.value
         val resumeHabitId = if (state.timerRunning) state.timedHabitId else null
         _uiState.value = state.copy(
@@ -199,7 +203,7 @@ class AgendaViewModel(
     }
 
     fun selectCompletedActivity(activityId: Long) {
-        val activity = _uiState.value.todayActivities.find { it.id == activityId } ?: return
+        val activity = _uiState.value.selectedDateActivities.find { it.id == activityId } ?: return
         _uiState.value = _uiState.value.copy(
             selectedActivityId = activityId,
             selectedHabitId = activity.habitId
@@ -267,7 +271,7 @@ class AgendaViewModel(
 
     fun deleteCompletedActivity() {
         val state = _uiState.value
-        val activity = state.todayActivities.find {
+        val activity = state.selectedDateActivities.find {
             it.id == state.selectedActivityId
         } ?: return
         _uiState.value = state.copy(
@@ -314,7 +318,7 @@ class AgendaViewModel(
                 val timedActivity = if (currentState.selectedHabitId == timedHabitId) {
                     currentState.activeActivity
                 } else {
-                    currentState.todayActivities.find {
+                    currentState.selectedDateActivities.find {
                         it.habitId == timedHabitId && it.completedAt == null && it.startTime != null
                     }
                 } ?: break
@@ -473,7 +477,7 @@ class AgendaViewModel(
             _uiState.value = state.copy(historyActivities = newHistory)
             viewModelScope.launch { activityRepo.update(updated) }
         } else if (state.selectedActivityId != null) {
-            val activity = state.todayActivities.find {
+            val activity = state.selectedDateActivities.find {
                 it.id == state.selectedActivityId
             } ?: return
             val updated = activity.copy(note = note)
@@ -590,10 +594,18 @@ class AgendaViewModel(
         )
     }
 
+    // the activity the detail surface is currently editing: the live in-progress one when present,
+    // otherwise the selected completed activity (e.g. a back-fill or any tapped completed row)
+    private fun currentEditableActivity(): Activity? {
+        val s = _uiState.value
+        return s.activeActivity
+            ?: s.selectedActivityId?.let { id -> s.selectedDateActivities.find { it.id == id } }
+    }
+
     fun selectTrack(trackId: String?) {
         val repo = trackRepo ?: return
         viewModelScope.launch {
-            val activity = _uiState.value.activeActivity ?: return@launch
+            val activity = currentEditableActivity() ?: return@launch
             val track = trackId?.let { repo.getById(it) }
             val milestone = track?.let { repo.defaultMilestone(it.id) }
             val incomplete = track?.let { repo.incompleteMilestones(it.id) } ?: emptyList()
@@ -601,8 +613,10 @@ class AgendaViewModel(
             val updated = activity.copy(trackId = trackId, milestoneId = milestone?.id)
             activityRepo.update(updated)
 
-            _uiState.value = _uiState.value.copy(
-                activeActivity = updated,
+            val current = _uiState.value
+            _uiState.value = current.copy(
+                activeActivity = if (current.activeActivity?.id == updated.id) updated
+                    else current.activeActivity,
                 selectedTrack = track,
                 selectedMilestone = milestone,
                 incompleteMilestones = incomplete
@@ -613,13 +627,15 @@ class AgendaViewModel(
     fun selectMilestone(milestoneId: Long) {
         val repo = trackRepo ?: return
         viewModelScope.launch {
-            val activity = _uiState.value.activeActivity ?: return@launch
+            val activity = currentEditableActivity() ?: return@launch
             val milestone = repo.getMilestoneById(milestoneId) ?: return@launch
             val updated = activity.copy(milestoneId = milestoneId)
             activityRepo.update(updated)
 
-            _uiState.value = _uiState.value.copy(
-                activeActivity = updated,
+            val current = _uiState.value
+            _uiState.value = current.copy(
+                activeActivity = if (current.activeActivity?.id == updated.id) updated
+                    else current.activeActivity,
                 selectedMilestone = milestone
             )
         }
@@ -778,9 +794,82 @@ class AgendaViewModel(
 
     fun refreshToday() {
         val current = dayBoundary.today()
-        if (current != today.value) {
-            today.value = current
+        if (current != realToday.value) {
+            realToday.value = current
+            if (selectedDate.value !in current.minusDays(WINDOW_DAYS)..current) {
+                clearViewSelection()
+                selectedDate.value = current
+            }
         }
+    }
+
+    fun stepDate(deltaDays: Int) {
+        val today = realToday.value
+        val candidate = selectedDate.value.plusDays(deltaDays.toLong())
+        if (candidate in today.minusDays(WINDOW_DAYS)..today) {
+            clearViewSelection()
+            selectedDate.value = candidate
+        }
+    }
+
+    fun goToToday() {
+        val running = _uiState.value.timerRunning
+        val timedId = _uiState.value.timedHabitId
+        clearViewSelection()
+        selectedDate.value = realToday.value
+        if (running && timedId != null) resumeRunningTimerView(timedId)
+    }
+
+    private fun resumeRunningTimerView(timedHabitId: String) {
+        _uiState.value = _uiState.value.copy(selectedHabitId = timedHabitId)
+        startTimerTick()
+    }
+
+    private fun clearViewSelection() {
+        val s = _uiState.value
+        _uiState.value = s.copy(
+            selectedHabitId = null,
+            selectedActivityId = null,
+            layout = if (s.layout == Layout.ACTIVITY_FOCUSED) Layout.REVIEW else s.layout,
+            historyActivities = emptyList(),
+            historyIndex = -1,
+            historyAnchorIndex = -1,
+            trackHistoryVisible = false,
+            trackHistory = emptyList()
+        )
+    }
+
+    fun backFill(habitId: String) {
+        val date = selectedDate.value
+        viewModelScope.launch {
+            val activity = Activity(
+                habitId = habitId,
+                attributedDate = date,
+                startTime = null,
+                note = "",
+                completedAt = dayBoundary.lastInstantOf(date),
+                trackId = null,
+                milestoneId = null,
+                skipped = false
+            )
+            val id = activityRepo.create(activity)
+            selectBackFilledActivity(activity.copy(id = id))
+        }
+    }
+
+    private suspend fun selectBackFilledActivity(activity: Activity) {
+        val s = _uiState.value
+        val activities =
+            if (s.selectedDateActivities.any { it.id == activity.id }) s.selectedDateActivities
+            else s.selectedDateActivities + activity
+        _uiState.value = s.copy(
+            selectedDateActivities = activities,
+            selectedActivityId = activity.id,
+            selectedHabitId = activity.habitId
+        )
+        loadHistory(activity.habitId, activity.id)
+        loadAndSetTracks(activity.habitId)
+        hydrateTrackStateForActivity(null)
     }
 
     fun setEasyDayLevel(level: EasyDayLevel) {
@@ -819,5 +908,9 @@ class AgendaViewModel(
                 if (it.completedAt == null) it else state.activeActivity
             } ?: state.activeActivity
         )
+    }
+
+    companion object {
+        const val WINDOW_DAYS = 7L
     }
 }

@@ -50,4 +50,31 @@ class DayBoundaryTest {
         assertThat(boundary.attributedDate(instant))
             .isEqualTo(LocalDate.of(2026, 3, 29))
     }
+
+    @Test
+    fun `lastInstantOf round-trips through attributedDate for several boundary hours`() {
+        for (hour in listOf(0, 2, 23)) {
+            val b = DayBoundary(boundaryHour = hour)
+            var date = LocalDate.of(2026, 1, 1)
+            repeat(40) {
+                assertThat(b.attributedDate(b.lastInstantOf(date))).isEqualTo(date)
+                date = date.plusDays(9)
+            }
+        }
+    }
+
+    @Test
+    fun `lastInstantOf is just before the next day boundary and after this one`() {
+        val date = LocalDate.of(2026, 3, 30)
+        val last = boundary.lastInstantOf(date)
+        val nextBoundary = ZonedDateTime.of(
+            2026, 3, 31, 2, 0, 0, 0, ZoneId.systemDefault()
+        ).toInstant()
+        val thisBoundary = ZonedDateTime.of(
+            2026, 3, 30, 2, 0, 0, 0, ZoneId.systemDefault()
+        ).toInstant()
+        assertThat(last.isBefore(nextBoundary)).isTrue()
+        assertThat(last.isAfter(thisBoundary)).isTrue()
+        assertThat(nextBoundary.toEpochMilli() - last.toEpochMilli()).isEqualTo(1L)
+    }
 }

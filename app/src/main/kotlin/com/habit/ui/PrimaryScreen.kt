@@ -55,7 +55,8 @@ fun PrimaryScreen(
         else easyDayLabel(uiState.easyDayLevel)
 
     if (showOtherDialog) {
-        val otherHabits = uiState.otherHabits
+        val isPast = uiState.isViewingPastDay
+        val otherHabits = if (isPast) uiState.pastDayOtherHabits else uiState.otherHabits
         AlertDialog(
             onDismissRequest = { showOtherDialog = false },
             title = { Text("Other") },
@@ -69,7 +70,8 @@ fun PrimaryScreen(
                                 .fillMaxWidth()
                                 .clickable {
                                     showOtherDialog = false
-                                    viewModel.selectHabit(habit.id)
+                                    if (isPast) viewModel.backFill(habit.id)
+                                    else viewModel.selectHabit(habit.id)
                                 }
                                 .padding(vertical = 12.dp)
                         )
@@ -98,6 +100,16 @@ fun PrimaryScreen(
     ) {
         val expandedModifier = if (uiState.layout == Layout.ACTIVITY_FOCUSED)
             Modifier.weight(1f) else Modifier
+        if (uiState.layout == Layout.REVIEW) {
+            DateStrip(
+                label = dateStripLabel(uiState.selectedDate, uiState.today),
+                canStepBack = uiState.selectedDate > uiState.today.minusDays(7),
+                canStepForward = uiState.isViewingPastDay,
+                onStepBack = { viewModel.stepDate(-1) },
+                onStepForward = { viewModel.stepDate(1) },
+                onLabelTap = viewModel::goToToday
+            )
+        }
         ActivityView(
             state = uiState,
             onStart = viewModel::startTimer,
@@ -149,7 +161,7 @@ fun PrimaryScreen(
                 )
                 val ratios = progressRatios(
                     uiState.habits,
-                    uiState.todayActivities,
+                    uiState.selectedDateActivities,
                     LocalDateTime.now(),
                     uiState.easyDayLevel
                 )
@@ -171,10 +183,15 @@ fun PrimaryScreen(
                 )
             }
             Layout.REVIEW -> {
+                val isPast = uiState.isViewingPastDay
                 CompletedList(
                     items = uiState.completedItems,
+                    missed = uiState.missedItems,
+                    showOther = isPast,
                     onSelect = viewModel::selectCompletedActivity,
-                    onDoAgain = viewModel::doAgain,
+                    onDoAgain = if (isPast) viewModel::backFill else viewModel::doAgain,
+                    onBackfillMissed = viewModel::backFill,
+                    onOther = { showOtherDialog = true },
                     modifier = Modifier.weight(1f)
                 )
                 AgendaBar(
@@ -183,25 +200,26 @@ fun PrimaryScreen(
                     onNewHabit = onNewHabit,
                     onHabitList = onHabitList,
                     onChoices = onChoices,
-                    onEasyDay = { showEasyDayDialog = true },
-                    easyDaySubLabel = easyDaySubLabel,
+                    onEasyDay = if (isPast) null else ({ showEasyDayDialog = true }),
+                    easyDaySubLabel = if (isPast) null else easyDaySubLabel,
                     onDayPlan = viewModel::switchToMain,
-                    onDoneToday = viewModel::switchToReview,
+                    onDoneToday = viewModel::goToToday,
                     onSwipeRight = viewModel::switchToMain
                 )
             }
             Layout.ACTIVITY_FOCUSED -> {
                 // expanded activity view fills remaining space via weight on parent
+                val isPast = uiState.isViewingPastDay
                 AgendaBar(
                     remaining = uiState.totalTarget - uiState.progressCount,
                     onClick = viewModel::switchToMain,
                     onNewHabit = onNewHabit,
                     onHabitList = onHabitList,
                     onChoices = onChoices,
-                    onEasyDay = { showEasyDayDialog = true },
-                    easyDaySubLabel = easyDaySubLabel,
+                    onEasyDay = if (isPast) null else ({ showEasyDayDialog = true }),
+                    easyDaySubLabel = if (isPast) null else easyDaySubLabel,
                     onDayPlan = viewModel::switchToMain,
-                    onDoneToday = viewModel::switchToReview,
+                    onDoneToday = if (isPast) viewModel::goToToday else viewModel::switchToReview,
                     onSwipeRight = viewModel::switchToMain
                 )
             }

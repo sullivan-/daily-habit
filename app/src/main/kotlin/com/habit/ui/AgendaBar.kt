@@ -47,7 +47,7 @@ fun AgendaBar(
             modifier = Modifier.align(Alignment.CenterStart)
         )
         Text(
-            text = "$remaining remaining",
+            text = "$remaining incomplete",
             color = Color.White,
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier

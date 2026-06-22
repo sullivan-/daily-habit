@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.habit.data.Activity
@@ -74,6 +75,7 @@ class PrimaryScreenTest {
     fun setUp() {
         every { dayBoundary.today() } returns today
         every { habitRepo.allHabits() } returns habitsFlow
+        every { activityRepo.activitiesForDate(any()) } returns MutableStateFlow(emptyList())
         every { activityRepo.activitiesForDate(today) } returns activitiesFlow
         coEvery { activityRepo.create(any()) } returns 1L
         coEvery { activityRepo.inProgressActivity(any(), any()) } returns null
@@ -118,8 +120,8 @@ class PrimaryScreenTest {
         setScreen(createViewModel())
         composeTestRule.onNodeWithText("0/3").performClick()
         composeTestRule.waitForIdle()
-        // agenda bar and collapsed summary both show "remaining" — check at least one exists
-        composeTestRule.onAllNodesWithText("3 remaining")[0].assertIsDisplayed()
+        // agenda bar and collapsed summary both show "incomplete" — check at least one exists
+        composeTestRule.onAllNodesWithText("3 incomplete")[0].assertIsDisplayed()
     }
 
     @Test
@@ -127,8 +129,8 @@ class PrimaryScreenTest {
         setScreen(createViewModel())
         composeTestRule.onNodeWithText("0/3").performClick()
         composeTestRule.waitForIdle()
-        // tap the agenda bar (last node with "3 remaining")
-        val nodes = composeTestRule.onAllNodesWithText("3 remaining")
+        // tap the agenda bar (last node with "3 incomplete")
+        val nodes = composeTestRule.onAllNodesWithText("3 incomplete")
         nodes[nodes.fetchSemanticsNodes().lastIndex].performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("Qigong").assertIsDisplayed()
@@ -167,5 +169,54 @@ class PrimaryScreenTest {
         composeTestRule.onNodeWithText("Vitamins").performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onAllNodesWithText("Start").assertCountEquals(0)
+    }
+
+    @Test
+    fun reviewLayoutShowsDateStripWithTodayLabel() {
+        setScreen(createViewModel())
+        composeTestRule.onNodeWithText("0/3").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("Today").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("previous day").assertIsDisplayed()
+    }
+
+    @Test
+    fun steppingBackShowsYesterdayLabelAndOther() {
+        setScreen(createViewModel())
+        composeTestRule.onNodeWithText("0/3").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithContentDescription("previous day").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("Yesterday").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Other…").assertIsDisplayed()
+    }
+
+    @Test
+    fun pastDayShowsMissedRows() {
+        setScreen(createViewModel())
+        composeTestRule.onNodeWithText("0/3").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithContentDescription("previous day").performClick()
+        composeTestRule.waitForIdle()
+        // both habits are active every day, so both appear as missed rows on the empty past day
+        composeTestRule.onNodeWithText("Qigong").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Vitamins").assertIsDisplayed()
+        // qigong target 2 shows the running count; vitamins target 1 omits it
+        composeTestRule.onNodeWithText("0/2").assertIsDisplayed()
+    }
+
+    @Test
+    fun tappingMissedRowAutoOpensCompletedDetail() {
+        every { dayBoundary.lastInstantOf(any()) } returns Instant.now()
+        coEvery { activityRepo.create(any()) } returns 5L
+        setScreen(createViewModel())
+        composeTestRule.onNodeWithText("0/3").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithContentDescription("previous day").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("Vitamins").performClick()
+        composeTestRule.waitForIdle()
+        // landed in the completed-activity detail (its Edit Habit button is present)
+        composeTestRule.onNodeWithText("Edit Habit").assertIsDisplayed()
     }
 }

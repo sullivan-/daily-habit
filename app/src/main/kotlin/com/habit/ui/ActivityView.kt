@@ -100,7 +100,10 @@ fun ActivityView(
                 onHideTrackHistory = onHideTrackHistory,
                 onDoAgain = onDoAgain,
                 onUpdateStartTime = onUpdateStartTime,
-                onUpdateCompletedAt = onUpdateCompletedAt
+                onUpdateCompletedAt = onUpdateCompletedAt,
+                onSelectTrack = onSelectTrack,
+                onSelectMilestone = onSelectMilestone,
+                onCompleteMilestone = onCompleteMilestone
             )
         } else {
             HabitView(
@@ -139,6 +142,16 @@ fun ActivityView(
 @Composable
 private fun CollapsedSummary(state: AgendaUiState) {
     Column(modifier = Modifier.padding(16.dp)) {
+        if (state.isViewingPastDay &&
+            state.completedItems.isEmpty() && state.missedItems.isEmpty()
+        ) {
+            Text(
+                text = "Nothing recorded on " +
+                    state.selectedDate.format(DateTimeFormatter.ofPattern("EEE MMM d")),
+                style = MaterialTheme.typography.bodyLarge
+            )
+            return@Column
+        }
         Text(
             text = "${state.progressCount}/${state.totalTarget} activities complete",
             style = MaterialTheme.typography.bodyLarge
@@ -146,7 +159,7 @@ private fun CollapsedSummary(state: AgendaUiState) {
         val remaining = state.totalTarget - state.progressCount
         if (remaining > 0) {
             Text(
-                text = "$remaining remaining",
+                text = "$remaining incomplete",
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -293,7 +306,7 @@ private fun CurrentActivityView(
                 modifier = Modifier.weight(1f)
             )
             if (habit.dailyTarget > 1) {
-                val done = state.todayActivities.count {
+                val done = state.selectedDateActivities.count {
                     it.habitId == habit.id && it.completedAt != null
                 }
                 Text(
@@ -560,9 +573,12 @@ private fun CompletedActivityDetail(
     onHideTrackHistory: () -> Unit,
     onDoAgain: (String) -> Unit,
     onUpdateStartTime: (Long, Instant?) -> Unit,
-    onUpdateCompletedAt: (Long, Instant?) -> Unit
+    onUpdateCompletedAt: (Long, Instant?) -> Unit,
+    onSelectTrack: (String?) -> Unit,
+    onSelectMilestone: (Long) -> Unit,
+    onCompleteMilestone: () -> Unit
 ) {
-    val activity = state.todayActivities.find { it.id == state.selectedActivityId }
+    val activity = state.selectedDateActivities.find { it.id == state.selectedActivityId }
         ?: return
     val habit = state.habits.find { it.id == activity.habitId } ?: return
 
@@ -598,6 +614,29 @@ private fun CompletedActivityDetail(
             )
             IconButton(onClick = onToggleDetail, modifier = Modifier.size(32.dp)) {
                 Icon(Icons.Filled.UnfoldMore, "expand")
+            }
+        }
+        if (state.isViewingPastDay) {
+            Text(
+                text = dateStripLabel(state.selectedDate, state.today),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (state.availableTracks.isNotEmpty()) {
+            TrackSelector(
+                tracks = state.availableTracks,
+                selectedTrackId = activity.trackId,
+                onSelect = onSelectTrack
+            )
+            if (state.incompleteMilestones.isNotEmpty() || state.selectedMilestone != null) {
+                MilestoneSelector(
+                    selected = state.selectedMilestone,
+                    checked = state.milestoneChecked,
+                    incomplete = state.incompleteMilestones,
+                    onSelect = onSelectMilestone,
+                    onToggle = onCompleteMilestone
+                )
             }
         }
         EditableActivityTimes(

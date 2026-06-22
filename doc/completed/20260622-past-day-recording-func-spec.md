@@ -49,9 +49,11 @@ The screen contents are:
 
 3. **Other... entry** — the same "Other" picker the main agenda uses for today, surfaced here
    because the past-day Done view is the only entry point for adding a past-day activity. Scoped to
-   the selected date, it lists every habit not already represented as a missed row, including
-   habits already at or above target on that date and habits not active on that weekday. Selecting
-   a habit performs a back-fill in the same way as tapping a missed row.
+   the selected date, it lists every habit not already represented as a missed row — including
+   at-least habits already at or above target on that date and habits not active on that weekday —
+   except exactly-mode habits already at or above target, which are suppressed just as they are in
+   today's Other... picker (adding a second instance would violate the habit's exactly-once mode).
+   Selecting a habit performs a back-fill in the same way as tapping a missed row.
 
 The bottom bar shows remaining count for the selected date — the sum of daily targets across
 habits active that weekday, minus completions on that date.

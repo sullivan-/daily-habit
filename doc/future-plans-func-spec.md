@@ -6,12 +6,6 @@ they come up. items here are not committed to, just captured.
 
 ## planned features
 
-### navigate to previous days
-
-allow the user to go back to yesterday (or earlier) and check off items
-they forgot. currently there is no obvious way to record activities for
-a day that has already passed.
-
 ### in-app configuration
 
 *habit editor (create/edit/delete), habit list, and menu are
@@ -25,9 +19,11 @@ implemented. remaining:*
 
 *per-habit track history is implemented (TrackHistoryView shows
 completed activities with dates, tracks, milestones, and notes).
-today's completed items appear in the CompletedList. remaining:*
+today's completed items appear in the CompletedList, and past-day
+recording (specced, not yet built) adds navigation across the last
+seven days. remaining:*
 
-- view completed items across multiple days (not just today)
+- view completed items beyond the seven-day past-day window
 - heatmap or visual overview that drills into details
 - weekly summary: how many days each habit was completed
 - trend indicators: improving, steady, declining

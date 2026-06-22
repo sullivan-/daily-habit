@@ -52,7 +52,7 @@ Unchanged from current behavior, with the date selector added at the top of the 
 │  ☑ Badux (1/3)       8:30a   │
 │  ...                         │
 ├──────────────────────────────┤
-│  ☐☐☐☐☐  5 remaining          │  ← agenda bar (menu + remaining)
+│  ☐☐☐☐☐  5 incomplete         │  ← agenda bar (menu + count)
 └──────────────────────────────┘
 ```
 
@@ -75,12 +75,12 @@ agenda view, which has its own Other... entry.
 │  ☐ Home                      │
 │  Other…                      │  ← Other... entry, bottom of list
 ├──────────────────────────────┤
-│  ☐☐☐☐☐  11 remaining         │  ← agenda bar (Easy Day entry
+│  ☐☐☐☐☐  11 incomplete        │  ← agenda bar (Easy Day entry
 └──────────────────────────────┘     hidden on past days)
 ```
 
 The activity view's collapsed summary reflects the *selected date* — totals, time tracked, etc. —
-not today's. The bottom-bar remaining count is computed against the selected date's raw daily
+not today's. The bottom-bar incomplete count is computed against the selected date's raw daily
 target sum, per the func spec.
 
 ### Missed row
@@ -154,7 +154,7 @@ The agenda bar persists at the bottom on past days with two small differences fr
 All other menu entries — `New habit`, `Habit list`, `Choices`, `Day Plan` — behave as they do
 today. `Day Plan` returns to the main agenda, which is always today.
 
-The remaining count in the centre of the bar reflects the selected date.
+The incomplete count in the centre of the bar reflects the selected date.
 
 ## Selection on date change
 

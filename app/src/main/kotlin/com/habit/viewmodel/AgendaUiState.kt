@@ -11,7 +11,8 @@ import java.time.LocalDate
 data class AgendaUiState(
     val layout: Layout = Layout.MAIN,
     val habits: List<Habit> = emptyList(),
-    val todayActivities: List<Activity> = emptyList(),
+    val selectedDateActivities: List<Activity> = emptyList(),
+    val selectedDate: LocalDate = LocalDate.now(),
     val today: LocalDate = LocalDate.now(),
     val selectedHabitId: String? = null,
     val selectedActivityId: Long? = null,
@@ -51,19 +52,26 @@ data class AgendaUiState(
     val hasSwipedFromAnchor: Boolean
         get() = historyAnchorIndex >= 0 && historyIndex != historyAnchorIndex
 
+    val isViewingPastDay: Boolean
+        get() = selectedDate != today
+
+    // Easy Day is forward-looking only; past days always compute from raw dailyTarget.
+    val effectiveEasyDay: EasyDayLevel
+        get() = if (isViewingPastDay) EasyDayLevel.OFF else easyDayLevel
+
     val agendaItems: List<AgendaItem>
         get() = sortAgenda(
             habits,
-            todayActivities,
-            today,
-            easyDayLevel = easyDayLevel
+            selectedDateActivities,
+            selectedDate,
+            easyDayLevel = effectiveEasyDay
         )
 
     val completedItems: List<CompletedItem>
         get() {
             val habitsById = habits.associateBy { it.id }
             val tracksById = availableTracks.associateBy { it.id }
-            return todayActivities
+            return selectedDateActivities
                 .filter { it.completedAt != null && !it.skipped }
                 .sortedBy { it.completedAt }
                 .mapNotNull { activity ->
@@ -79,13 +87,37 @@ data class AgendaUiState(
                 }
         }
 
+    val missedItems: List<MissedItem>
+        get() {
+            if (!isViewingPastDay) return emptyList()
+            val completedCounts = selectedDateActivities
+                .filter { it.completedAt != null && !it.skipped }
+                .groupBy { it.habitId }
+                .mapValues { it.value.size }
+            return habits
+                .filter { selectedDate.dayOfWeek in it.daysActive }
+                .mapNotNull { habit ->
+                    val count = completedCounts[habit.id] ?: 0
+                    if (count < habit.dailyTarget) {
+                        MissedItem(habit, count, habit.dailyTarget)
+                    } else {
+                        null
+                    }
+                }
+                .sortedWith(
+                    compareBy<MissedItem> { it.habit.timesOfDay.firstOrNull() ?: 0 }
+                        .thenBy { it.habit.priority.ordinal }
+                        .thenByDescending { it.habit.tieBreaker }
+                )
+        }
+
     val progressCount: Int
-        get() = todayActivities.count { it.completedAt != null && !it.skipped }
+        get() = selectedDateActivities.count { it.completedAt != null && !it.skipped }
 
     val totalTarget: Int
         get() = habits
-            .filter { today.dayOfWeek in it.daysActive }
-            .sumOf { easyDayLevel.effectiveTarget(it.priority, it.dailyTarget) }
+            .filter { selectedDate.dayOfWeek in it.daysActive }
+            .sumOf { effectiveEasyDay.effectiveTarget(it.priority, it.dailyTarget) }
 
     val selectedHabit: Habit?
         get() = selectedHabitId?.let { id -> habits.find { it.id == id } }
@@ -93,12 +125,26 @@ data class AgendaUiState(
     val otherHabits: List<Habit>
         get() {
             val agendaHabitIds = agendaItems.map { it.habit.id }.toSet()
-            val completedCounts = todayActivities
+            val completedCounts = selectedDateActivities
                 .filter { it.completedAt != null }
                 .groupBy { it.habitId }
                 .mapValues { it.value.size }
             return habits.filter { habit ->
                 habit.id !in agendaHabitIds &&
+                    !(habit.dailyTargetMode == TargetMode.EXACTLY &&
+                        (completedCounts[habit.id] ?: 0) >= habit.dailyTarget)
+            }
+        }
+
+    val pastDayOtherHabits: List<Habit>
+        get() {
+            val missedIds = missedItems.map { it.habit.id }.toSet()
+            val completedCounts = selectedDateActivities
+                .filter { it.completedAt != null && !it.skipped }
+                .groupBy { it.habitId }
+                .mapValues { it.value.size }
+            return habits.filter { habit ->
+                habit.id !in missedIds &&
                     !(habit.dailyTargetMode == TargetMode.EXACTLY &&
                         (completedCounts[habit.id] ?: 0) >= habit.dailyTarget)
             }

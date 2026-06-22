@@ -109,7 +109,7 @@ class AgendaViewModelTest {
         val vm = createViewModel()
         val state = vm.uiState.value
         assertThat(state.habits).hasSize(2)
-        assertThat(state.todayActivities).isEmpty()
+        assertThat(state.selectedDateActivities).isEmpty()
         assertThat(state.layout).isEqualTo(Layout.MAIN)
     }
 
@@ -1062,5 +1062,129 @@ class AgendaViewModelTest {
         // countdown should be set (timer just started so elapsed is tiny,
         // countdown should be close to the full interval)
         assertThat(countdown).isGreaterThan(0)
+    }
+
+    @Test
+    fun `stepDate back moves the selected date and clears the view selection`() = runTest {
+        val past = today.minusDays(1)
+        every { activityRepo.activitiesForDate(past) } returns MutableStateFlow(emptyList())
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        assertThat(vm.uiState.value.selectedHabitId).isEqualTo("qigong")
+
+        vm.stepDate(-1)
+
+        assertThat(vm.uiState.value.selectedDate).isEqualTo(past)
+        assertThat(vm.uiState.value.isViewingPastDay).isTrue()
+        assertThat(vm.uiState.value.selectedHabitId).isNull()
+        assertThat(vm.uiState.value.selectedActivityId).isNull()
+    }
+
+    @Test
+    fun `stepDate is clamped to the window edges`() = runTest {
+        every { activityRepo.activitiesForDate(any()) } returns MutableStateFlow(emptyList())
+        every { activityRepo.activitiesForDate(today) } returns activitiesFlow
+        val vm = createViewModel()
+
+        // cannot step forward past today
+        vm.stepDate(1)
+        assertThat(vm.uiState.value.selectedDate).isEqualTo(today)
+
+        // eight back-steps clamp at today minus seven
+        repeat(8) { vm.stepDate(-1) }
+        assertThat(vm.uiState.value.selectedDate).isEqualTo(today.minusDays(7))
+    }
+
+    @Test
+    fun `goToToday resets the selected date and collapses the selection`() = runTest {
+        every { activityRepo.activitiesForDate(any()) } returns MutableStateFlow(emptyList())
+        every { activityRepo.activitiesForDate(today) } returns activitiesFlow
+        val vm = createViewModel()
+        vm.stepDate(-2)
+        assertThat(vm.uiState.value.isViewingPastDay).isTrue()
+
+        vm.goToToday()
+
+        assertThat(vm.uiState.value.selectedDate).isEqualTo(today)
+        assertThat(vm.uiState.value.isViewingPastDay).isFalse()
+        assertThat(vm.uiState.value.selectedActivityId).isNull()
+        assertThat(vm.uiState.value.selectedHabitId).isNull()
+    }
+
+    @Test
+    fun `switchToMain resets the selected date to today`() = runTest {
+        every { activityRepo.activitiesForDate(any()) } returns MutableStateFlow(emptyList())
+        every { activityRepo.activitiesForDate(today) } returns activitiesFlow
+        val vm = createViewModel()
+        vm.switchToReview()
+        vm.stepDate(-1)
+        assertThat(vm.uiState.value.isViewingPastDay).isTrue()
+
+        vm.switchToMain()
+
+        assertThat(vm.uiState.value.selectedDate).isEqualTo(today)
+        assertThat(vm.uiState.value.layout).isEqualTo(Layout.MAIN)
+    }
+
+    @Test
+    fun `backFill inserts a completed activity on the selected date and selects it`() = runTest {
+        val past = today.minusDays(1)
+        every { activityRepo.activitiesForDate(any()) } returns MutableStateFlow(emptyList())
+        every { activityRepo.activitiesForDate(today) } returns activitiesFlow
+        val lastInstant = Instant.parse("2026-03-30T00:59:59Z")
+        every { dayBoundary.lastInstantOf(past) } returns lastInstant
+        val captured = mutableListOf<Activity>()
+        coEvery { activityRepo.create(capture(captured)) } returns 42L
+
+        val vm = createViewModel()
+        vm.stepDate(-1)
+        vm.backFill("vitamins")
+
+        val created = captured.last()
+        assertThat(created.habitId).isEqualTo("vitamins")
+        assertThat(created.attributedDate).isEqualTo(past)
+        assertThat(created.completedAt).isEqualTo(lastInstant)
+        assertThat(created.startTime).isNull()
+        assertThat(created.skipped).isFalse()
+
+        // selected immediately and present in the list via the optimistic insert
+        assertThat(vm.uiState.value.selectedActivityId).isEqualTo(42L)
+        assertThat(vm.uiState.value.selectedHabitId).isEqualTo("vitamins")
+        assertThat(vm.uiState.value.selectedDateActivities.map { it.id }).contains(42L)
+        // no timer started for a back-fill
+        assertThat(vm.uiState.value.timerRunning).isFalse()
+    }
+
+    @Test
+    fun `selectTrack persists the track on a selected completed activity`() = runTest {
+        val completed = Activity(
+            id = 7L,
+            habitId = "qigong",
+            attributedDate = today,
+            startTime = null,
+            note = "",
+            completedAt = Instant.now()
+        )
+        every { activityRepo.activitiesForDate(today) } returns
+            MutableStateFlow(listOf(completed))
+        val track = Track(
+            id = "t1",
+            habitId = "qigong",
+            name = "T1",
+            priority = Priority.MEDIUM
+        )
+        coEvery { trackRepo.getById("t1") } returns track
+        coEvery { trackRepo.defaultMilestone("t1") } returns null
+        coEvery { trackRepo.incompleteMilestones("t1") } returns emptyList()
+
+        val vm = AgendaViewModel(
+            habitRepo, activityRepo, dayBoundary, trackRepo,
+            tickDispatcher = tickDispatcher
+        )
+        vm.selectCompletedActivity(7L)
+        vm.selectTrack("t1")
+
+        coVerify { activityRepo.update(match { it.id == 7L && it.trackId == "t1" }) }
+        assertThat(vm.uiState.value.selectedTrack?.id).isEqualTo("t1")
     }
 }
