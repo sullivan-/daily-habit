@@ -1,11 +1,13 @@
 package com.habit.service
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import com.habit.HabitApp
 import com.habit.MainActivity
@@ -22,6 +24,7 @@ class TimerService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var tickJob: Job? = null
     private var chimePlayer: ChimePlayer? = null
+    private var wakeLock: PowerManager.WakeLock? = null
 
     private var habitName: String = ""
     private var startEpochMs: Long = 0
@@ -75,6 +78,7 @@ class TimerService : Service() {
 
     private fun startTicking() {
         tickJob?.cancel()
+        acquireWakeLock()
         tickJob = scope.launch {
             while (isActive) {
                 delay(1000)
@@ -104,6 +108,23 @@ class TimerService : Service() {
     private fun stopTicking() {
         tickJob?.cancel()
         tickJob = null
+        releaseWakeLock()
+    }
+
+    // held for the full user-initiated session, not a fixed window, so no timeout —
+    // a timeout would silently kill chimes mid-session. released explicitly on stop.
+    @SuppressLint("WakelockTimeout")
+    private fun acquireWakeLock() {
+        if (wakeLock == null) {
+            val powerManager = getSystemService(POWER_SERVICE) as PowerManager
+            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG)
+                .apply { setReferenceCounted(false) }
+        }
+        wakeLock?.let { if (!it.isHeld) it.acquire() }
+    }
+
+    private fun releaseWakeLock() {
+        wakeLock?.let { if (it.isHeld) it.release() }
     }
 
     override fun onDestroy() {
@@ -135,6 +156,7 @@ class TimerService : Service() {
 
     companion object {
         const val NOTIFICATION_ID = 1
+        private const val WAKE_LOCK_TAG = "habit:timer"
         const val ACTION_START = "com.habit.timer.START"
         const val ACTION_STOP = "com.habit.timer.STOP"
         const val ACTION_START_INTERVAL = "com.habit.timer.START_INTERVAL"
