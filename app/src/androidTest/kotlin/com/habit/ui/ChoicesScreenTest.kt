@@ -158,7 +158,8 @@ class ChoicesScreenTest {
             Choice(1, "1", fiveDaysAgo, abstained = true)
 
         setScreen(listOf(sweets))
-        composeTestRule.onNodeWithText("5 day streak").assertIsDisplayed()
+        // the row renders "5 day streak (<count>)"; assert the duration label
+        composeTestRule.onNodeWithText("5 day streak", substring = true).assertIsDisplayed()
     }
 
     @Test

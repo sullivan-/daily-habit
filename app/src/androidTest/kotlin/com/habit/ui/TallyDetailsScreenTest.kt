@@ -189,7 +189,8 @@ class TallyDetailsScreenTest {
             Choice(1, "1", fiveDaysAgo, abstained = true)
 
         setScreen(tallyId = "1")
-        composeTestRule.onNodeWithText("5 day streak").assertIsDisplayed()
+        // the section renders "5 day streak (<count>)"; assert the duration label
+        composeTestRule.onNodeWithText("5 day streak", substring = true).assertIsDisplayed()
     }
 
     @Test
