@@ -20,8 +20,8 @@ implemented. remaining:*
 *per-habit track history is implemented (TrackHistoryView shows
 completed activities with dates, tracks, milestones, and notes).
 today's completed items appear in the CompletedList, and past-day
-recording (specced, not yet built) adds navigation across the last
-seven days. remaining:*
+recording navigates and records across the last seven days.
+remaining:*
 
 - view completed items beyond the seven-day past-day window
 - heatmap or visual overview that drills into details
