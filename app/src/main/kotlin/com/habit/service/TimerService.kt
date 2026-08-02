@@ -35,6 +35,7 @@ class TimerService : Service() {
     private var intervalMs: Long = 0
     private var nextIntervalAtMs: Long = 0
     private var isSecondsInterval: Boolean = true
+    private var intervalsElapsed: Int = 0
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -62,10 +63,12 @@ class TimerService : Service() {
                 val currentElapsed = intent.getLongExtra(EXTRA_CURRENT_ELAPSED_MS, 0)
                 isSecondsInterval = intent.getBooleanExtra(EXTRA_IS_SECONDS, true)
                 nextIntervalAtMs = currentElapsed + intervalMs
+                intervalsElapsed = 0
             }
             ACTION_STOP_INTERVAL -> {
                 intervalMs = 0
                 nextIntervalAtMs = 0
+                intervalsElapsed = 0
             }
             ACTION_STOP -> {
                 stopTicking()
@@ -98,7 +101,15 @@ class TimerService : Service() {
                 }
 
                 if (intervalMs > 0 && elapsed >= nextIntervalAtMs) {
-                    chimePlayer?.playIntervalChime(isSecondsInterval)
+                    intervalsElapsed++
+                    // minute intervals count out how many have passed, cycling
+                    // back to 1 after 10; second intervals stay a single beep
+                    val beeps = if (isSecondsInterval) {
+                        1
+                    } else {
+                        (intervalsElapsed - 1) % MAX_INTERVAL_BEEPS + 1
+                    }
+                    chimePlayer?.playIntervalChime(beeps)
                     nextIntervalAtMs += intervalMs
                 }
             }
@@ -157,6 +168,7 @@ class TimerService : Service() {
     companion object {
         const val NOTIFICATION_ID = 1
         private const val WAKE_LOCK_TAG = "habit:timer"
+        private const val MAX_INTERVAL_BEEPS = 10
         const val ACTION_START = "com.habit.timer.START"
         const val ACTION_STOP = "com.habit.timer.STOP"
         const val ACTION_START_INTERVAL = "com.habit.timer.START_INTERVAL"

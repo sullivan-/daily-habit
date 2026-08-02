@@ -899,15 +899,13 @@ class AgendaViewModelTest {
     }
 
     @Test
-    fun `startIntervalChime emits immediate chime event`() = runTest {
+    fun `startIntervalChime emits no immediate chime event`() = runTest {
         val vm = createViewModel()
         vm.selectHabit("qigong")
 
         vm.chimeEvents.test {
             vm.startIntervalChime(8_000)
-            val event = awaitItem()
-            assertThat(event).isInstanceOf(ChimeEvent.Interval::class.java)
-            assertThat((event as ChimeEvent.Interval).isSeconds).isTrue()
+            expectNoEvents()
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -972,20 +970,6 @@ class AgendaViewModelTest {
         val state = vm.uiState.value
         assertThat(state.intervalChimeState).isEqualTo(IntervalChimeState.IDLE)
         assertThat(state.intervalChimeMs).isEqualTo(0)
-    }
-
-    @Test
-    fun `minutes interval emits isSeconds false`() = runTest {
-        val vm = createViewModel()
-        vm.selectHabit("qigong")
-
-        vm.chimeEvents.test {
-            vm.startIntervalChime(180_000)
-            val event = awaitItem()
-            assertThat(event).isInstanceOf(ChimeEvent.Interval::class.java)
-            assertThat((event as ChimeEvent.Interval).isSeconds).isFalse()
-            cancelAndIgnoreRemainingEvents()
-        }
     }
 
     // --- track history tests ---

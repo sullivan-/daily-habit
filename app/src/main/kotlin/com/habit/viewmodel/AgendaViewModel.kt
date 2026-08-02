@@ -744,9 +744,6 @@ class AgendaViewModel(
             startTimer()
         }
 
-        val isSeconds = IntervalOptions.isSecondsInterval(intervalMs)
-        _chimeEvents.tryEmit(ChimeEvent.Interval(isSeconds))
-
         val elapsed = _uiState.value.activeActivity?.elapsedMs ?: 0
         nextIntervalChimeAtMs = elapsed + intervalMs
 

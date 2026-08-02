@@ -60,15 +60,14 @@ class ChimePlayer(private val context: Context) {
         )
     }
 
-    fun playIntervalChime(isSeconds: Boolean) {
-        if (isSeconds) {
-            if (toneGenerator == null) {
-                toneGenerator = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
-            }
-            toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP2, 200)
-        } else {
-            val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            RingtoneManager.getRingtone(context, uri)?.play()
+    fun playIntervalChime(count: Int) {
+        if (toneGenerator == null) {
+            toneGenerator = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
+        }
+        repeat(count) { i ->
+            handler.postDelayed({
+                toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP2, 200)
+            }, i * BEEP_SPACING_MS)
         }
     }
 
@@ -77,5 +76,9 @@ class ChimePlayer(private val context: Context) {
         toneGenerator?.release()
         toneGenerator = null
         handler.removeCallbacksAndMessages(null)
+    }
+
+    companion object {
+        private const val BEEP_SPACING_MS = 400L
     }
 }

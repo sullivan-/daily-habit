@@ -63,8 +63,6 @@ class MainActivity : ComponentActivity() {
                     when (event) {
                         is ChimeEvent.Goal -> chimePlayer.playGoalChime()
                         is ChimeEvent.Stop -> chimePlayer.playStopChime()
-                        is ChimeEvent.Interval ->
-                            chimePlayer.playIntervalChime(event.isSeconds)
                     }
                 }
             }
