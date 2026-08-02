@@ -504,17 +504,16 @@ class AgendaViewModel(
         viewModelScope.launch {
             val repo = trackRepo ?: return@launch
             val activities = activityRepo.completedHistoryForHabit(habitId)
-            val recent = activities.takeLast(10)
-            val items = recent.map { activity ->
-                val trackName = activity.trackId?.let { repo.getById(it)?.name }
-                val milestoneName = activity.milestoneId?.let {
-                    repo.getMilestoneById(it)?.name
-                }
+            val trackNames = activities.mapNotNull { it.trackId }.distinct()
+                .associateWith { repo.getById(it)?.name }
+            val milestoneNames = activities.mapNotNull { it.milestoneId }.distinct()
+                .associateWith { repo.getMilestoneById(it)?.name }
+            val items = activities.map { activity ->
                 TrackHistoryItem(
                     activityId = activity.id,
                     completedAt = activity.completedAt!!,
-                    trackName = trackName,
-                    milestoneName = milestoneName,
+                    trackName = activity.trackId?.let { trackNames[it] },
+                    milestoneName = activity.milestoneId?.let { milestoneNames[it] },
                     note = activity.note
                 )
             }.reversed()

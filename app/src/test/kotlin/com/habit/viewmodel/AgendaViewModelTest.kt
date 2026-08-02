@@ -13,6 +13,7 @@ import com.habit.data.Track
 import com.habit.data.TrackRepository
 
 import app.cash.turbine.test
+import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -1003,6 +1004,35 @@ class AgendaViewModelTest {
         assertThat(state.trackHistory).hasSize(1)
         assertThat(state.trackHistory[0].trackName).isEqualTo("Standing")
         assertThat(state.trackHistory[0].milestoneName).isEqualTo("Lesson 1")
+    }
+
+    @Test
+    fun `showTrackHistory loads full history with one lookup per track`() = runTest {
+        val track = Track(
+            id = "standing", habitId = "qigong", name = "Standing",
+            priority = Priority.HIGH
+        )
+        val activities = (1L..25L).map { n ->
+            Activity(
+                id = n, habitId = "qigong", attributedDate = today,
+                startTime = null, note = "session $n",
+                completedAt = Instant.now(), trackId = "standing", milestoneId = null
+            )
+        }
+        coEvery { activityRepo.completedHistoryForHabit("qigong") } returns activities
+        coEvery { trackRepo.getById("standing") } returns track
+
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        clearMocks(trackRepo, answers = false)
+
+        vm.showTrackHistory()
+
+        val state = vm.uiState.value
+        assertThat(state.trackHistory).hasSize(25)
+        assertThat(state.trackHistory.first().activityId).isEqualTo(25)
+        assertThat(state.trackHistory.first().trackName).isEqualTo("Standing")
+        coVerify(exactly = 1) { trackRepo.getById("standing") }
     }
 
     @Test
