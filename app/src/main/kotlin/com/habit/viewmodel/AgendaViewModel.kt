@@ -593,12 +593,14 @@ class AgendaViewModel(
         )
     }
 
-    // the activity the detail surface is currently editing: the live in-progress one when present,
-    // otherwise the selected completed activity (e.g. a back-fill or any tapped completed row)
+    // the activity the detail surface is currently editing: the selected completed activity when
+    // one is open (e.g. a back-fill or any tapped completed row), otherwise the live in-progress
+    // one. the selected activity must win — an in-progress activity for today can linger while a
+    // completed activity's detail is open, and edits belong to the activity on screen
     private fun currentEditableActivity(): Activity? {
         val s = _uiState.value
-        return s.activeActivity
-            ?: s.selectedActivityId?.let { id -> s.selectedDateActivities.find { it.id == id } }
+        return s.selectedActivityId?.let { id -> s.selectedDateActivities.find { it.id == id } }
+            ?: s.activeActivity
     }
 
     fun selectTrack(trackId: String?) {

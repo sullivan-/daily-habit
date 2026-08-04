@@ -679,6 +679,67 @@ class AgendaViewModelTest {
     }
 
     @Test
+    fun `selectTrack on past-day completed activity ignores lingering active activity`() = runTest {
+        // regression: an in-progress activity for today lingers while a completed activity from
+        // yesterday is open in the Review detail — the track change must land on the open one
+        val yesterday = today.minusDays(1)
+        val completed = Activity(
+            id = 99, habitId = "qigong", attributedDate = yesterday,
+            startTime = null, note = "", completedAt = Instant.now()
+        )
+        every { activityRepo.activitiesForDate(yesterday) } returns
+            MutableStateFlow(listOf(completed))
+        val track = Track(
+            id = "standing", habitId = "qigong", name = "Standing",
+            priority = Priority.HIGH
+        )
+        coEvery { trackRepo.getById("standing") } returns track
+        coEvery { trackRepo.defaultMilestone("standing") } returns null
+        coEvery { trackRepo.incompleteMilestones("standing") } returns emptyList()
+
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        val active = vm.uiState.value.activeActivity!!
+        vm.stepDate(-1)
+        vm.selectCompletedActivity(99)
+        vm.selectTrack("standing")
+
+        coVerify { activityRepo.update(match { it.id == 99L && it.trackId == "standing" }) }
+        coVerify(exactly = 0) {
+            activityRepo.update(match { it.id == active.id && it.trackId != null })
+        }
+        assertThat(vm.uiState.value.activeActivity?.trackId).isNull()
+    }
+
+    @Test
+    fun `selectMilestone on completed activity ignores lingering active activity`() = runTest {
+        // same targeting rule as selectTrack, on today's Done Today list
+        val completed = Activity(
+            id = 99, habitId = "qigong", attributedDate = today,
+            startTime = null, note = "", completedAt = Instant.now(),
+            trackId = "standing"
+        )
+        activitiesFlow.value = listOf(completed)
+        val milestone = Milestone(
+            id = 2, trackId = "standing", name = "Lesson 2",
+            sortOrder = 2, completed = false
+        )
+        coEvery { trackRepo.getMilestoneById(2) } returns milestone
+
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        val active = vm.uiState.value.activeActivity!!
+        vm.selectCompletedActivity(99)
+        vm.selectMilestone(2)
+
+        coVerify { activityRepo.update(match { it.id == 99L && it.milestoneId == 2L }) }
+        coVerify(exactly = 0) {
+            activityRepo.update(match { it.id == active.id && it.milestoneId != null })
+        }
+        assertThat(vm.uiState.value.activeActivity?.milestoneId).isNull()
+    }
+
+    @Test
     fun `habits with no tracks have empty availableTracks`() = runTest {
         coEvery { trackRepo.activeTracksForHabit("vitamins") } returns emptyList()
 
