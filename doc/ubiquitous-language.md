@@ -68,21 +68,18 @@ differ.
 ### Easy Day
 
 A per-day planning setting that lightens the day's expected workload by
-dropping or reducing lower-priority habits. It is forward-looking: it
-shapes what the user plans to do today (and future days, via carry-over),
-and never applies to past days — past-day views always use raw daily
-targets.
+dropping lower-priority habits. It is forward-looking: it shapes what the
+user plans to do today (and future days, via carry-over), and never
+applies to past days — past-day views always use raw daily targets.
 
 ### Easy Day Level
 
 The chosen tier. `OFF` means no lightening. The other tiers each name a
-priority threshold (from low up to high). Habits with priority above the
-threshold keep their full daily target. Habits at or below the threshold
-lose occurrences — one at the threshold, and one more for each priority
-step further below it — floored at zero. So a single-occurrence
-low-priority habit drops off the agenda entirely, while a multi-occurrence
-habit is reduced by count. The reduced value is the habit's **effective
-target** for the day. A higher level lightens the day more.
+priority threshold (from low up to high). A habit is on the day if and
+only if its priority is strictly above the threshold; included habits keep
+their full daily target, and habits at or below the threshold are dropped
+entirely, regardless of daily target. A higher level lightens the day
+more.
 
 ### Carry-over
 

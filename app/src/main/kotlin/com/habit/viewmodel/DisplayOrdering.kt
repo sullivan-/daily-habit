@@ -65,7 +65,7 @@ fun sortAgenda(
     val dayOfWeek = today.dayOfWeek
     val activeHabits = habits
         .filter { dayOfWeek in it.daysActive }
-        .filter { easyDayLevel.effectiveTarget(it.priority, it.dailyTarget) > 0 }
+        .filter { easyDayLevel.includes(it.priority) }
 
     val completedCounts = activities
         .filter { it.completedAt != null }
@@ -82,12 +82,12 @@ fun sortAgenda(
     val extraHabits = inProgressHabitIds
         .filter { id -> activeHabits.none { it.id == id } }
         .mapNotNull { habitsById[it] }
-        .filter { easyDayLevel.effectiveTarget(it.priority, it.dailyTarget) > 0 }
+        .filter { easyDayLevel.includes(it.priority) }
 
     val items = mutableListOf<AgendaItem>()
     for (habit in activeHabits) {
         val done = completedCounts[habit.id] ?: 0
-        val target = easyDayLevel.effectiveTarget(habit.priority, habit.dailyTarget)
+        val target = habit.dailyTarget
         if (done < target) {
             val slot = bestSlot(habit, done, now)
             if (slot != null) {
@@ -102,11 +102,10 @@ fun sortAgenda(
     }
     for (habit in extraHabits) {
         val done = completedCounts[habit.id] ?: 0
-        val target = easyDayLevel.effectiveTarget(habit.priority, habit.dailyTarget)
         items.add(AgendaItem(
             habit = habit,
             activityNumber = done + 1,
-            totalTarget = maxOf(target, done + 1),
+            totalTarget = maxOf(habit.dailyTarget, done + 1),
             assignedTimeOfDay = now.hour
         ))
     }

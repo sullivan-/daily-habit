@@ -32,8 +32,8 @@ fun progressRatios(
     var totalWeight = 0
     var expectedWeight = 0
     for (habit in activeHabits) {
-        val target = easyDayLevel.effectiveTarget(habit.priority, habit.dailyTarget)
-        if (target == 0) continue
+        if (!easyDayLevel.includes(habit.priority)) continue
+        val target = habit.dailyTarget
         val w = priorityWeight(habit.priority)
         totalWeight += target * w
         val dueByNow = habit.timesOfDay.count { it <= now.hour }
