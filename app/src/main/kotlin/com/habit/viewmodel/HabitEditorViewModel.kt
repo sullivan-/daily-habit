@@ -43,6 +43,9 @@ data class HabitEditorState(
             dailyTarget >= 1
 }
 
+// backstop against typos like "1 to 1700" flooding the editor with rows
+private const val MAX_SERIES_SIZE = 100
+
 class HabitEditorViewModel(
     private val habitRepo: HabitRepository,
     private val trackRepo: TrackRepository? = null
@@ -259,6 +262,38 @@ class HabitEditorViewModel(
         val milestones = track.milestones.toMutableList()
         milestones.removeAt(milestoneIndex)
         items[trackIndex] = track.copy(milestones = milestones)
+        _state.value = _state.value.copy(tracks = items, dirty = true)
+    }
+
+    fun moveMilestone(trackIndex: Int, fromIndex: Int, toIndex: Int) {
+        if (fromIndex == toIndex) return
+        val items = _state.value.tracks.toMutableList()
+        val track = items[trackIndex]
+        val milestones = track.milestones.toMutableList()
+        if (fromIndex !in milestones.indices || toIndex !in milestones.indices) return
+        val moved = milestones.removeAt(fromIndex)
+        milestones.add(toIndex, moved)
+        // renumber so sortOrder always matches list position; save() rewrites every milestone
+        val renumbered = milestones.mapIndexed { i, ms -> ms.copy(sortOrder = i + 1) }
+        items[trackIndex] = track.copy(milestones = renumbered)
+        _state.value = _state.value.copy(tracks = items, dirty = true)
+    }
+
+    fun addMilestoneSeries(trackIndex: Int, label: String, from: Int, to: Int) {
+        val trimmed = label.trim()
+        if (trimmed.isEmpty()) return
+        val range = if (from <= to) from..to else from downTo to
+        if (range.count() > MAX_SERIES_SIZE) return
+        val items = _state.value.tracks.toMutableList()
+        val track = items[trackIndex]
+        var nextOrder = (track.milestones.maxOfOrNull { it.sortOrder } ?: 0) + 1
+        val added = range.map { n ->
+            Milestone(
+                trackId = track.id, name = "$trimmed $n",
+                sortOrder = nextOrder++, completed = false
+            )
+        }
+        items[trackIndex] = track.copy(milestones = track.milestones + added)
         _state.value = _state.value.copy(tracks = items, dirty = true)
     }
 

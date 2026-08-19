@@ -2,7 +2,7 @@ package com.habit.ui
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -61,13 +63,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.habit.data.Priority
 import com.habit.data.TargetMode
 import com.habit.viewmodel.HabitEditorViewModel
 import com.habit.viewmodel.TrackEditorItem
+import kotlin.math.roundToInt
 import java.time.DayOfWeek
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -312,7 +319,9 @@ fun HabitEditorScreen(
                         onDelete = viewModel::deleteTrack,
                         onAddMilestone = viewModel::addMilestone,
                         onDeleteMilestone = viewModel::deleteMilestone,
-                        onToggleMilestone = viewModel::toggleMilestone
+                        onToggleMilestone = viewModel::toggleMilestone,
+                        onMoveMilestone = viewModel::moveMilestone,
+                        onAddMilestoneSeries = viewModel::addMilestoneSeries
                     )
                 }
             }
@@ -497,7 +506,9 @@ private fun TracksEditor(
     onDelete: (Int) -> Unit,
     onAddMilestone: (Int, String) -> Unit,
     onDeleteMilestone: (Int, Int) -> Unit,
-    onToggleMilestone: (Int, Int) -> Unit
+    onToggleMilestone: (Int, Int) -> Unit,
+    onMoveMilestone: (Int, Int, Int) -> Unit,
+    onAddMilestoneSeries: (Int, String, Int, Int) -> Unit
 ) {
     val active = tracks.withIndex().filter { !it.value.archived }
     val archived = tracks.withIndex().filter { it.value.archived }
@@ -514,7 +525,11 @@ private fun TracksEditor(
                 onDone = { onToggleExpanded(index) },
                 onAddMilestone = { onAddMilestone(index, it) },
                 onDeleteMilestone = { msIdx -> onDeleteMilestone(index, msIdx) },
-                onToggleMilestone = { msIdx -> onToggleMilestone(index, msIdx) }
+                onToggleMilestone = { msIdx -> onToggleMilestone(index, msIdx) },
+                onMoveMilestone = { from, to -> onMoveMilestone(index, from, to) },
+                onAddMilestoneSeries = { label, from, to ->
+                    onAddMilestoneSeries(index, label, from, to)
+                }
             )
         } else {
             TrackRow(
@@ -600,7 +615,9 @@ private fun TrackInlineEditor(
     onDone: () -> Unit,
     onAddMilestone: (String) -> Unit,
     onDeleteMilestone: (Int) -> Unit,
-    onToggleMilestone: (Int) -> Unit
+    onToggleMilestone: (Int) -> Unit,
+    onMoveMilestone: (Int, Int) -> Unit,
+    onAddMilestoneSeries: (String, Int, Int) -> Unit
 ) {
     var newMilestoneName by remember { mutableStateOf("") }
 
@@ -627,30 +644,12 @@ private fun TrackInlineEditor(
 
         if (track.milestones.isNotEmpty()) {
             Text("Series", style = MaterialTheme.typography.labelMedium)
-            track.milestones.forEachIndexed { msIdx, milestone ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "${msIdx + 1}.",
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.width(24.dp)
-                    )
-                    Checkbox(
-                        checked = milestone.completed,
-                        onCheckedChange = { onToggleMilestone(msIdx) }
-                    )
-                    Text(
-                        text = milestone.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (milestone.id == 0L || track.canDelete) {
-                        IconButton(onClick = { onDeleteMilestone(msIdx) }) {
-                            Icon(Icons.Filled.Close, "delete milestone",
-                                modifier = Modifier.size(16.dp))
-                        }
-                    }
-                }
-            }
+            DraggableMilestoneList(
+                track = track,
+                onToggleMilestone = onToggleMilestone,
+                onDeleteMilestone = onDeleteMilestone,
+                onMoveMilestone = onMoveMilestone
+            )
         }
 
         Row(
@@ -677,6 +676,8 @@ private fun TrackInlineEditor(
             }
         }
 
+        AddSeriesSection(onAdd = onAddMilestoneSeries)
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
@@ -693,6 +694,157 @@ private fun TrackInlineEditor(
             Button(onClick = onDone, elevation = buttonElevation()) {
                 Text("Close")
             }
+        }
+    }
+}
+
+@Composable
+private fun DraggableMilestoneList(
+    track: TrackEditorItem,
+    onToggleMilestone: (Int) -> Unit,
+    onDeleteMilestone: (Int) -> Unit,
+    onMoveMilestone: (Int, Int) -> Unit
+) {
+    // rows are uniform height, so the first row's measurement works as the move threshold
+    var rowHeightPx by remember { mutableStateOf(0) }
+    var draggingIndex by remember { mutableStateOf(-1) }
+    var dragOffsetY by remember { mutableStateOf(0f) }
+
+    Column {
+        track.milestones.forEachIndexed { msIdx, milestone ->
+            val isDragging = msIdx == draggingIndex
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onSizeChanged { if (msIdx == 0) rowHeightPx = it.height }
+                    .zIndex(if (isDragging) 1f else 0f)
+                    .offset {
+                        IntOffset(0, if (isDragging) dragOffsetY.roundToInt() else 0)
+                    }
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.DragHandle,
+                    contentDescription = "reorder",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .size(20.dp)
+                        .pointerInput(msIdx) {
+                            detectDragGestures(
+                                onDragStart = {
+                                    draggingIndex = msIdx
+                                    dragOffsetY = 0f
+                                },
+                                onDrag = { change, amount ->
+                                    change.consume()
+                                    dragOffsetY += amount.y
+                                    val height = rowHeightPx
+                                    if (height <= 0) return@detectDragGestures
+                                    while (dragOffsetY > height / 2f &&
+                                        draggingIndex < track.milestones.lastIndex
+                                    ) {
+                                        onMoveMilestone(draggingIndex, draggingIndex + 1)
+                                        draggingIndex++
+                                        dragOffsetY -= height
+                                    }
+                                    while (dragOffsetY < -height / 2f && draggingIndex > 0) {
+                                        onMoveMilestone(draggingIndex, draggingIndex - 1)
+                                        draggingIndex--
+                                        dragOffsetY += height
+                                    }
+                                },
+                                onDragEnd = { draggingIndex = -1; dragOffsetY = 0f },
+                                onDragCancel = { draggingIndex = -1; dragOffsetY = 0f }
+                            )
+                        }
+                )
+                Text(
+                    text = "${msIdx + 1}.",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier
+                        .width(28.dp)
+                        .padding(start = 4.dp)
+                )
+                Checkbox(
+                    checked = milestone.completed,
+                    onCheckedChange = { onToggleMilestone(msIdx) }
+                )
+                Text(
+                    text = milestone.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                if (milestone.id == 0L || track.canDelete) {
+                    IconButton(onClick = { onDeleteMilestone(msIdx) }) {
+                        Icon(Icons.Filled.Close, "delete milestone",
+                            modifier = Modifier.size(16.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AddSeriesSection(
+    onAdd: (String, Int, Int) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var label by remember { mutableStateOf("Chapter") }
+    var fromText by remember { mutableStateOf("1") }
+    var toText by remember { mutableStateOf("") }
+
+    if (!expanded) {
+        TextButton(onClick = { expanded = true }) {
+            Text("Add series…")
+        }
+        return
+    }
+
+    val from = fromText.toIntOrNull()
+    val to = toText.toIntOrNull()
+    val count = if (from != null && to != null) kotlin.math.abs(to - from) + 1 else 0
+    val valid = label.isNotBlank() && count in 1..100
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        OutlinedTextField(
+            value = label,
+            onValueChange = { label = it },
+            label = { Text("Label") },
+            modifier = Modifier.weight(1f),
+            shape = ControlShape,
+            singleLine = true
+        )
+        OutlinedTextField(
+            value = fromText,
+            onValueChange = { fromText = it },
+            label = { Text("From") },
+            modifier = Modifier.width(64.dp),
+            shape = ControlShape,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true
+        )
+        OutlinedTextField(
+            value = toText,
+            onValueChange = { toText = it },
+            label = { Text("To") },
+            modifier = Modifier.width(64.dp),
+            shape = ControlShape,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true
+        )
+        IconButton(
+            onClick = {
+                onAdd(label.trim(), from!!, to!!)
+                toText = ""
+                expanded = false
+            },
+            enabled = valid
+        ) {
+            Icon(Icons.Filled.Add, "add series")
         }
     }
 }

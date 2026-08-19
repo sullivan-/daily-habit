@@ -434,4 +434,70 @@ class HabitEditorViewModelTest {
         assertThat(milestones[0].name).isEqualTo("Lesson 2")
         assertThat(vm.state.value.dirty).isTrue()
     }
+
+    @Test
+    fun `moveMilestone reorders and renumbers sort order`() {
+        val vm = createViewModelWithTracks()
+        vm.addTrack()
+        vm.addMilestone(0, "Lesson 1")
+        vm.addMilestone(0, "Lesson 2")
+        vm.addMilestone(0, "Lesson 3")
+
+        vm.moveMilestone(0, 2, 0)
+
+        val milestones = vm.state.value.tracks[0].milestones
+        assertThat(milestones.map { it.name })
+            .containsExactly("Lesson 3", "Lesson 1", "Lesson 2").inOrder()
+        assertThat(milestones.map { it.sortOrder }).containsExactly(1, 2, 3).inOrder()
+        assertThat(vm.state.value.dirty).isTrue()
+    }
+
+    @Test
+    fun `moveMilestone ignores out of range indices`() {
+        val vm = createViewModelWithTracks()
+        vm.addTrack()
+        vm.addMilestone(0, "Lesson 1")
+
+        vm.moveMilestone(0, 0, 5)
+
+        assertThat(vm.state.value.tracks[0].milestones.map { it.name })
+            .containsExactly("Lesson 1")
+    }
+
+    @Test
+    fun `addMilestoneSeries appends numbered milestones continuing sort order`() {
+        val vm = createViewModelWithTracks()
+        vm.addTrack()
+        vm.addMilestone(0, "Intro")
+
+        vm.addMilestoneSeries(0, "Chapter", 1, 3)
+
+        val milestones = vm.state.value.tracks[0].milestones
+        assertThat(milestones.map { it.name })
+            .containsExactly("Intro", "Chapter 1", "Chapter 2", "Chapter 3").inOrder()
+        assertThat(milestones.map { it.sortOrder }).containsExactly(1, 2, 3, 4).inOrder()
+        assertThat(vm.state.value.dirty).isTrue()
+    }
+
+    @Test
+    fun `addMilestoneSeries supports descending ranges`() {
+        val vm = createViewModelWithTracks()
+        vm.addTrack()
+
+        vm.addMilestoneSeries(0, "Week", 3, 1)
+
+        assertThat(vm.state.value.tracks[0].milestones.map { it.name })
+            .containsExactly("Week 3", "Week 2", "Week 1").inOrder()
+    }
+
+    @Test
+    fun `addMilestoneSeries rejects blank label and oversized ranges`() {
+        val vm = createViewModelWithTracks()
+        vm.addTrack()
+
+        vm.addMilestoneSeries(0, "   ", 1, 3)
+        vm.addMilestoneSeries(0, "Chapter", 1, 1000)
+
+        assertThat(vm.state.value.tracks[0].milestones).isEmpty()
+    }
 }
