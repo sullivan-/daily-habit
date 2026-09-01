@@ -42,6 +42,19 @@ interface MilestoneDao {
     )
     suspend fun activityCount(milestoneId: Long): Int
 
+    @Query(
+        "SELECT DISTINCT milestoneId FROM activity " +
+        "WHERE milestoneId IN (:milestoneIds) " +
+        "AND completedAt IS NOT NULL AND skipped = 0"
+    )
+    suspend fun milestoneIdsWithHistory(milestoneIds: List<Long>): List<Long>
+
+    @Query(
+        "UPDATE activity SET milestoneId = NULL " +
+        "WHERE milestoneId = :milestoneId AND completedAt IS NULL"
+    )
+    suspend fun detachPendingActivities(milestoneId: Long)
+
     @Query("SELECT MAX(sortOrder) FROM milestone WHERE trackId = :trackId")
     suspend fun maxSortOrder(trackId: String): Int?
 

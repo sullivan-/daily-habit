@@ -12,6 +12,10 @@ data class TrackEditorItem(
     val archived: Boolean,
     val milestones: List<Milestone>,
     val canDelete: Boolean = false,
+    val milestonesWithHistory: Set<Long> = emptySet(),
     val isNew: Boolean = false,
     val expanded: Boolean = false
-)
+) {
+    fun canDeleteMilestone(milestone: Milestone): Boolean =
+        milestone.id !in milestonesWithHistory
+}

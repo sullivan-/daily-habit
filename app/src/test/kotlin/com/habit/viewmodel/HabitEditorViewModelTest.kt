@@ -316,6 +316,31 @@ class HabitEditorViewModelTest {
         habitRepo, trackRepo = trackRepo
     )
 
+    private val readingTrack = Track(
+        id = "reading",
+        habitId = "qigong",
+        name = "Reading",
+        priority = Priority.MEDIUM,
+        dayOfWeek = null,
+        archived = false
+    )
+
+    private val chapters = listOf(
+        Milestone(id = 1L, trackId = "reading", name = "Chapter 1", sortOrder = 1),
+        Milestone(id = 2L, trackId = "reading", name = "Chapter 2", sortOrder = 2),
+        Milestone(id = 3L, trackId = "reading", name = "Chapter 3", sortOrder = 3)
+    )
+
+    private fun loadTrackWithMilestones(
+        milestones: List<Milestone>,
+        withHistory: Set<Long>
+    ) {
+        coEvery { trackRepo.tracksForHabit("qigong") } returns flowOf(listOf(readingTrack))
+        coEvery { trackRepo.milestonesForTrack("reading") } returns milestones
+        coEvery { trackRepo.canDelete("reading") } returns false
+        coEvery { trackRepo.milestoneIdsWithHistory(any()) } returns withHistory
+    }
+
     @Test
     fun `addTrack adds an expanded new item`() {
         val vm = createViewModelWithTracks()
@@ -433,6 +458,71 @@ class HabitEditorViewModelTest {
         assertThat(milestones).hasSize(1)
         assertThat(milestones[0].name).isEqualTo("Lesson 2")
         assertThat(vm.state.value.dirty).isTrue()
+    }
+
+    @Test
+    fun `deleteMilestone renumbers the milestones left behind`() {
+        val vm = createViewModelWithTracks()
+        vm.addTrack()
+        vm.addMilestone(0, "Lesson 1")
+        vm.addMilestone(0, "Lesson 2")
+        vm.addMilestone(0, "Lesson 3")
+
+        vm.deleteMilestone(0, 0)
+
+        val milestones = vm.state.value.tracks[0].milestones
+        assertThat(milestones.map { it.name }).containsExactly("Lesson 2", "Lesson 3").inOrder()
+        assertThat(milestones.map { it.sortOrder }).containsExactly(1, 2).inOrder()
+    }
+
+    @Test
+    fun `deleteMilestone on persisted milestone deletes from repo on save`() = runTest {
+        loadTrackWithMilestones(chapters, withHistory = emptySet())
+        val vm = createViewModelWithTracks()
+        vm.loadHabit("qigong")
+
+        vm.deleteMilestone(0, 1)
+
+        assertThat(vm.state.value.tracks[0].milestones.map { it.name })
+            .containsExactly("Chapter 1", "Chapter 3").inOrder()
+        assertThat(vm.state.value.pendingMilestoneDeletions).containsExactly(2L)
+
+        vm.save()
+        coVerify { trackRepo.deleteMilestone(2L) }
+        assertThat(vm.state.value.pendingMilestoneDeletions).isEmpty()
+    }
+
+    @Test
+    fun `deleteMilestone refuses a milestone with recorded activities`() = runTest {
+        loadTrackWithMilestones(chapters, withHistory = setOf(2L))
+        val vm = createViewModelWithTracks()
+        vm.loadHabit("qigong")
+
+        vm.deleteMilestone(0, 1)
+
+        assertThat(vm.state.value.tracks[0].milestones).hasSize(3)
+        assertThat(vm.state.value.pendingMilestoneDeletions).isEmpty()
+
+        vm.save()
+        coVerify(exactly = 0) { trackRepo.deleteMilestone(any()) }
+    }
+
+    @Test
+    fun `deleteMilestone on unsaved milestone does not call repo deleteMilestone`() = runTest {
+        coEvery { trackRepo.tracksForHabit(any()) } returns flowOf(emptyList())
+        // a relaxed mock hands back a track for every candidate id, which would spin the
+        // unique-id loop in save() forever
+        coEvery { trackRepo.getById(any()) } returns null
+        val vm = createViewModelWithTracks()
+        vm.loadHabit("qigong")
+        vm.addTrack()
+        vm.addMilestone(0, "Lesson 1")
+        vm.updateTrackName(0, "Reading")
+        vm.deleteMilestone(0, 0)
+
+        assertThat(vm.state.value.pendingMilestoneDeletions).isEmpty()
+        vm.save()
+        coVerify(exactly = 0) { trackRepo.deleteMilestone(any()) }
     }
 
     @Test

@@ -41,6 +41,9 @@ interface ActivityDao {
     )
     suspend fun completedHistoryForHabit(habitId: String): List<Activity>
 
+    @Query("SELECT * FROM activity WHERE id = :id")
+    suspend fun getById(id: Long): Activity?
+
     @Insert
     suspend fun insert(activity: Activity): Long
 

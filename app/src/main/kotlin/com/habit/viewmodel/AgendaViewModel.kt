@@ -533,7 +533,19 @@ class AgendaViewModel(
 
     fun refreshTracks() {
         val habitId = _uiState.value.selectedHabitId ?: return
-        viewModelScope.launch { loadAndSetTracks(habitId) }
+        viewModelScope.launch {
+            loadAndSetTracks(habitId)
+            refreshActiveActivity()
+        }
+    }
+
+    // the editor may have deleted the track or milestone the cached activity points at
+    private suspend fun refreshActiveActivity() {
+        val cached = _uiState.value.activeActivity ?: return
+        val current = activityRepo.getById(cached.id)
+        if (current == cached) return
+        _uiState.value = _uiState.value.copy(activeActivity = current)
+        hydrateTrackStateForActivity(current)
     }
 
     fun loadTracksForHabit(habitId: String) {

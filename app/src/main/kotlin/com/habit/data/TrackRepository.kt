@@ -39,11 +39,15 @@ class TrackRepository(
     suspend fun updateMilestone(milestone: Milestone) =
         milestoneDao.update(milestone)
 
-    suspend fun canDeleteMilestone(id: Long): Boolean =
-        milestoneDao.activityCount(id) == 0
+    suspend fun milestoneIdsWithHistory(ids: List<Long>): Set<Long> =
+        if (ids.isEmpty()) emptySet() else milestoneDao.milestoneIdsWithHistory(ids).toSet()
 
-    suspend fun deleteMilestone(id: Long) =
+    // an unfinished activity may already point at this milestone; drop the reference so the
+    // foreign key cascade does not take the agenda entry down with it
+    suspend fun deleteMilestone(id: Long) {
+        milestoneDao.detachPendingActivities(id)
         milestoneDao.deleteById(id)
+    }
 
     suspend fun maxMilestoneSortOrder(trackId: String): Int =
         milestoneDao.maxSortOrder(trackId) ?: 0

@@ -10,6 +10,7 @@ import java.time.LocalDate
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -195,4 +196,52 @@ class MilestoneDaoTest {
 
         assertEquals(1, milestoneDao.activityCount(milestoneId))
     }
+
+    @Test
+    fun milestoneIdsWithHistoryReportsOnlyRecordedMilestones() = runTest {
+        habitDao.insert(habit)
+        trackDao.insert(track)
+        val recorded = milestoneDao.insert(
+            Milestone(trackId = "standing", name = "Lesson 1", sortOrder = 1)
+        )
+        val untouched = milestoneDao.insert(
+            Milestone(trackId = "standing", name = "Lesson 2", sortOrder = 2)
+        )
+        activityDao.insert(
+            activity(milestoneId = recorded, completedAt = Instant.now())
+        )
+
+        val withHistory = milestoneDao.milestoneIdsWithHistory(listOf(recorded, untouched))
+
+        assertEquals(listOf(recorded), withHistory)
+    }
+
+    @Test
+    fun detachPendingActivitiesKeepsUnfinishedActivityWhenMilestoneDeleted() = runTest {
+        habitDao.insert(habit)
+        trackDao.insert(track)
+        val milestoneId = milestoneDao.insert(
+            Milestone(trackId = "standing", name = "Lesson 1", sortOrder = 1)
+        )
+        val activityId = activityDao.insert(
+            activity(milestoneId = milestoneId, completedAt = null)
+        )
+
+        milestoneDao.detachPendingActivities(milestoneId)
+        milestoneDao.deleteById(milestoneId)
+
+        val survivor = activityDao.getById(activityId)
+        assertNotNull(survivor)
+        assertNull(survivor!!.milestoneId)
+    }
+
+    private fun activity(milestoneId: Long, completedAt: Instant?) = Activity(
+        habitId = "qigong",
+        attributedDate = LocalDate.of(2026, 3, 30),
+        startTime = null,
+        note = "",
+        completedAt = completedAt,
+        trackId = "standing",
+        milestoneId = milestoneId
+    )
 }

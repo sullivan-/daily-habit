@@ -31,6 +31,7 @@ data class HabitEditorState(
     val priority: Priority = Priority.MEDIUM,
     val tracks: List<TrackEditorItem> = emptyList(),
     val pendingTrackDeletions: List<String> = emptyList(),
+    val pendingMilestoneDeletions: List<Long> = emptyList(),
     val isNew: Boolean = true,
     val dirty: Boolean = false,
     val saved: Boolean = false,
@@ -68,6 +69,9 @@ class HabitEditorViewModel(
             val trackItems = tracks.map { track ->
                 val milestones = trackRepo?.milestonesForTrack(track.id) ?: emptyList()
                 val canDelete = trackRepo?.canDelete(track.id) ?: true
+                val withHistory = trackRepo
+                    ?.milestoneIdsWithHistory(milestones.map { it.id })
+                    ?: emptySet()
                 TrackEditorItem(
                     id = track.id,
                     name = track.name,
@@ -75,7 +79,8 @@ class HabitEditorViewModel(
                     dayOfWeek = track.dayOfWeek,
                     archived = track.archived,
                     milestones = milestones,
-                    canDelete = canDelete
+                    canDelete = canDelete,
+                    milestonesWithHistory = withHistory
                 )
             }.sortedWith(
                 compareBy<TrackEditorItem> { it.archived }
@@ -260,9 +265,21 @@ class HabitEditorViewModel(
         val items = _state.value.tracks.toMutableList()
         val track = items[trackIndex]
         val milestones = track.milestones.toMutableList()
+        val removed = milestones[milestoneIndex]
+        if (!track.canDeleteMilestone(removed)) return
         milestones.removeAt(milestoneIndex)
-        items[trackIndex] = track.copy(milestones = milestones)
-        _state.value = _state.value.copy(tracks = items, dirty = true)
+        val renumbered = milestones.mapIndexed { i, ms -> ms.copy(sortOrder = i + 1) }
+        items[trackIndex] = track.copy(milestones = renumbered)
+        val pending = if (removed.id == 0L) {
+            _state.value.pendingMilestoneDeletions
+        } else {
+            _state.value.pendingMilestoneDeletions + removed.id
+        }
+        _state.value = _state.value.copy(
+            tracks = items,
+            pendingMilestoneDeletions = pending,
+            dirty = true
+        )
     }
 
     fun moveMilestone(trackIndex: Int, fromIndex: Int, toIndex: Int) {
@@ -328,6 +345,9 @@ class HabitEditorViewModel(
                 for (trackId in s.pendingTrackDeletions) {
                     repo.deleteById(trackId)
                 }
+                for (milestoneId in s.pendingMilestoneDeletions) {
+                    repo.deleteMilestone(milestoneId)
+                }
                 for (trackItem in s.tracks) {
                     val trackId = if (trackItem.isNew) {
                         val base = trackItem.name.lowercase()
@@ -371,7 +391,12 @@ class HabitEditorViewModel(
                 }
             }
 
-            _state.value = s.copy(saved = true, dirty = false)
+            _state.value = s.copy(
+                saved = true,
+                dirty = false,
+                pendingTrackDeletions = emptyList(),
+                pendingMilestoneDeletions = emptyList()
+            )
         }
     }
 

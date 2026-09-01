@@ -18,6 +18,8 @@ class ActivityRepository(private val activityDao: ActivityDao) {
 
     suspend fun activeActivity(): Activity? = activityDao.activeActivity()
 
+    suspend fun getById(id: Long): Activity? = activityDao.getById(id)
+
     suspend fun completedHistoryForHabit(habitId: String): List<Activity> =
         activityDao.completedHistoryForHabit(habitId)
 

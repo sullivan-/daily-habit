@@ -774,7 +774,7 @@ private fun DraggableMilestoneList(
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
-                if (milestone.id == 0L || track.canDelete) {
+                if (track.canDeleteMilestone(milestone)) {
                     IconButton(onClick = { onDeleteMilestone(msIdx) }) {
                         Icon(Icons.Filled.Close, "delete milestone",
                             modifier = Modifier.size(16.dp))
