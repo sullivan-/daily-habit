@@ -52,4 +52,12 @@ interface ActivityDao {
 
     @Query("DELETE FROM activity WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    // a habit tapped but never started, completed or annotated leaves an empty in-progress
+    // activity behind; once its day is over nothing looks it up again
+    @Query(
+        "DELETE FROM activity WHERE completedAt IS NULL AND startTime IS NULL " +
+        "AND note = '' AND attributedDate < :today"
+    )
+    suspend fun deleteStalePlaceholders(today: LocalDate): Int
 }

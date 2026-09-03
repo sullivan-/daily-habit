@@ -107,9 +107,9 @@ private fun TrackHistoryRow(
                     text = item.trackName,
                     style = MaterialTheme.typography.bodyMedium
                 )
-                if (item.milestoneName != null) {
+                if (item.milestoneNames.isNotEmpty()) {
                     Text(
-                        text = " — ${item.milestoneName}",
+                        text = " — ${item.milestoneNames.joinToString(", ")}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

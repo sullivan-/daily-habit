@@ -145,6 +145,7 @@ fun PrimaryScreen(
             onCloseIntervalSelector = viewModel::closeIntervalSelector,
             onStartIntervalChime = viewModel::startIntervalChime,
             onCancelIntervalChime = viewModel::cancelIntervalChime,
+            onChangeIntervalChime = viewModel::changeIntervalChime,
             onShowTrackHistory = viewModel::showTrackHistory,
             onHideTrackHistory = viewModel::hideTrackHistory,
             modifier = expandedModifier

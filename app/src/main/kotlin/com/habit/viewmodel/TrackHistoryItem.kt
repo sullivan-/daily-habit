@@ -6,6 +6,6 @@ data class TrackHistoryItem(
     val activityId: Long,
     val completedAt: Instant,
     val trackName: String?,
-    val milestoneName: String?,
+    val milestoneNames: List<String>,
     val note: String
 )

@@ -1,11 +1,13 @@
 package com.habit.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -16,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import com.habit.viewmodel.IntervalChimeState
 import com.habit.viewmodel.IntervalOptions
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IntervalChimeControl(
     state: IntervalChimeState,
@@ -25,6 +26,7 @@ fun IntervalChimeControl(
     onOpen: () -> Unit,
     onClose: () -> Unit,
     onSelect: (Long) -> Unit,
+    onChange: (Long) -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -40,39 +42,19 @@ fun IntervalChimeControl(
             }
         }
         IntervalChimeState.SELECTING -> {
+            // while chimes are already running, a chip changes the interval in place
+            val onPick = if (intervalMs > 0) onChange else onSelect
             Column(modifier = modifier) {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    IntervalOptions.seconds.forEach { sec ->
-                        FilterChip(
-                            selected = false,
-                            onClick = { onSelect(sec * 1000L) },
-                            label = {
-                                Text(
-                                    "${sec}s",
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Visible,
-                                    softWrap = false
-                                )
-                            }
-                        )
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    IntervalOptions.minutes.forEach { min ->
-                        FilterChip(
-                            selected = false,
-                            onClick = { onSelect(min * 60_000L) },
-                            label = {
-                                Text(
-                                    "${min}m",
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Visible,
-                                    softWrap = false
-                                )
-                            }
-                        )
-                    }
-                }
+                IntervalChipRow(
+                    options = IntervalOptions.seconds.map { it * 1000L to "${it}s" },
+                    currentMs = intervalMs,
+                    onPick = onPick
+                )
+                IntervalChipRow(
+                    options = IntervalOptions.minutes.map { it * 60_000L to "${it}m" },
+                    currentMs = intervalMs,
+                    onPick = onPick
+                )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
@@ -88,7 +70,11 @@ fun IntervalChimeControl(
                 modifier = modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("every ${IntervalOptions.labelFor(intervalMs)}")
+                Text(
+                    text = "every ${IntervalOptions.labelFor(intervalMs)}",
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable(onClick = onOpen)
+                )
                 val countdownText = formatCountdown(countdownMs, intervalMs)
                 Text(
                     text = " — next in $countdownText",
@@ -96,6 +82,31 @@ fun IntervalChimeControl(
                 )
                 TextButton(onClick = onCancel) { Text("Cancel") }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun IntervalChipRow(
+    options: List<Pair<Long, String>>,
+    currentMs: Long,
+    onPick: (Long) -> Unit
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        options.forEach { (ms, label) ->
+            FilterChip(
+                selected = ms == currentMs,
+                onClick = { onPick(ms) },
+                label = {
+                    Text(
+                        label,
+                        maxLines = 1,
+                        overflow = TextOverflow.Visible,
+                        softWrap = false
+                    )
+                }
+            )
         }
     }
 }

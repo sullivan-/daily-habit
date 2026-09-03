@@ -68,11 +68,12 @@ fun ActivityView(
     onDelete: () -> Unit = {},
     onSelectTrack: (String?) -> Unit = {},
     onSelectMilestone: (Long) -> Unit = {},
-    onCompleteMilestone: () -> Unit = {},
+    onCompleteMilestone: (Long) -> Unit = {},
     onOpenIntervalSelector: () -> Unit = {},
     onCloseIntervalSelector: () -> Unit = {},
     onStartIntervalChime: (Long) -> Unit = {},
     onCancelIntervalChime: () -> Unit = {},
+    onChangeIntervalChime: (Long) -> Unit = {},
     onShowTrackHistory: () -> Unit = {},
     onHideTrackHistory: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -131,6 +132,7 @@ fun ActivityView(
                 onCloseIntervalSelector = onCloseIntervalSelector,
                 onStartIntervalChime = onStartIntervalChime,
                 onCancelIntervalChime = onCancelIntervalChime,
+                onChangeIntervalChime = onChangeIntervalChime,
                 onShowTrackHistory = onShowTrackHistory,
                 onHideTrackHistory = onHideTrackHistory,
                 isExpanded = state.layout == Layout.ACTIVITY_FOCUSED
@@ -187,11 +189,12 @@ private fun HabitView(
     onDelete: () -> Unit,
     onSelectTrack: (String?) -> Unit,
     onSelectMilestone: (Long) -> Unit,
-    onCompleteMilestone: () -> Unit,
+    onCompleteMilestone: (Long) -> Unit,
     onOpenIntervalSelector: () -> Unit,
     onCloseIntervalSelector: () -> Unit,
     onStartIntervalChime: (Long) -> Unit,
     onCancelIntervalChime: () -> Unit,
+    onChangeIntervalChime: (Long) -> Unit,
     onShowTrackHistory: () -> Unit,
     onHideTrackHistory: () -> Unit,
     isExpanded: Boolean
@@ -246,6 +249,7 @@ private fun HabitView(
             onCloseIntervalSelector = onCloseIntervalSelector,
             onStartIntervalChime = onStartIntervalChime,
             onCancelIntervalChime = onCancelIntervalChime,
+                onChangeIntervalChime = onChangeIntervalChime,
             onShowTrackHistory = onShowTrackHistory,
             onUpdateStartTime = onUpdateStartTime,
             onUpdateCompletedAt = onUpdateCompletedAt,
@@ -272,11 +276,12 @@ private fun CurrentActivityView(
     onDelete: () -> Unit,
     onSelectTrack: (String?) -> Unit,
     onSelectMilestone: (Long) -> Unit,
-    onCompleteMilestone: () -> Unit,
+    onCompleteMilestone: (Long) -> Unit,
     onOpenIntervalSelector: () -> Unit,
     onCloseIntervalSelector: () -> Unit,
     onStartIntervalChime: (Long) -> Unit,
     onCancelIntervalChime: () -> Unit,
+    onChangeIntervalChime: (Long) -> Unit,
     onShowTrackHistory: () -> Unit,
     onUpdateStartTime: (Long, java.time.Instant?) -> Unit,
     onUpdateCompletedAt: (Long, java.time.Instant?) -> Unit,
@@ -336,11 +341,11 @@ private fun CurrentActivityView(
                 selectedTrackId = state.activeActivity?.trackId,
                 onSelect = onSelectTrack
             )
-            if (state.incompleteMilestones.isNotEmpty() || state.selectedMilestone != null) {
-                MilestoneSelector(
-                    selected = state.selectedMilestone,
-                    checked = state.milestoneChecked,
-                    incomplete = state.incompleteMilestones,
+            if (state.checkedMilestones.isNotEmpty() || state.selectedMilestone != null) {
+                MilestoneChecklist(
+                    checked = state.checkedMilestones,
+                    current = state.selectedMilestone,
+                    choices = state.milestoneChoices,
                     onSelect = onSelectMilestone,
                     onToggle = onCompleteMilestone
                 )
@@ -370,6 +375,7 @@ private fun CurrentActivityView(
                 onOpen = onOpenIntervalSelector,
                 onClose = onCloseIntervalSelector,
                 onSelect = onStartIntervalChime,
+                onChange = onChangeIntervalChime,
                 onCancel = onCancelIntervalChime
             )
         }
@@ -576,7 +582,7 @@ private fun CompletedActivityDetail(
     onUpdateCompletedAt: (Long, Instant?) -> Unit,
     onSelectTrack: (String?) -> Unit,
     onSelectMilestone: (Long) -> Unit,
-    onCompleteMilestone: () -> Unit
+    onCompleteMilestone: (Long) -> Unit
 ) {
     val activity = state.selectedDateActivities.find { it.id == state.selectedActivityId }
         ?: return
@@ -629,11 +635,11 @@ private fun CompletedActivityDetail(
                 selectedTrackId = activity.trackId,
                 onSelect = onSelectTrack
             )
-            if (state.incompleteMilestones.isNotEmpty() || state.selectedMilestone != null) {
-                MilestoneSelector(
-                    selected = state.selectedMilestone,
-                    checked = state.milestoneChecked,
-                    incomplete = state.incompleteMilestones,
+            if (state.checkedMilestones.isNotEmpty() || state.selectedMilestone != null) {
+                MilestoneChecklist(
+                    checked = state.checkedMilestones,
+                    current = state.selectedMilestone,
+                    choices = state.milestoneChoices,
                     onSelect = onSelectMilestone,
                     onToggle = onCompleteMilestone
                 )
@@ -728,13 +734,45 @@ private fun TrackSelector(
     }
 }
 
+// the milestones checked off in this activity, then the one it is on now. checking the
+// current one grows the list and the next open milestone takes its place
 @Composable
-private fun MilestoneSelector(
-    selected: Milestone?,
-    checked: Boolean,
-    incomplete: List<Milestone>,
+private fun MilestoneChecklist(
+    checked: List<Milestone>,
+    current: Milestone?,
+    choices: List<Milestone>,
     onSelect: (Long) -> Unit,
-    onToggle: () -> Unit
+    onToggle: (Long) -> Unit
+) {
+    Column {
+        checked.forEach { ms ->
+            MilestoneRow(
+                milestone = ms,
+                checked = true,
+                choices = emptyList(),
+                onSelect = onSelect,
+                onToggle = onToggle
+            )
+        }
+        if (current != null) {
+            MilestoneRow(
+                milestone = current,
+                checked = false,
+                choices = choices,
+                onSelect = onSelect,
+                onToggle = onToggle
+            )
+        }
+    }
+}
+
+@Composable
+private fun MilestoneRow(
+    milestone: Milestone,
+    checked: Boolean,
+    choices: List<Milestone>,
+    onSelect: (Long) -> Unit,
+    onToggle: (Long) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -744,11 +782,11 @@ private fun MilestoneSelector(
     ) {
         Checkbox(
             checked = checked,
-            onCheckedChange = { onToggle() }
+            onCheckedChange = { onToggle(milestone.id) }
         )
-        if (incomplete.size > 1) {
+        if (choices.any { it.id != milestone.id }) {
             Text(
-                text = selected?.name ?: "",
+                text = milestone.name,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
@@ -759,7 +797,7 @@ private fun MilestoneSelector(
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
             ) {
-                incomplete.forEach { ms ->
+                choices.forEach { ms ->
                     DropdownMenuItem(
                         text = { Text(ms.name) },
                         onClick = { onSelect(ms.id); expanded = false }
@@ -768,7 +806,7 @@ private fun MilestoneSelector(
             }
         } else {
             Text(
-                text = selected?.name ?: "",
+                text = milestone.name,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f)
             )

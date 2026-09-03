@@ -11,6 +11,7 @@ import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import com.habit.HabitApp
 import com.habit.MainActivity
+import com.habit.viewmodel.IntervalReschedule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -65,6 +66,11 @@ class TimerService : Service() {
                 nextIntervalAtMs = currentElapsed + intervalMs
                 intervalsElapsed = 0
             }
+            ACTION_CHANGE_INTERVAL -> {
+                val newIntervalMs = intent.getLongExtra(EXTRA_INTERVAL_MS, 0)
+                isSecondsInterval = intent.getBooleanExtra(EXTRA_IS_SECONDS, true)
+                changeInterval(newIntervalMs)
+            }
             ACTION_STOP_INTERVAL -> {
                 intervalMs = 0
                 nextIntervalAtMs = 0
@@ -101,19 +107,42 @@ class TimerService : Service() {
                 }
 
                 if (intervalMs > 0 && elapsed >= nextIntervalAtMs) {
-                    intervalsElapsed++
-                    // minute intervals count out how many have passed, cycling
-                    // back to 1 after 10; second intervals stay a single beep
-                    val beeps = if (isSecondsInterval) {
-                        1
-                    } else {
-                        (intervalsElapsed - 1) % MAX_INTERVAL_BEEPS + 1
-                    }
-                    chimePlayer?.playIntervalChime(beeps)
+                    fireIntervalChime()
                     nextIntervalAtMs += intervalMs
                 }
             }
         }
+    }
+
+    private fun fireIntervalChime() {
+        intervalsElapsed++
+        // minute intervals count out how many have passed, cycling
+        // back to 1 after 10; second intervals stay a single beep
+        val beeps = if (isSecondsInterval) {
+            1
+        } else {
+            (intervalsElapsed - 1) % MAX_INTERVAL_BEEPS + 1
+        }
+        chimePlayer?.playIntervalChime(beeps)
+    }
+
+    private fun changeInterval(newIntervalMs: Long) {
+        val elapsed = System.currentTimeMillis() - startEpochMs
+        if (intervalMs == 0L) {
+            intervalMs = newIntervalMs
+            nextIntervalAtMs = elapsed + newIntervalMs
+            intervalsElapsed = 0
+            return
+        }
+        val reschedule = IntervalReschedule.of(
+            nextAtMs = nextIntervalAtMs,
+            oldMs = intervalMs,
+            newMs = newIntervalMs,
+            elapsedMs = elapsed
+        )
+        intervalMs = newIntervalMs
+        nextIntervalAtMs = reschedule.nextAtMs
+        if (reschedule.chimeNow) fireIntervalChime()
     }
 
     private fun stopTicking() {
@@ -172,6 +201,7 @@ class TimerService : Service() {
         const val ACTION_START = "com.habit.timer.START"
         const val ACTION_STOP = "com.habit.timer.STOP"
         const val ACTION_START_INTERVAL = "com.habit.timer.START_INTERVAL"
+        const val ACTION_CHANGE_INTERVAL = "com.habit.timer.CHANGE_INTERVAL"
         const val ACTION_STOP_INTERVAL = "com.habit.timer.STOP_INTERVAL"
         const val EXTRA_HABIT_NAME = "habit_name"
         const val EXTRA_START_EPOCH_MS = "start_epoch_ms"
@@ -209,6 +239,16 @@ class TimerService : Service() {
             action = ACTION_START_INTERVAL
             putExtra(EXTRA_INTERVAL_MS, intervalMs)
             putExtra(EXTRA_CURRENT_ELAPSED_MS, currentElapsedMs)
+            putExtra(EXTRA_IS_SECONDS, isSeconds)
+        }
+
+        fun changeIntervalIntent(
+            context: Context,
+            intervalMs: Long,
+            isSeconds: Boolean
+        ): Intent = Intent(context, TimerService::class.java).apply {
+            action = ACTION_CHANGE_INTERVAL
+            putExtra(EXTRA_INTERVAL_MS, intervalMs)
             putExtra(EXTRA_IS_SECONDS, isSeconds)
         }
 

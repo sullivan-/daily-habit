@@ -256,7 +256,10 @@ class HabitEditorViewModel(
         val track = items[trackIndex]
         val milestones = track.milestones.toMutableList()
         val ms = milestones[milestoneIndex]
-        milestones[milestoneIndex] = ms.copy(completed = !ms.completed)
+        milestones[milestoneIndex] = ms.copy(
+            completed = !ms.completed,
+            activityId = if (ms.completed) null else ms.activityId
+        )
         items[trackIndex] = track.copy(milestones = milestones)
         _state.value = _state.value.copy(tracks = items, dirty = true)
     }

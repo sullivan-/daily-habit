@@ -39,6 +39,26 @@ class TrackRepository(
     suspend fun updateMilestone(milestone: Milestone) =
         milestoneDao.update(milestone)
 
+    // milestones checked off in this activity; pending while it is in progress
+    suspend fun claimedMilestones(activityId: Long): List<Milestone> =
+        milestoneDao.claimedBy(activityId)
+
+    suspend fun claimedMilestonesByAny(activityIds: List<Long>): List<Milestone> =
+        if (activityIds.isEmpty()) emptyList() else milestoneDao.claimedByAny(activityIds)
+
+    // a check on a finished activity completes the milestone right away; on an in-progress
+    // one it stays pending until the activity finishes
+    suspend fun checkMilestone(milestoneId: Long, activityId: Long, completed: Boolean) =
+        milestoneDao.claim(milestoneId, activityId, completed)
+
+    suspend fun uncheckMilestone(milestoneId: Long) = milestoneDao.release(milestoneId)
+
+    suspend fun completeClaimedMilestones(activityId: Long) =
+        milestoneDao.completeClaimedBy(activityId)
+
+    suspend fun releaseClaimedMilestones(activityId: Long) =
+        milestoneDao.releaseClaimedBy(activityId)
+
     suspend fun milestoneIdsWithHistory(ids: List<Long>): Set<Long> =
         if (ids.isEmpty()) emptySet() else milestoneDao.milestoneIdsWithHistory(ids).toSet()
 

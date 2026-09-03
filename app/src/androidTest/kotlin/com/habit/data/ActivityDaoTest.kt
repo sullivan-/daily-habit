@@ -70,6 +70,23 @@ class ActivityDaoTest {
     )
 
     @Test
+    fun deleteStalePlaceholdersSparesTodayStartedAnnotatedAndCompletedOnes() = runTest {
+        habitDao.insert(habit)
+        val stale = activityDao.insert(activity(date = yesterday))
+        activityDao.insert(activity(date = yesterday, note = "meant to"))
+        activityDao.insert(activity(date = yesterday, completedAt = Instant.now()))
+        activityDao.insert(activity(date = yesterday).copy(startTime = Instant.now()))
+        activityDao.insert(activity(date = today))
+
+        val deleted = activityDao.deleteStalePlaceholders(today)
+
+        assertEquals(1, deleted)
+        assertEquals(null, activityDao.getById(stale))
+        assertEquals(3, activityDao.activitiesForDate(yesterday).first().size)
+        assertEquals(1, activityDao.activitiesForDate(today).first().size)
+    }
+
+    @Test
     fun insertAndQueryByDate() = runTest {
         habitDao.insertAll(listOf(habit))
         activityDao.insert(activity(note = "session 1"))

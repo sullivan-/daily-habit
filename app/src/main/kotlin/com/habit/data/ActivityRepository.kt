@@ -29,6 +29,9 @@ class ActivityRepository(private val activityDao: ActivityDao) {
     suspend fun update(activity: Activity) =
         activityDao.update(activity)
 
+    suspend fun deleteStalePlaceholders(today: LocalDate): Int =
+        activityDao.deleteStalePlaceholders(today)
+
     suspend fun delete(activity: Activity) =
         activityDao.deleteById(activity.id)
 }

@@ -90,23 +90,29 @@ class MainActivity : ComponentActivity() {
         }
 
         lifecycleScope.launch {
-            var intervalRunning = false
+            var sentIntervalMs = 0L
             viewModel.uiState.collect { state ->
-                if (state.intervalChimeMs > 0 && serviceRunning && !intervalRunning) {
+                val wantedMs = state.intervalChimeMs
+                if (wantedMs > 0 && serviceRunning && sentIntervalMs == 0L) {
                     startService(TimerService.startIntervalIntent(
                         context = this@MainActivity,
-                        intervalMs = state.intervalChimeMs,
+                        intervalMs = wantedMs,
                         currentElapsedMs = state.activeActivity?.elapsedMs ?: 0,
-                        isSeconds = IntervalOptions.isSecondsInterval(
-                            state.intervalChimeMs
-                        )
+                        isSeconds = IntervalOptions.isSecondsInterval(wantedMs)
                     ))
-                    intervalRunning = true
-                } else if (state.intervalChimeMs == 0L && intervalRunning) {
+                    sentIntervalMs = wantedMs
+                } else if (wantedMs > 0 && serviceRunning && wantedMs != sentIntervalMs) {
+                    startService(TimerService.changeIntervalIntent(
+                        context = this@MainActivity,
+                        intervalMs = wantedMs,
+                        isSeconds = IntervalOptions.isSecondsInterval(wantedMs)
+                    ))
+                    sentIntervalMs = wantedMs
+                } else if (wantedMs == 0L && sentIntervalMs != 0L) {
                     startService(
                         TimerService.stopIntervalIntent(this@MainActivity)
                     )
-                    intervalRunning = false
+                    sentIntervalMs = 0L
                 }
             }
         }

@@ -115,6 +115,24 @@ class AgendaViewModelTest {
     }
 
     @Test
+    fun `init sweeps stale placeholder activities`() = runTest {
+        createViewModel()
+        coVerify { activityRepo.deleteStalePlaceholders(today) }
+    }
+
+    @Test
+    fun `refreshToday sweeps again when the day rolls over`() = runTest {
+        val vm = createViewModel()
+        val tomorrow = today.plusDays(1)
+        every { dayBoundary.today() } returns tomorrow
+        every { activityRepo.activitiesForDate(tomorrow) } returns MutableStateFlow(emptyList())
+
+        vm.refreshToday()
+
+        coVerify { activityRepo.deleteStalePlaceholders(tomorrow) }
+    }
+
+    @Test
     fun `selectHabit updates selectedHabitId and creates activity`() = runTest {
         val vm = createViewModel()
         vm.selectHabit("qigong")
@@ -678,6 +696,382 @@ class AgendaViewModelTest {
         assertThat(state.incompleteMilestones).isEmpty()
     }
 
+    private val mondayTrack = Track(
+        id = "monday-form", habitId = "qigong", name = "Monday Form",
+        priority = Priority.MEDIUM, dayOfWeek = DayOfWeek.MONDAY
+    )
+    private val standingTrack = Track(
+        id = "standing", habitId = "qigong", name = "Standing",
+        priority = Priority.HIGH
+    )
+    private val lesson1 = Milestone(
+        id = 1, trackId = "standing", name = "Lesson 1",
+        sortOrder = 1, completed = false
+    )
+
+    private val lesson2 = Milestone(
+        id = 2, trackId = "standing", name = "Lesson 2",
+        sortOrder = 2, completed = false
+    )
+
+    private fun stubLesson2() {
+        coEvery { trackRepo.incompleteMilestones("standing") } returns listOf(lesson1, lesson2)
+        coEvery { trackRepo.getMilestoneById(2) } returns lesson2
+    }
+
+    private fun stubStandingTrack() {
+        coEvery { trackRepo.activeTracksForHabit("qigong") } returns
+            listOf(mondayTrack, standingTrack)
+        coEvery { trackRepo.getById("standing") } returns standingTrack
+        coEvery { trackRepo.defaultMilestone("standing") } returns lesson1
+        coEvery { trackRepo.getMilestoneById(1) } returns lesson1
+        coEvery { trackRepo.incompleteMilestones("standing") } returns listOf(lesson1)
+    }
+
+    @Test
+    fun `selectHabit gives a fresh activity today's default track`() = runTest {
+        coEvery { trackRepo.activeTracksForHabit("qigong") } returns listOf(mondayTrack)
+
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+
+        assertThat(vm.uiState.value.activeActivity?.trackId).isEqualTo("monday-form")
+        assertThat(vm.uiState.value.selectedTrack).isEqualTo(mondayTrack)
+    }
+
+    @Test
+    fun `selectHabit keeps an existing activity's track cleared to none`() = runTest {
+        // regression: the user set the track to none before starting, switched to another habit
+        // and came back — the day-of-week default must not be re-applied over that choice
+        val existing = Activity(
+            id = 5, habitId = "qigong", attributedDate = today,
+            startTime = null, note = "some note", completedAt = null, trackId = null
+        )
+        coEvery { activityRepo.inProgressActivity("qigong", today) } returns existing
+        coEvery { trackRepo.activeTracksForHabit("qigong") } returns listOf(mondayTrack)
+
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+
+        assertThat(vm.uiState.value.activeActivity?.trackId).isNull()
+        assertThat(vm.uiState.value.selectedTrack).isNull()
+        coVerify(exactly = 0) { activityRepo.update(match { it.trackId == "monday-form" }) }
+    }
+
+    @Test
+    fun `selectHabit rehydrates track and milestone of an existing activity`() = runTest {
+        val standing = Track(
+            id = "standing", habitId = "qigong", name = "Standing",
+            priority = Priority.HIGH
+        )
+        val milestone = Milestone(
+            id = 1, trackId = "standing", name = "Lesson 1",
+            sortOrder = 1, completed = false
+        )
+        val existing = Activity(
+            id = 5, habitId = "qigong", attributedDate = today,
+            startTime = null, note = "", completedAt = null,
+            trackId = "standing", milestoneId = 1
+        )
+        coEvery { activityRepo.inProgressActivity("qigong", today) } returns existing
+        coEvery { trackRepo.activeTracksForHabit("qigong") } returns listOf(mondayTrack, standing)
+        coEvery { trackRepo.getById("standing") } returns standing
+        coEvery { trackRepo.getMilestoneById(1) } returns milestone
+        coEvery { trackRepo.incompleteMilestones("standing") } returns listOf(milestone)
+
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+
+        val state = vm.uiState.value
+        assertThat(state.activeActivity?.trackId).isEqualTo("standing")
+        assertThat(state.selectedTrack).isEqualTo(standing)
+        assertThat(state.selectedMilestone).isEqualTo(milestone)
+        assertThat(state.incompleteMilestones).containsExactly(milestone)
+    }
+
+    @Test
+    fun `switchToMain restores the timed activity's track and milestone after review`() = runTest {
+        stubStandingTrack()
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.selectTrack("standing")
+        vm.startTimer()
+
+        // review a completed vitamins activity, which has no track
+        activitiesFlow.value = listOf(
+            Activity(
+                id = 7, habitId = "vitamins", attributedDate = today,
+                startTime = null, note = "", completedAt = Instant.now()
+            )
+        )
+        vm.switchToReview()
+        vm.selectCompletedActivity(7)
+        assertThat(vm.uiState.value.selectedMilestone).isNull()
+
+        vm.switchToMain()
+
+        val state = vm.uiState.value
+        assertThat(state.selectedHabitId).isEqualTo("qigong")
+        assertThat(state.selectedTrack).isEqualTo(standingTrack)
+        assertThat(state.selectedMilestone).isEqualTo(lesson1)
+        assertThat(state.incompleteMilestones).containsExactly(lesson1)
+    }
+
+    @Test
+    fun `history swipe shows the milestones of the activity on screen`() = runTest {
+        stubStandingTrack()
+        stubLesson2()
+        val older = Activity(
+            id = 3, habitId = "qigong", attributedDate = today.minusDays(1),
+            startTime = null, note = "", completedAt = Instant.now().minusSeconds(86_400)
+        )
+        coEvery { activityRepo.completedHistoryForHabit("qigong") } returns listOf(older)
+        coEvery { trackRepo.claimedMilestones(1L) } returns listOf(lesson1.copy(activityId = 1))
+
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.selectTrack("standing")
+        vm.toggleMilestoneChecked(1)
+        vm.expandActivity()
+
+        vm.historyOlder()
+        assertThat(vm.uiState.value.selectedMilestone).isNull()
+        assertThat(vm.uiState.value.checkedMilestones).isEmpty()
+
+        vm.historyNewer()
+        val state = vm.uiState.value
+        assertThat(state.checkedMilestones.map { it.id }).containsExactly(1L)
+        assertThat(state.selectedMilestone).isEqualTo(lesson2)
+    }
+
+    @Test
+    fun `refreshTracks picks up a series added to the track in the editor`() = runTest {
+        stubStandingTrack()
+        coEvery { trackRepo.defaultMilestone("standing") } returns null
+        coEvery { trackRepo.incompleteMilestones("standing") } returns emptyList()
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.selectTrack("standing")
+        assertThat(vm.uiState.value.selectedMilestone).isNull()
+
+        // the editor added lesson 1 to the track; the activity itself is unchanged
+        coEvery { trackRepo.defaultMilestone("standing") } returns lesson1
+        coEvery { trackRepo.incompleteMilestones("standing") } returns listOf(lesson1)
+        coEvery { activityRepo.getById(1L) } answers { vm.uiState.value.activeActivity }
+        vm.refreshTracks()
+
+        val state = vm.uiState.value
+        assertThat(state.selectedMilestone).isEqualTo(lesson1)
+        assertThat(state.activeActivity?.milestoneId).isEqualTo(1L)
+        assertThat(state.incompleteMilestones).containsExactly(lesson1)
+    }
+
+    @Test
+    fun `milestone check survives an editor round trip`() = runTest {
+        stubStandingTrack()
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.selectTrack("standing")
+        vm.toggleMilestoneChecked(1)
+        coEvery { activityRepo.getById(1L) } answers { vm.uiState.value.activeActivity }
+        coEvery { trackRepo.claimedMilestones(1L) } returns listOf(lesson1.copy(activityId = 1))
+
+        vm.refreshTracks()
+
+        assertThat(vm.uiState.value.checkedMilestones.map { it.id }).containsExactly(1L)
+    }
+
+    @Test
+    fun `selecting another milestone keeps the checks`() = runTest {
+        stubStandingTrack()
+        stubLesson2()
+        val lesson3 = Milestone(
+            id = 3, trackId = "standing", name = "Lesson 3",
+            sortOrder = 3, completed = false
+        )
+        coEvery { trackRepo.incompleteMilestones("standing") } returns
+            listOf(lesson1, lesson2, lesson3)
+        coEvery { trackRepo.getMilestoneById(3) } returns lesson3
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.selectTrack("standing")
+        vm.toggleMilestoneChecked(1)
+        assertThat(vm.uiState.value.selectedMilestone).isEqualTo(lesson2)
+
+        vm.selectMilestone(3)
+
+        val state = vm.uiState.value
+        assertThat(state.selectedMilestone).isEqualTo(lesson3)
+        assertThat(state.checkedMilestones.map { it.id }).containsExactly(1L)
+        assertThat(state.milestoneChoices.map { it.id }).containsExactly(2L, 3L)
+    }
+
+    @Test
+    fun `checking a milestone advances to the next open one`() = runTest {
+        stubStandingTrack()
+        stubLesson2()
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.selectTrack("standing")
+
+        vm.toggleMilestoneChecked(1)
+        var state = vm.uiState.value
+        assertThat(state.checkedMilestones.map { it.id }).containsExactly(1L)
+        assertThat(state.selectedMilestone).isEqualTo(lesson2)
+        assertThat(state.milestoneChoices.map { it.id }).containsExactly(2L)
+
+        vm.toggleMilestoneChecked(2)
+        state = vm.uiState.value
+        assertThat(state.checkedMilestones.map { it.id }).containsExactly(1L, 2L).inOrder()
+        assertThat(state.selectedMilestone).isNull()
+    }
+
+    @Test
+    fun `unchecking a milestone makes it the current one again`() = runTest {
+        stubStandingTrack()
+        stubLesson2()
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.selectTrack("standing")
+        vm.toggleMilestoneChecked(1)
+        vm.toggleMilestoneChecked(2)
+
+        vm.toggleMilestoneChecked(1)
+
+        val state = vm.uiState.value
+        assertThat(state.checkedMilestones.map { it.id }).containsExactly(2L)
+        assertThat(state.selectedMilestone).isEqualTo(lesson1)
+        assertThat(state.activeActivity?.milestoneId).isEqualTo(1L)
+        coVerify { trackRepo.uncheckMilestone(1) }
+    }
+
+    @Test
+    fun `checking a milestone on a finished activity completes it at once`() = runTest {
+        stubStandingTrack()
+        activitiesFlow.value = listOf(
+            Activity(
+                id = 7, habitId = "qigong", attributedDate = today, startTime = null,
+                note = "", completedAt = Instant.now(), trackId = "standing", milestoneId = 1
+            )
+        )
+        val vm = createViewModelWithTracks()
+        vm.switchToReview()
+        vm.selectCompletedActivity(7)
+        assertThat(vm.uiState.value.selectedMilestone).isEqualTo(lesson1)
+
+        vm.toggleMilestoneChecked(1)
+
+        coVerify { trackRepo.checkMilestone(1, 7L, completed = true) }
+        val state = vm.uiState.value
+        assertThat(state.checkedMilestones.map { it.id }).containsExactly(1L)
+        assertThat(state.selectedMilestone).isNull()
+    }
+
+    @Test
+    fun `selectHabit shows the checks already made on an existing activity`() = runTest {
+        stubStandingTrack()
+        stubLesson2()
+        val existing = Activity(
+            id = 5, habitId = "qigong", attributedDate = today, startTime = null,
+            note = "", completedAt = null, trackId = "standing", milestoneId = 1
+        )
+        coEvery { activityRepo.inProgressActivity("qigong", today) } returns existing
+        coEvery { trackRepo.claimedMilestones(5L) } returns listOf(lesson1.copy(activityId = 5))
+
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+
+        val state = vm.uiState.value
+        assertThat(state.checkedMilestones.map { it.id }).containsExactly(1L)
+        assertThat(state.selectedMilestone).isEqualTo(lesson2)
+    }
+
+    @Test
+    fun `showTrackHistory lists every milestone completed in an activity`() = runTest {
+        stubStandingTrack()
+        stubLesson2()
+        val completed = Activity(
+            id = 10, habitId = "qigong", attributedDate = today, startTime = null,
+            note = "", completedAt = Instant.now(), trackId = "standing", milestoneId = 1
+        )
+        coEvery { activityRepo.completedHistoryForHabit("qigong") } returns listOf(completed)
+        coEvery { trackRepo.claimedMilestonesByAny(listOf(10L)) } returns listOf(
+            lesson1.copy(activityId = 10, completed = true),
+            lesson2.copy(activityId = 10, completed = true)
+        )
+
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.showTrackHistory()
+
+        assertThat(vm.uiState.value.trackHistory[0].milestoneNames)
+            .containsExactly("Lesson 1", "Lesson 2").inOrder()
+    }
+
+    @Test
+    fun `cancelTimer carries the pending checks to the fresh activity`() = runTest {
+        stubStandingTrack()
+        stubLesson2()
+        coEvery { activityRepo.create(any()) } returns 1L andThen 2L
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.selectTrack("standing")
+        vm.toggleMilestoneChecked(1)
+        vm.startTimer()
+
+        vm.cancelTimer()
+
+        coVerify { trackRepo.checkMilestone(1, 2L, completed = false) }
+        val state = vm.uiState.value
+        assertThat(state.activeActivity?.id).isEqualTo(2L)
+        assertThat(state.checkedMilestones.map { it.activityId }).containsExactly(2L)
+    }
+
+    @Test
+    fun `skipActivity releases the pending checks`() = runTest {
+        stubStandingTrack()
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.selectTrack("standing")
+        vm.toggleMilestoneChecked(1)
+
+        vm.skipActivity()
+
+        coVerify { trackRepo.releaseClaimedMilestones(1L) }
+    }
+
+    @Test
+    fun `cancelTimer keeps the chosen track and milestone on the fresh activity`() = runTest {
+        stubStandingTrack()
+        coEvery { activityRepo.create(any()) } returns 1L andThen 2L
+        val vm = createViewModelWithTracks()
+        vm.selectHabit("qigong")
+        vm.selectTrack("standing")
+        vm.startTimer()
+
+        vm.cancelTimer()
+
+        val state = vm.uiState.value
+        assertThat(state.activeActivity?.id).isEqualTo(2L)
+        assertThat(state.activeActivity?.trackId).isEqualTo("standing")
+        assertThat(state.activeActivity?.milestoneId).isEqualTo(1L)
+        assertThat(state.selectedMilestone).isEqualTo(lesson1)
+    }
+
+    @Test
+    fun `doAgain starts a fresh activity with today's default track`() = runTest {
+        coEvery { trackRepo.activeTracksForHabit("qigong") } returns listOf(mondayTrack)
+        val vm = createViewModelWithTracks()
+        vm.switchToReview()
+
+        vm.doAgain("qigong")
+
+        val state = vm.uiState.value
+        assertThat(state.layout).isEqualTo(Layout.MAIN)
+        assertThat(state.activeActivity?.habitId).isEqualTo("qigong")
+        assertThat(state.activeActivity?.trackId).isEqualTo("monday-form")
+    }
+
     @Test
     fun `selectTrack on past-day completed activity ignores lingering active activity`() = runTest {
         // regression: an in-progress activity for today lingers while a completed activity from
@@ -780,7 +1174,7 @@ class AgendaViewModelTest {
     }
 
     @Test
-    fun `completeMilestone marks done and advances to next`() = runTest {
+    fun `a checked milestone completes only when the activity finishes`() = runTest {
         val track = Track(
             id = "standing", habitId = "qigong", name = "Standing",
             priority = Priority.HIGH
@@ -802,32 +1196,35 @@ class AgendaViewModelTest {
         vm.selectHabit("qigong")
         vm.selectTrack("standing")
 
-        // toggle checkbox — should be visual only, no DB write yet
-        vm.toggleMilestoneChecked()
-        assertThat(vm.uiState.value.milestoneChecked).isTrue()
-        coVerify(exactly = 0) {
-            trackRepo.updateMilestone(any())
-        }
+        // the check is recorded against the activity but the milestone stays open
+        vm.toggleMilestoneChecked(1)
+        assertThat(vm.uiState.value.checkedMilestones.map { it.id }).containsExactly(1L)
+        coVerify { trackRepo.checkMilestone(1, 1L, completed = false) }
+        coVerify(exactly = 0) { trackRepo.completeClaimedMilestones(any()) }
 
-        // complete the activity — milestone should now persist
+        // finishing the activity completes what was checked
         vm.completeActivity("")
-        coVerify {
-            trackRepo.updateMilestone(milestone1.copy(completed = true))
-        }
+        coVerify { trackRepo.completeClaimedMilestones(1L) }
     }
 
     @Test
-    fun `toggleMilestoneChecked toggles state`() = runTest {
+    fun `toggleMilestoneChecked toggles the check on the selected milestone`() = runTest {
+        stubStandingTrack()
         val vm = createViewModelWithTracks()
-        assertThat(vm.uiState.value.milestoneChecked).isFalse()
-        vm.toggleMilestoneChecked()
-        assertThat(vm.uiState.value.milestoneChecked).isTrue()
-        vm.toggleMilestoneChecked()
-        assertThat(vm.uiState.value.milestoneChecked).isFalse()
+        vm.selectHabit("qigong")
+        vm.selectTrack("standing")
+        assertThat(vm.uiState.value.checkedMilestones).isEmpty()
+        vm.toggleMilestoneChecked(1)
+        assertThat(vm.uiState.value.checkedMilestones.map { it.id }).containsExactly(1L)
+        assertThat(vm.uiState.value.selectedMilestone).isNull()
+        vm.toggleMilestoneChecked(1)
+        assertThat(vm.uiState.value.checkedMilestones).isEmpty()
+        assertThat(vm.uiState.value.selectedMilestone).isEqualTo(lesson1)
+        coVerify { trackRepo.uncheckMilestone(1) }
     }
 
     @Test
-    fun `app resumption hydrates incompleteMilestones for active track`() = runTest {
+    fun `app resumption hydrates milestones and gives the active activity the first one`() = runTest {
         val track = Track(
             id = "standing", habitId = "qigong", name = "Standing",
             priority = Priority.HIGH
@@ -848,6 +1245,7 @@ class AgendaViewModelTest {
         coEvery { activityRepo.activeActivity() } returns active
         coEvery { trackRepo.activeTracksForHabit("qigong") } returns listOf(track)
         coEvery { trackRepo.getById("standing") } returns track
+        coEvery { trackRepo.defaultMilestone("standing") } returns milestone1
         coEvery { trackRepo.incompleteMilestones("standing") } returns
             listOf(milestone1, milestone2)
 
@@ -855,8 +1253,10 @@ class AgendaViewModelTest {
 
         val state = vm.uiState.value
         assertThat(state.selectedTrack).isEqualTo(track)
-        assertThat(state.selectedMilestone).isNull()
+        assertThat(state.selectedMilestone).isEqualTo(milestone1)
+        assertThat(state.activeActivity?.milestoneId).isEqualTo(1L)
         assertThat(state.incompleteMilestones).hasSize(2)
+        coVerify { activityRepo.update(active.copy(milestoneId = 1)) }
     }
 
     @Test
@@ -983,6 +1383,37 @@ class AgendaViewModelTest {
     }
 
     @Test
+    fun `changeIntervalChime swaps the interval while chimes keep running`() = runTest {
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.startIntervalChime(8_000)
+        vm.openIntervalSelector()
+
+        vm.changeIntervalChime(9_000)
+
+        val state = vm.uiState.value
+        assertThat(state.intervalChimeState).isEqualTo(IntervalChimeState.RUNNING)
+        assertThat(state.intervalChimeMs).isEqualTo(9_000)
+        // the cycle started at 0, so the next chime moved out to 9s
+        assertThat(state.intervalCountdownMs).isGreaterThan(8_000)
+        assertThat(state.intervalCountdownMs).isAtMost(9_000)
+    }
+
+    @Test
+    fun `closeIntervalSelector returns to RUNNING while chimes are on`() = runTest {
+        val vm = createViewModel()
+        vm.selectHabit("qigong")
+        vm.startIntervalChime(8_000)
+        vm.openIntervalSelector()
+        assertThat(vm.uiState.value.intervalChimeState).isEqualTo(IntervalChimeState.SELECTING)
+
+        vm.closeIntervalSelector()
+
+        assertThat(vm.uiState.value.intervalChimeState).isEqualTo(IntervalChimeState.RUNNING)
+        assertThat(vm.uiState.value.intervalChimeMs).isEqualTo(8_000)
+    }
+
+    @Test
     fun `cancelIntervalChime clears interval state`() = runTest {
         val vm = createViewModel()
         vm.selectHabit("qigong")
@@ -1064,7 +1495,7 @@ class AgendaViewModelTest {
         assertThat(state.trackHistoryVisible).isTrue()
         assertThat(state.trackHistory).hasSize(1)
         assertThat(state.trackHistory[0].trackName).isEqualTo("Standing")
-        assertThat(state.trackHistory[0].milestoneName).isEqualTo("Lesson 1")
+        assertThat(state.trackHistory[0].milestoneNames).containsExactly("Lesson 1")
     }
 
     @Test

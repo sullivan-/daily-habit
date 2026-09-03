@@ -12,7 +12,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         Track::class, Milestone::class, AppConfigEntity::class,
         EasyDaySettingEntity::class, EasyDayCarryOverEntity::class
     ],
-    version = 14,
+    version = 15,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -220,6 +220,28 @@ abstract class HabitDatabase : RoomDatabase() {
                         enabled INTEGER NOT NULL,
                         level TEXT NOT NULL
                     )
+                """)
+            }
+        }
+
+        val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE milestone ADD COLUMN activityId INTEGER " +
+                    "REFERENCES activity(id) ON DELETE SET NULL"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_milestone_activityId " +
+                    "ON milestone(activityId)"
+                )
+                // attribute each milestone completed so far to the last activity that was on it
+                db.execSQL("""
+                    UPDATE milestone SET activityId = (
+                        SELECT a.id FROM activity a
+                        WHERE a.milestoneId = milestone.id
+                        AND a.completedAt IS NOT NULL AND a.skipped = 0
+                        ORDER BY a.completedAt DESC LIMIT 1
+                    ) WHERE completed = 1
                 """)
             }
         }

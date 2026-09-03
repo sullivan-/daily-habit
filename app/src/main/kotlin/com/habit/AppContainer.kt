@@ -33,7 +33,8 @@ class AppContainer(context: Context) {
         HabitDatabase.MIGRATION_10_11,
         HabitDatabase.MIGRATION_11_12,
         HabitDatabase.MIGRATION_12_13,
-        HabitDatabase.MIGRATION_13_14
+        HabitDatabase.MIGRATION_13_14,
+        HabitDatabase.MIGRATION_14_15
     ).build()
 
     val habitRepo = HabitRepository(database.habitDao())

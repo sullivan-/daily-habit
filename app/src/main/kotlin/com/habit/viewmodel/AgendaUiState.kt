@@ -28,7 +28,7 @@ data class AgendaUiState(
     val selectedTrack: Track? = null,
     val selectedMilestone: Milestone? = null,
     val incompleteMilestones: List<Milestone> = emptyList(),
-    val milestoneChecked: Boolean = false,
+    val checkedMilestones: List<Milestone> = emptyList(),
     val intervalChimeState: IntervalChimeState = IntervalChimeState.IDLE,
     val intervalChimeMs: Long = 0,
     val intervalCountdownMs: Long = 0,
@@ -37,6 +37,10 @@ data class AgendaUiState(
     val easyDayLevel: EasyDayLevel = EasyDayLevel.OFF,
     val easyDayCarryOver: Boolean = false
 ) {
+    // what the unchecked milestone row can be switched to: open milestones not yet checked here
+    val milestoneChoices: List<Milestone>
+        get() = incompleteMilestones.filter { m -> checkedMilestones.none { it.id == m.id } }
+
     val browsingHistory: Boolean
         get() = historyIndex >= 0 && historyActivities.isNotEmpty()
 

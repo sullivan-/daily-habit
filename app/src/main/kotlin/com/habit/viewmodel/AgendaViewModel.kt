@@ -9,6 +9,7 @@ import com.habit.data.EasyDayLevel
 import com.habit.data.EasyDayRepository
 import com.habit.data.HabitRepository
 import com.habit.data.priorityToScore
+import com.habit.data.Milestone
 import com.habit.data.TrackRepository
 import com.habit.data.TargetMode
 import java.time.Instant
@@ -53,6 +54,7 @@ class AgendaViewModel(
     private var nextIntervalChimeAtMs: Long = 0
 
     init {
+        sweepStalePlaceholders()
         viewModelScope.launch {
             combine(selectedDate, realToday) { sel, today -> sel to today }
                 .flatMapLatest { (sel, today) ->
@@ -118,6 +120,15 @@ class AgendaViewModel(
             historyActivities = emptyList(),
             historyIndex = -1
         )
+        if (resumeHabitId != null) restoreTimedActivityTracks(resumeHabitId)
+    }
+
+    // review may have put another activity's tracks and milestone on screen
+    private fun restoreTimedActivityTracks(habitId: String) {
+        viewModelScope.launch {
+            loadAndSetTracks(habitId)
+            hydrateTrackStateForActivity(_uiState.value.activeActivity)
+        }
     }
 
     fun collapseActivity() {
@@ -151,7 +162,7 @@ class AgendaViewModel(
             layout = Layout.MAIN,
             selectedTrack = null,
             selectedMilestone = null,
-            milestoneChecked = false,
+            checkedMilestones = emptyList(),
             incompleteMilestones = emptyList(),
             availableTracks = emptyList()
         )
@@ -159,28 +170,45 @@ class AgendaViewModel(
             val today = dayBoundary.today()
             val existing = activityRepo.inProgressActivity(habitId, today)
             if (existing != null) {
-                _uiState.value = _uiState.value.copy(activeActivity = existing)
-                if (existing.startTime != null) {
-                    startTimerTick()
-                }
+                resumeInProgressActivity(existing)
             } else {
-                val habit = habitRepo.getById(habitId) ?: return@launch
-                val new = Activity(
-                    habitId = habitId,
-                    attributedDate = today,
-                    startTime = null,
-                    note = "",
-                    completedAt = null
-                )
-                val id = activityRepo.create(new)
-                _uiState.value = _uiState.value.copy(
-                    activeActivity = new.copy(id = id)
-                )
+                createInProgressActivity(habitId, today) ?: return@launch
             }
             loadHistory(habitId)
             loadAndSetTracks(habitId)
-            autoSelectTodayTrack()
+            // an existing activity keeps whatever track the user chose, including none; only a
+            // fresh activity gets the day-of-week default
+            if (existing != null) hydrateTrackStateForActivity(existing) else autoSelectTodayTrack()
         }
+    }
+
+    private fun resumeInProgressActivity(existing: Activity) {
+        _uiState.value = _uiState.value.copy(activeActivity = existing)
+        if (existing.startTime != null) {
+            startTimerTick()
+        }
+    }
+
+    private suspend fun createInProgressActivity(
+        habitId: String,
+        today: LocalDate,
+        trackId: String? = null,
+        milestoneId: Long? = null
+    ): Activity? {
+        habitRepo.getById(habitId) ?: return null
+        val new = Activity(
+            habitId = habitId,
+            attributedDate = today,
+            startTime = null,
+            note = "",
+            completedAt = null,
+            trackId = trackId,
+            milestoneId = milestoneId
+        )
+        val id = activityRepo.create(new)
+        val created = new.copy(id = id)
+        _uiState.value = _uiState.value.copy(activeActivity = created)
+        return created
     }
 
     private suspend fun loadHistory(habitId: String, selectedActivityId: Long? = null) {
@@ -245,6 +273,7 @@ class AgendaViewModel(
         )
         viewModelScope.launch {
             activityRepo.update(skipped)
+            trackRepo?.releaseClaimedMilestones(activity.id)
         }
     }
 
@@ -347,11 +376,6 @@ class AgendaViewModel(
         timerJob = null
         nextIntervalChimeAtMs = 0
 
-        viewModelScope.launch {
-            activityRepo.delete(activity)
-        }
-
-        // create a fresh activity for this habit
         val habitId = activity.habitId
         _uiState.value = state.copy(
             activeActivity = null,
@@ -363,21 +387,23 @@ class AgendaViewModel(
             intervalCountdownMs = 0
         )
 
+        // the fresh activity keeps the track, milestone and pending checks the user had
         viewModelScope.launch {
-            val today = dayBoundary.today()
-            val habit = habitRepo.getById(habitId) ?: return@launch
-            val new = Activity(
-                habitId = habitId,
-                attributedDate = today,
-                startTime = null,
-                note = "",
-                completedAt = null
-            )
-            val id = activityRepo.create(new)
-            _uiState.value = _uiState.value.copy(
-                activeActivity = new.copy(id = id)
-            )
+            activityRepo.delete(activity)
+            val fresh = createInProgressActivity(
+                habitId, dayBoundary.today(),
+                trackId = activity.trackId, milestoneId = activity.milestoneId
+            ) ?: return@launch
+            reclaimMilestones(state.checkedMilestones, fresh.id)
         }
+    }
+
+    private suspend fun reclaimMilestones(milestones: List<Milestone>, activityId: Long) {
+        val repo = trackRepo ?: return
+        milestones.forEach { repo.checkMilestone(it.id, activityId, completed = false) }
+        _uiState.value = _uiState.value.copy(
+            checkedMilestones = milestones.map { it.copy(activityId = activityId) }
+        )
     }
 
     fun completeActivity(note: String) {
@@ -423,7 +449,7 @@ class AgendaViewModel(
                     completedAt = now
                 ))
             }
-            persistMilestoneIfChecked()
+            completeCheckedMilestones(activity?.takeIf { it.habitId == habitId }?.id)
         }
     }
 
@@ -451,7 +477,7 @@ class AgendaViewModel(
                 activityRepo.create(new)
             }
 
-            persistMilestoneIfChecked()
+            completeCheckedMilestones(activity?.takeIf { it.habitId == habitId }?.id)
 
             _uiState.value = _uiState.value.copy(
                 activeActivity = null,
@@ -508,12 +534,17 @@ class AgendaViewModel(
                 .associateWith { repo.getById(it)?.name }
             val milestoneNames = activities.mapNotNull { it.milestoneId }.distinct()
                 .associateWith { repo.getMilestoneById(it)?.name }
+            val doneByActivity = repo.claimedMilestonesByAny(activities.map { it.id })
+                .groupBy { it.activityId }
             val items = activities.map { activity ->
+                // an activity that checked nothing off still shows the milestone it was on
+                val done = doneByActivity[activity.id]?.map { it.name }
+                    ?: listOfNotNull(activity.milestoneId?.let { milestoneNames[it] })
                 TrackHistoryItem(
                     activityId = activity.id,
                     completedAt = activity.completedAt!!,
                     trackName = activity.trackId?.let { trackNames[it] },
-                    milestoneName = activity.milestoneId?.let { milestoneNames[it] },
+                    milestoneNames = done,
                     note = activity.note
                 )
             }.reversed()
@@ -535,16 +566,18 @@ class AgendaViewModel(
         val habitId = _uiState.value.selectedHabitId ?: return
         viewModelScope.launch {
             loadAndSetTracks(habitId)
-            refreshActiveActivity()
+            refreshEditableActivity()
         }
     }
 
-    // the editor may have deleted the track or milestone the cached activity points at
-    private suspend fun refreshActiveActivity() {
-        val cached = _uiState.value.activeActivity ?: return
-        val current = activityRepo.getById(cached.id)
-        if (current == cached) return
-        _uiState.value = _uiState.value.copy(activeActivity = current)
+    // the editor may have deleted the track or milestone the cached activity points at, or
+    // given its track a series it did not have before
+    private suspend fun refreshEditableActivity() {
+        val cached = currentEditableActivity() ?: return
+        val current = activityRepo.getById(cached.id) ?: return
+        if (_uiState.value.activeActivity?.id == current.id) {
+            _uiState.value = _uiState.value.copy(activeActivity = current)
+        }
         hydrateTrackStateForActivity(current)
     }
 
@@ -560,19 +593,56 @@ class AgendaViewModel(
                 selectedTrack = null,
                 selectedMilestone = null,
                 incompleteMilestones = emptyList(),
-                milestoneChecked = false
+                checkedMilestones = emptyList()
             )
             return
         }
         val track = repo.getById(trackId)
-        val milestone = activity.milestoneId?.let { repo.getMilestoneById(it) }
+        val checked = repo.claimedMilestones(activity.id)
         val incomplete = repo.incompleteMilestones(trackId)
+        val milestone = currentMilestone(activity, checked, incomplete, repo)
         _uiState.value = _uiState.value.copy(
             selectedTrack = track,
             selectedMilestone = milestone,
             incompleteMilestones = incomplete,
-            milestoneChecked = false
+            checkedMilestones = checked
         )
+    }
+
+    // the unchecked row: the milestone the activity points at unless that is already checked
+    // off, otherwise (only while in progress) the next open one after the last check
+    private suspend fun currentMilestone(
+        activity: Activity,
+        checked: List<Milestone>,
+        incomplete: List<Milestone>,
+        repo: TrackRepository
+    ): Milestone? {
+        val explicit = activity.milestoneId?.let { repo.getMilestoneById(it) }
+        if (explicit != null && checked.none { it.id == explicit.id }) return explicit
+        if (activity.completedAt != null) return null
+        if (explicit == null && checked.isEmpty()) return assignDefaultMilestone(activity, repo)
+        return nextOpenMilestone(incomplete, checked)
+    }
+
+    private fun nextOpenMilestone(incomplete: List<Milestone>, checked: List<Milestone>): Milestone? {
+        val open = incomplete.filter { m -> checked.none { it.id == m.id } }
+        val last = checked.lastOrNull() ?: return open.firstOrNull()
+        return open.firstOrNull { it.sortOrder > last.sortOrder } ?: open.firstOrNull()
+    }
+
+    // an in-progress activity whose track gained a series after the track was chosen picks up
+    // the first milestone, as it would have had the series existed when the track was selected
+    private suspend fun assignDefaultMilestone(activity: Activity, repo: TrackRepository): Milestone? {
+        if (activity.completedAt != null) return null
+        val trackId = activity.trackId ?: return null
+        val milestone = repo.defaultMilestone(trackId) ?: return null
+        val updated = activity.copy(milestoneId = milestone.id)
+        activityRepo.update(updated)
+        val current = _uiState.value
+        if (current.activeActivity?.id == updated.id) {
+            _uiState.value = current.copy(activeActivity = updated)
+        }
+        return milestone
     }
 
     private suspend fun loadAndSetTracks(habitId: String) {
@@ -625,6 +695,7 @@ class AgendaViewModel(
 
             val updated = activity.copy(trackId = trackId, milestoneId = milestone?.id)
             activityRepo.update(updated)
+            repo.releaseClaimedMilestones(activity.id)
 
             val current = _uiState.value
             _uiState.value = current.copy(
@@ -632,7 +703,8 @@ class AgendaViewModel(
                     else current.activeActivity,
                 selectedTrack = track,
                 selectedMilestone = milestone,
-                incompleteMilestones = incomplete
+                incompleteMilestones = incomplete,
+                checkedMilestones = emptyList()
             )
         }
     }
@@ -654,17 +726,64 @@ class AgendaViewModel(
         }
     }
 
-    fun toggleMilestoneChecked() {
-        val current = _uiState.value.milestoneChecked
-        _uiState.value = _uiState.value.copy(milestoneChecked = !current)
+    fun toggleMilestoneChecked(milestoneId: Long) {
+        val repo = trackRepo ?: return
+        viewModelScope.launch {
+            val activity = currentEditableActivity() ?: return@launch
+            if (_uiState.value.checkedMilestones.any { it.id == milestoneId }) {
+                uncheckMilestone(milestoneId, activity, repo)
+            } else {
+                checkMilestone(milestoneId, activity, repo)
+            }
+        }
     }
 
-    private suspend fun persistMilestoneIfChecked() {
+    private suspend fun checkMilestone(milestoneId: Long, activity: Activity, repo: TrackRepository) {
+        val shown = _uiState.value
+        val milestone = shown.incompleteMilestones.find { it.id == milestoneId }
+            ?: shown.selectedMilestone?.takeIf { it.id == milestoneId }
+            ?: repo.getMilestoneById(milestoneId) ?: return
+        // a finished activity is being corrected after the fact, so the milestone completes
+        // now; an in-progress one waits for the finish
+        val done = activity.completedAt != null
+        repo.checkMilestone(milestoneId, activity.id, completed = done)
+        val state = _uiState.value
+        val checked = (state.checkedMilestones + milestone.copy(
+            activityId = activity.id, completed = done || milestone.completed
+        )).sortedBy { it.sortOrder }
+        _uiState.value = state.copy(
+            checkedMilestones = checked,
+            selectedMilestone = if (done) null else nextOpenMilestone(state.incompleteMilestones, checked)
+        )
+    }
+
+    // the milestone becomes the one the activity is on again
+    private suspend fun uncheckMilestone(milestoneId: Long, activity: Activity, repo: TrackRepository) {
+        repo.uncheckMilestone(milestoneId)
+        val updated = activity.copy(milestoneId = milestoneId)
+        activityRepo.update(updated)
+        val state = _uiState.value
+        val milestone = state.checkedMilestones.first { it.id == milestoneId }
+            .copy(activityId = null, completed = false)
+        val incomplete = if (state.incompleteMilestones.any { it.id == milestoneId }) {
+            state.incompleteMilestones
+        } else {
+            (state.incompleteMilestones + milestone).sortedBy { it.sortOrder }
+        }
+        _uiState.value = state.copy(
+            activeActivity = if (state.activeActivity?.id == updated.id) updated
+                else state.activeActivity,
+            checkedMilestones = state.checkedMilestones.filter { it.id != milestoneId },
+            incompleteMilestones = incomplete,
+            selectedMilestone = milestone
+        )
+    }
+
+    private suspend fun completeCheckedMilestones(activityId: Long?) {
         val repo = trackRepo ?: return
-        if (!_uiState.value.milestoneChecked) return
-        val milestone = _uiState.value.selectedMilestone ?: return
-        repo.updateMilestone(milestone.copy(completed = true))
-        _uiState.value = _uiState.value.copy(milestoneChecked = false)
+        if (activityId == null) return
+        repo.completeClaimedMilestones(activityId)
+        _uiState.value = _uiState.value.copy(checkedMilestones = emptyList())
     }
 
     fun updateActivityStartTime(activityId: Long, startTime: Instant?) {
@@ -709,13 +828,7 @@ class AgendaViewModel(
         val habit = _uiState.value.habits.find { it.id == habitId } ?: return
         if (habit.dailyTargetMode != TargetMode.AT_LEAST) return
 
-        _uiState.value = _uiState.value.copy(
-            layout = Layout.MAIN,
-            selectedHabitId = habitId,
-            selectedActivityId = null,
-            activeActivity = null
-        )
-        viewModelScope.launch { hydrateTrackStateForActivity(null) }
+        selectHabit(habitId)
     }
 
     fun forceSelectHabit(habitId: String) {
@@ -745,8 +858,10 @@ class AgendaViewModel(
     }
 
     fun closeIntervalSelector() {
-        _uiState.value = _uiState.value.copy(
-            intervalChimeState = IntervalChimeState.IDLE
+        val state = _uiState.value
+        _uiState.value = state.copy(
+            intervalChimeState = if (state.intervalChimeMs > 0) IntervalChimeState.RUNNING
+                else IntervalChimeState.IDLE
         )
     }
 
@@ -767,6 +882,26 @@ class AgendaViewModel(
         )
     }
 
+    fun changeIntervalChime(intervalMs: Long) {
+        val state = _uiState.value
+        if (state.intervalChimeMs <= 0) {
+            startIntervalChime(intervalMs)
+            return
+        }
+        val elapsed = state.activeActivity?.elapsedMs ?: 0
+        nextIntervalChimeAtMs = IntervalReschedule.of(
+            nextAtMs = nextIntervalChimeAtMs,
+            oldMs = state.intervalChimeMs,
+            newMs = intervalMs,
+            elapsedMs = elapsed
+        ).nextAtMs
+        _uiState.value = state.copy(
+            intervalChimeState = IntervalChimeState.RUNNING,
+            intervalChimeMs = intervalMs,
+            intervalCountdownMs = nextIntervalChimeAtMs - elapsed
+        )
+    }
+
     fun cancelIntervalChime() {
         nextIntervalChimeAtMs = 0
         _uiState.value = _uiState.value.copy(
@@ -778,27 +913,28 @@ class AgendaViewModel(
 
     fun historyOlder() {
         val state = _uiState.value
-        if (state.historyIndex > 0) {
-            val newIndex = state.historyIndex - 1
-            val activity = state.historyActivities[newIndex]
-            _uiState.value = state.copy(
-                historyIndex = newIndex,
-                selectedActivityId = if (activity.completedAt != null) activity.id else null,
-                activeActivity = if (activity.completedAt == null) activity else state.activeActivity
-            )
-        }
+        if (state.historyIndex > 0) showHistoryActivity(state.historyIndex - 1)
     }
 
     fun historyNewer() {
         val state = _uiState.value
         if (state.historyIndex < state.historyActivities.lastIndex) {
-            val newIndex = state.historyIndex + 1
-            val activity = state.historyActivities[newIndex]
-            _uiState.value = state.copy(
-                historyIndex = newIndex,
-                selectedActivityId = if (activity.completedAt != null) activity.id else null,
-                activeActivity = if (activity.completedAt == null) activity else state.activeActivity
-            )
+            showHistoryActivity(state.historyIndex + 1)
+        }
+    }
+
+    private fun showHistoryActivity(index: Int) {
+        val state = _uiState.value
+        val activity = state.historyActivities.getOrNull(index)
+        _uiState.value = state.copy(
+            historyIndex = index,
+            selectedActivityId = activity?.let { if (it.completedAt != null) it.id else null },
+            activeActivity = activity?.let {
+                if (it.completedAt == null) it else state.activeActivity
+            } ?: state.activeActivity
+        )
+        if (activity != null) {
+            viewModelScope.launch { hydrateTrackStateForActivity(activity) }
         }
     }
 
@@ -806,11 +942,16 @@ class AgendaViewModel(
         val current = dayBoundary.today()
         if (current != realToday.value) {
             realToday.value = current
+            sweepStalePlaceholders()
             if (selectedDate.value !in current.minusDays(WINDOW_DAYS)..current) {
                 clearViewSelection()
                 selectedDate.value = current
             }
         }
+    }
+
+    private fun sweepStalePlaceholders() {
+        viewModelScope.launch { activityRepo.deleteStalePlaceholders(dayBoundary.today()) }
     }
 
     fun stepDate(deltaDays: Int) {
@@ -907,17 +1048,7 @@ class AgendaViewModel(
     }
 
     fun historyBackToAnchor() {
-        val state = _uiState.value
-        val anchorActivity = state.historyActivities.getOrNull(state.historyAnchorIndex)
-        _uiState.value = state.copy(
-            historyIndex = state.historyAnchorIndex,
-            selectedActivityId = anchorActivity?.let {
-                if (it.completedAt != null) it.id else null
-            },
-            activeActivity = anchorActivity?.let {
-                if (it.completedAt == null) it else state.activeActivity
-            } ?: state.activeActivity
-        )
+        showHistoryActivity(_uiState.value.historyAnchorIndex)
     }
 
     companion object {
